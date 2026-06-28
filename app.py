@@ -314,38 +314,11 @@ def api_sunrise_sunset():
         if not origin:
             return jsonify({"error": f"Could not geocode location: {location!r}"}), 400
         origin_lat, origin_lon, origin_name = origin
-    try:
-        resp = requests.get(
-            "https://api.open-meteo.com/v1/forecast",
-            params={
-                "latitude": origin_lat,
-                "longitude": origin_lon,
-                "daily": "sunrise,sunset",
-                "timezone": "Europe/London",
-                "start_date": base_date.strftime("%Y-%m-%d"),
-                "end_date": base_date.strftime("%Y-%m-%d"),
-            },
-            timeout=15,
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        daily = data.get("daily", {})
-        sunrise = daily.get("sunrise", [None])[0]
-        sunset = daily.get("sunset", [None])[0]
-        if sunrise and sunset and isinstance(sunrise, str) and isinstance(sunset, str) and len(sunrise) >= 16 and len(sunset) >= 16:
-            return jsonify({"sunrise": sunrise[11:16], "sunset": sunset[11:16]})
-        fallback = _fallback_sunrise_sunset(base_date, origin_lat, origin_lon)
-        if fallback:
-            sunrise, sunset = fallback
-            return jsonify({"sunrise": sunrise, "sunset": sunset})
-        return jsonify({"error": "Sunrise/sunset not available for that date"}), 502
-    except requests.RequestException as exc:
-        logger.warning("Sunrise/sunset lookup failed: %s", exc)
-        fallback = _fallback_sunrise_sunset(base_date, origin_lat, origin_lon)
-        if fallback:
-            sunrise, sunset = fallback
-            return jsonify({"sunrise": sunrise, "sunset": sunset})
-        return jsonify({"error": "Sunrise/sunset lookup failed"}), 502
+    fallback = _fallback_sunrise_sunset(base_date, origin_lat, origin_lon)
+    if fallback:
+        sunrise, sunset = fallback
+        return jsonify({"sunrise": sunrise, "sunset": sunset})
+    return jsonify({"error": "Sunrise/sunset not available for that date"}), 502
 
 
 @app.route("/api/cloud_cover")
