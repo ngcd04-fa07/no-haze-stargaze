@@ -569,6 +569,7 @@ def api_recommend():
             "lunar_by_date": lunar_by_date,
             "sites_checked": len(nearby),
             "weather_sites_checked": len(weather_candidates),
+            "weather_rate_limit": weather.rate_limit_status(),
             "all_uk": all_uk,
             "query": {
                 "date": base_date.strftime("%Y-%m-%d"),

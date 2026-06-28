@@ -7,6 +7,7 @@ hammering the API when users repeat similar searches.
 """
 
 import logging
+import threading
 import time
 from datetime import datetime, timedelta
 from typing import Optional
@@ -19,12 +20,36 @@ OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 BATCH_SIZE = 12
 FORECAST_CACHE_TTL_SECONDS = 45 * 60
 INTER_BATCH_DELAY_SECONDS = 0.65
+REQUEST_TIMEOUT_SECONDS = 12
+RATE_LIMIT_COOLDOWN_SECONDS = 20 * 60
 
 _forecast_cache: dict[tuple[str, str, str], tuple[float, list[tuple[str, int]]]] = {}
+_rate_limit_lock = threading.Lock()
+_rate_limited_until = 0.0
 
 
 class ForecastRateLimitError(Exception):
     pass
+
+
+def _mark_rate_limited() -> None:
+    global _rate_limited_until
+    with _rate_limit_lock:
+        _rate_limited_until = max(_rate_limited_until, time.time() + RATE_LIMIT_COOLDOWN_SECONDS)
+
+
+def _is_rate_limited() -> bool:
+    with _rate_limit_lock:
+        return time.time() < _rate_limited_until
+
+
+def rate_limit_status() -> dict[str, float | bool]:
+    with _rate_limit_lock:
+        retry_after = max(0.0, _rate_limited_until - time.time())
+    return {
+        "active": retry_after > 0,
+        "retry_after_seconds": round(retry_after, 1),
+    }
 
 
 def _cache_key(site: dict, start_date: datetime, end_date: datetime) -> tuple[str, str, str]:
@@ -65,17 +90,21 @@ def _prune_forecast_cache() -> None:
 
 
 def _request_forecast(params: dict) -> dict | list | None:
-    for attempt in range(4):
+    if _is_rate_limited():
+        raise ForecastRateLimitError()
+
+    for attempt in range(2):
         try:
-            resp = requests.get(OPEN_METEO_URL, params=params, timeout=30)
+            resp = requests.get(OPEN_METEO_URL, params=params, timeout=REQUEST_TIMEOUT_SECONDS)
             resp.raise_for_status()
             return resp.json()
         except requests.HTTPError as exc:
             status = exc.response.status_code if exc.response is not None else None
             if status == 429:
-                if attempt < 3:
-                    time.sleep(2.5 * (attempt + 1))
+                if attempt < 1:
+                    time.sleep(1.0)
                     continue
+                _mark_rate_limited()
                 raise ForecastRateLimitError() from exc
             logger.error("Open-Meteo API error: %s", exc)
             return None
@@ -110,13 +139,7 @@ def _fetch_batch(
     try:
         data = _request_forecast(params)
     except ForecastRateLimitError:
-        logger.warning(
-            "Open-Meteo rate limit hit for batch of %d sites covering %s to %s.",
-            len(sites),
-            start_date.strftime("%Y-%m-%d"),
-            end_date.strftime("%Y-%m-%d"),
-        )
-        return {}
+        raise
 
     if data is None:
         return {}
@@ -175,7 +198,17 @@ def get_cloud_cover_forecast(
 
     for i in range(0, len(uncached_sites), BATCH_SIZE):
         batch = uncached_sites[i : i + BATCH_SIZE]
-        batch_results = _fetch_batch(batch, start_date, end_date)
+        try:
+            batch_results = _fetch_batch(batch, start_date, end_date)
+        except ForecastRateLimitError:
+            logger.warning(
+                "Open-Meteo rate limit hit for batch of %d sites covering %s to %s; skipping remaining uncached forecasts for %.0f minutes.",
+                len(batch),
+                start_date.strftime("%Y-%m-%d"),
+                end_date.strftime("%Y-%m-%d"),
+                RATE_LIMIT_COOLDOWN_SECONDS / 60,
+            )
+            break
         all_results.update(batch_results)
         if i + BATCH_SIZE < len(uncached_sites):
             time.sleep(INTER_BATCH_DELAY_SECONDS)
