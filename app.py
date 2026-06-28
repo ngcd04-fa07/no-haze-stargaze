@@ -40,6 +40,8 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
+WEATHER_CANDIDATE_LIMIT = 75
+
 
 @app.after_request
 def add_cors_headers(response):
@@ -72,6 +74,36 @@ def _progress_cb(done: int, total: int, found: int) -> None:
 
 
 _INCREMENTAL_SAVE_EVERY = 100  # update shared state every N sites found
+
+
+def _pick_weather_candidates(
+    sites: list[dict],
+    origin_lat: float,
+    origin_lon: float,
+    max_distance_km: float,
+    ignore_distance: bool,
+    limit: int = WEATHER_CANDIDATE_LIMIT,
+) -> list[dict]:
+    if len(sites) <= limit:
+        return sites
+
+    scored: list[tuple[float, dict]] = []
+    for site in sites:
+        result = rec.score_site(
+            site,
+            origin_lat,
+            origin_lon,
+            max_distance_km,
+            avg_cloud_cover=None,
+            weather_info=None,
+            lunar_illumination_pct=None,
+            ignore_distance=ignore_distance,
+        )
+        if result is not None:
+            scored.append((result["total_score"], site))
+
+    scored.sort(key=lambda item: item[0], reverse=True)
+    return [site for _, site in scored[:limit]]
 
 
 def _site_found_cb(site: dict, all_sites: list[dict]) -> None:
@@ -434,6 +466,10 @@ def api_recommend():
                 min_score = rec.LIGHT_POLLUTION_SCORE.get(min_pollution_level, 0)
                 if pol_score < min_score:
                     continue
+            if require_parking and not site.get("has_parking", False):
+                continue
+            if require_toilets and site.get("has_toilets") is not True:
+                continue
             nearby.append(site)
 
     if not nearby:
@@ -458,16 +494,29 @@ def api_recommend():
         d.strftime("%Y-%m-%d"): lu.lunar_illumination(d) for d in query_dates
     }
 
-    # ---- Fetch cloud cover for all nearby sites ----
+    weather_candidates = _pick_weather_candidates(
+        nearby,
+        origin_lat,
+        origin_lon,
+        max_distance_km,
+        ignore_distance=all_uk,
+    )
+    logger.info(
+        "Weather fetch limited to %d of %d candidate sites.",
+        len(weather_candidates),
+        len(nearby),
+    )
+
+    # ---- Fetch cloud cover for top candidate sites only ----
     weather_start = query_dates[0]
     weather_end = query_dates[-1] + timedelta(days=1)
-    hourly_data = weather.get_cloud_cover_forecast(nearby, weather_start, weather_end)
+    hourly_data = weather.get_cloud_cover_forecast(weather_candidates, weather_start, weather_end)
 
     # ---- Build per-site cloud summary ----
     cloud_data: dict[str, float] = {}
     weather_details: dict[str, dict] = {}
 
-    for site in nearby:
+    for site in weather_candidates:
         slug = site["slug"]
         w_info = weather.best_window_cloud_cover(
             slug, hourly_data, night_start_hour, night_end_hour, query_dates,
@@ -481,7 +530,7 @@ def api_recommend():
     recommendations = rec.recommend(
         origin_lat=origin_lat,
         origin_lon=origin_lon,
-        sites=nearby,
+        sites=weather_candidates,
         cloud_data=cloud_data,
         weather_details=weather_details,
         max_distance_km=max_distance_km,
@@ -519,6 +568,7 @@ def api_recommend():
             "lunar": primary_lunar,
             "lunar_by_date": lunar_by_date,
             "sites_checked": len(nearby),
+            "weather_sites_checked": len(weather_candidates),
             "all_uk": all_uk,
             "query": {
                 "date": base_date.strftime("%Y-%m-%d"),

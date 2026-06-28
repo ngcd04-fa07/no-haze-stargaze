@@ -2,7 +2,8 @@
 weather.py — Cloud cover forecasts via the Open-Meteo API (free, no key required).
 
 Open-Meteo supports multiple locations per request (comma-separated lat/lng).
-We batch sites in groups of 50 to stay within URL length limits.
+Requests are batched conservatively and cached per site/date range to avoid
+hammering the API when users repeat similar searches.
 """
 
 import logging
@@ -15,20 +16,67 @@ import requests
 logger = logging.getLogger(__name__)
 
 OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
-BATCH_SIZE = 50  # max locations per API call
+BATCH_SIZE = 12
+FORECAST_CACHE_TTL_SECONDS = 45 * 60
+INTER_BATCH_DELAY_SECONDS = 0.65
+
+_forecast_cache: dict[tuple[str, str, str], tuple[float, list[tuple[str, int]]]] = {}
+
+
+class ForecastRateLimitError(Exception):
+    pass
+
+
+def _cache_key(site: dict, start_date: datetime, end_date: datetime) -> tuple[str, str, str]:
+    return (
+        site["slug"],
+        start_date.strftime("%Y-%m-%d"),
+        end_date.strftime("%Y-%m-%d"),
+    )
+
+
+def _get_cached_forecast(site: dict, start_date: datetime, end_date: datetime) -> Optional[list[tuple[str, int]]]:
+    key = _cache_key(site, start_date, end_date)
+    cached = _forecast_cache.get(key)
+    if not cached:
+        return None
+    expires_at, records = cached
+    if expires_at <= time.time():
+        _forecast_cache.pop(key, None)
+        return None
+    return records
+
+
+def _set_cached_forecast(
+    site: dict,
+    start_date: datetime,
+    end_date: datetime,
+    records: list[tuple[str, int]],
+) -> None:
+    key = _cache_key(site, start_date, end_date)
+    _forecast_cache[key] = (time.time() + FORECAST_CACHE_TTL_SECONDS, records)
+
+
+def _prune_forecast_cache() -> None:
+    now = time.time()
+    expired_keys = [key for key, (expires_at, _) in _forecast_cache.items() if expires_at <= now]
+    for key in expired_keys:
+        _forecast_cache.pop(key, None)
 
 
 def _request_forecast(params: dict) -> dict | list | None:
-    for attempt in range(3):
+    for attempt in range(4):
         try:
             resp = requests.get(OPEN_METEO_URL, params=params, timeout=30)
             resp.raise_for_status()
             return resp.json()
         except requests.HTTPError as exc:
             status = exc.response.status_code if exc.response is not None else None
-            if status == 429 and attempt < 2:
-                time.sleep(1.5 * (attempt + 1))
-                continue
+            if status == 429:
+                if attempt < 3:
+                    time.sleep(2.5 * (attempt + 1))
+                    continue
+                raise ForecastRateLimitError() from exc
             logger.error("Open-Meteo API error: %s", exc)
             return None
         except requests.RequestException as exc:
@@ -59,13 +107,18 @@ def _fetch_batch(
         "end_date": end_date.strftime("%Y-%m-%d"),
     }
 
-    data = _request_forecast(params)
+    try:
+        data = _request_forecast(params)
+    except ForecastRateLimitError:
+        logger.warning(
+            "Open-Meteo rate limit hit for batch of %d sites covering %s to %s.",
+            len(sites),
+            start_date.strftime("%Y-%m-%d"),
+            end_date.strftime("%Y-%m-%d"),
+        )
+        return {}
+
     if data is None:
-        if len(sites) > 1:
-            mid = max(1, len(sites) // 2)
-            left = _fetch_batch(sites[:mid], start_date, end_date)
-            right = _fetch_batch(sites[mid:], start_date, end_date)
-            return {**left, **right}
         return {}
 
     results: dict[str, list[tuple[str, int]]] = {}
@@ -75,9 +128,11 @@ def _fetch_batch(
         for i, site in enumerate(sites):
             try:
                 hourly = data[i]["hourly"]
-                results[site["slug"]] = list(
+                records = list(
                     zip(hourly["time"], hourly["cloud_cover"])
                 )
+                results[site["slug"]] = records
+                _set_cached_forecast(site, start_date, end_date, records)
             except (IndexError, KeyError, TypeError):
                 pass
     elif isinstance(data, dict) and "hourly" in data:
@@ -85,9 +140,11 @@ def _fetch_batch(
         site = sites[0]
         try:
             hourly = data["hourly"]
-            results[site["slug"]] = list(
+            records = list(
                 zip(hourly["time"], hourly["cloud_cover"])
             )
+            results[site["slug"]] = records
+            _set_cached_forecast(site, start_date, end_date, records)
         except (KeyError, TypeError):
             pass
 
@@ -104,14 +161,24 @@ def get_cloud_cover_forecast(
 
     Returns: slug -> [(iso_time_str, cloud_cover_0_100), ...]
     """
-    all_results: dict[str, list[tuple[str, int]]] = {}
+    _prune_forecast_cache()
 
-    for i in range(0, len(sites), BATCH_SIZE):
-        batch = sites[i : i + BATCH_SIZE]
+    all_results: dict[str, list[tuple[str, int]]] = {}
+    uncached_sites: list[dict] = []
+
+    for site in sites:
+        cached = _get_cached_forecast(site, start_date, end_date)
+        if cached is not None:
+            all_results[site["slug"]] = cached
+        else:
+            uncached_sites.append(site)
+
+    for i in range(0, len(uncached_sites), BATCH_SIZE):
+        batch = uncached_sites[i : i + BATCH_SIZE]
         batch_results = _fetch_batch(batch, start_date, end_date)
         all_results.update(batch_results)
-        if i + BATCH_SIZE < len(sites):
-            time.sleep(0.35)
+        if i + BATCH_SIZE < len(uncached_sites):
+            time.sleep(INTER_BATCH_DELAY_SECONDS)
 
     return all_results
 
