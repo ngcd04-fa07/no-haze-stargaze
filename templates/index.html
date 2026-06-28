@@ -591,54 +591,6 @@
     }
     #map { width: 100%; height: 100%; }
 
-    /* cloud time slider */
-    #cloud-slider-wrap {
-      position: absolute;
-      bottom: 1.5rem;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 1000;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 2rem;
-      padding: 0.4rem 0.9rem;
-      display: none;
-      align-items: center;
-      gap: 0.6rem;
-      font-size: 0.71rem;
-      color: var(--text);
-      min-width: 260px;
-      max-width: calc(100% - 1.5rem);
-      box-shadow: 0 2px 14px rgba(0,0,0,0.45);
-      white-space: nowrap;
-    }
-    #cloud-time-slider {
-      flex: 1;
-      min-width: 120px;
-      accent-color: var(--accent);
-      cursor: pointer;
-    }
-    #cloud-time-label {
-      min-width: 100px;
-      color: var(--accent);
-      font-weight: 600;
-    }
-    .cloud-err {
-      position: absolute;
-      bottom: 5rem;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #2a0a0a;
-      border: 1px solid #7f2020;
-      color: #f87171;
-      font-size: 0.72rem;
-      padding: 0.35rem 0.75rem;
-      border-radius: var(--radius);
-      z-index: 1001;
-      pointer-events: none;
-      white-space: nowrap;
-    }
-
     /* Leaflet popup override */
     .leaflet-popup-content-wrapper {
       background: var(--surface);
@@ -799,13 +751,6 @@
   <!-- ── Map ── -->
   <main>
     <div id="map"></div>
-    <!-- cloud cover time slider (shown when overlay is active) -->
-    <div id="cloud-slider-wrap">
-      <span style="color:var(--muted)">☁</span>
-      <span id="cloud-time-label">Now</span>
-      <input type="range" id="cloud-time-slider" min="0" max="47" step="1" value="0"
-             oninput="onCloudSlider(this.value)" />
-    </div>
     <div id="loading-overlay">
       <div class="spinner"></div>
       <p id="loading-msg">Searching…</p>
@@ -932,136 +877,9 @@ function feeStr(fee) {
   return '';
 }
 
-// ── Cloud overlay (Open-Meteo grid) ──────────────────────────────────────────────
-let _cloudGridData  = null;   // fetched from /api/cloud_cover
-let _cloudCircles   = [];     // L.circle instances on map
-let _cloudOverlayOn = false;
-let _cloudTimeIdx   = 0;
-let _cloudAttrAdded = false;
-
-function toggleCloudOverlay() {
-  const btn = document.getElementById('cloud-toggle');
-  if (btn.disabled) return;
-  _cloudOverlayOn ? _disableCloud() : _enableCloud();
-}
-
-async function _enableCloud() {
-  const btn = document.getElementById('cloud-toggle');
-  btn.disabled = true;
-  btn.textContent = '⏳ Loading…';
-  try {
-    if (!hasConfiguredBackend()) {
-      throw new Error(API_SETUP_HINT);
-    }
-    if (!_cloudGridData) {
-      _cloudGridData = await requestJson('/api/cloud_cover');
-    }
-    _cloudOverlayOn = true;
-    _cloudTimeIdx   = _findCurrentHourIdx();
-
-    // Build all circles once; slider moves just update fillOpacity (no re-render)
-    _buildCloudCircles(_cloudTimeIdx);
-
-    const slider = document.getElementById('cloud-time-slider');
-    slider.max   = _cloudGridData.hours.length - 1;
-    slider.value = _cloudTimeIdx;
-    _updateCloudLabel(_cloudTimeIdx);
-    document.getElementById('cloud-slider-wrap').style.display = 'flex';
-
-    // Attribution added once, persists
-    if (!_cloudAttrAdded) {
-      map.attributionControl.addAttribution(
-        '☁ <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a>'
-      );
-      _cloudAttrAdded = true;
-    }
-    btn.disabled = false;
-    btn.textContent = '☁ Overlay ON';
-    btn.classList.add('active');
-  } catch (err) {
-    btn.disabled = false;
-    btn.textContent = '☁ Cloud overlay';
-    _showCloudErr('Cloud data unavailable: ' + err.message);
-  }
-}
-
-function _disableCloud() {
-  _cloudCircles.forEach(c => map.removeLayer(c));
-  _cloudCircles = [];
-  _cloudOverlayOn = false;
-  document.getElementById('cloud-slider-wrap').style.display = 'none';
-  const btn = document.getElementById('cloud-toggle');
-  btn.textContent = '☁ Cloud overlay';
-  btn.classList.remove('active');
-}
-
-function _buildCloudCircles(hourIdx) {
-  _cloudCircles.forEach(c => map.removeLayer(c));
-  _cloudCircles = [];
-  if (!_cloudGridData) return;
-  _cloudGridData.points.forEach(pt => {
-    const pct = pt.layers.total[hourIdx] ?? 0;
-    const circle = L.circle([pt.lat, pt.lng], {
-      radius:      85000,         // ~85 km — fills the 1° grid gaps
-      color:       'none',
-      fillColor:   '#607d9e',
-      fillOpacity: pct / 100 * 0.5,
-      interactive: false,
-    }).addTo(map);
-    _cloudCircles.push(circle);
-  });
-}
-
-function _updateCloudOpacities(hourIdx) {
-  if (!_cloudGridData) return;
-  _cloudGridData.points.forEach((pt, i) => {
-    if (!_cloudCircles[i]) return;
-    const pct = pt.layers.total[hourIdx] ?? 0;
-    _cloudCircles[i].setStyle({ fillOpacity: pct / 100 * 0.5 });
-  });
-}
-
-function _findCurrentHourIdx() {
-  if (!_cloudGridData) return 0;
-  const now    = new Date();
-  const ukISO  = now.toLocaleDateString('sv-SE', { timeZone: 'Europe/London' });
-  const ukHour = now.toLocaleTimeString('en-GB', { timeZone: 'Europe/London', hour: '2-digit', hour12: false });
-  const prefix = `${ukISO}T${ukHour}`;
-  const idx    = _cloudGridData.hours.findIndex(h => h.startsWith(prefix));
-  return idx >= 0 ? idx : 0;
-}
-
-function _updateCloudLabel(idx) {
-  const label = document.getElementById('cloud-time-label');
-  if (!_cloudGridData || idx >= _cloudGridData.hours.length) return;
-  const iso     = _cloudGridData.hours[idx];  // "2026-06-28T21:00"
-  const dateStr = iso.slice(0, 10);
-  const timeStr = iso.slice(11, 16);
-  const today   = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/London' });
-  const curHour = new Date().toLocaleTimeString('en-GB', { timeZone: 'Europe/London', hour: '2-digit', hour12: false });
-  if (dateStr === today && timeStr.startsWith(curHour)) {
-    label.textContent = `Now (${timeStr})`;
-  } else {
-    const dayAbbr = new Date(dateStr + 'T12:00:00Z')
-      .toLocaleDateString('en-GB', { weekday: 'short' });
-    label.textContent = `${dayAbbr} ${timeStr}`;
-  }
-}
-
-function onCloudSlider(val) {
-  _cloudTimeIdx = parseInt(val, 10);
-  _updateCloudOpacities(_cloudTimeIdx);
-  _updateCloudLabel(_cloudTimeIdx);
-}
-
-function _showCloudErr(msg) {
-  document.querySelectorAll('.cloud-err').forEach(e => e.remove());
-  const el = document.createElement('div');
-  el.className   = 'cloud-err';
-  el.textContent = msg;
-  document.getElementById('map').appendChild(el);
-  setTimeout(() => el.remove(), 6000);
-}
+// Cloud cover overlay intentionally disabled to avoid extra Open-Meteo traffic.
+function toggleCloudOverlay() {}
+function onCloudSlider() {}
 
 const formatDateForDisplay = (value) => {
   const raw = `${value || ''}`.trim();

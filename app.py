@@ -27,7 +27,6 @@ from flask import Flask, jsonify, render_template, request
 
 import geocoder as geo
 import amenities as am
-import cloud_grid as cg
 import lunar as lu
 import recommender as rec
 import scraper
@@ -254,9 +253,6 @@ if not _preload_cached_sites_on_startup():
 # Start the background weekly-refresh scheduler
 threading.Thread(target=_weekly_cache_manager, daemon=True, name="weekly-cache").start()
 
-# Pre-warm the cloud grid cache in the background
-threading.Thread(target=cg.fetch_grid, daemon=True, name="cloud-grid-prefetch").start()
-
 
 # ---------------------------------------------------------------------------
 # Amenity background fetcher
@@ -350,17 +346,7 @@ def api_sunrise_sunset():
 
 @app.route("/api/cloud_cover")
 def api_cloud_cover():
-    """Return hourly cloud-cover grid data for the UK map overlay.
-
-    Response is cached server-side for 1 hour so repeated page loads
-    do not hammer the Open-Meteo API.
-    """
-    data = cg.fetch_grid()
-    if data is None:
-        return jsonify(
-            {"error": "Cloud cover data is temporarily unavailable. Please try again shortly."}
-        ), 503
-    return jsonify(data)
+    return jsonify({"error": "Cloud cover overlay is disabled."}), 410
 
 
 @app.route("/api/refresh", methods=["POST"])

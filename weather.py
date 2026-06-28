@@ -6,6 +6,7 @@ We batch sites in groups of 50 to stay within URL length limits.
 """
 
 import logging
+import time
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -15,6 +16,25 @@ logger = logging.getLogger(__name__)
 
 OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 BATCH_SIZE = 50  # max locations per API call
+
+
+def _request_forecast(params: dict) -> dict | list | None:
+    for attempt in range(3):
+        try:
+            resp = requests.get(OPEN_METEO_URL, params=params, timeout=30)
+            resp.raise_for_status()
+            return resp.json()
+        except requests.HTTPError as exc:
+            status = exc.response.status_code if exc.response is not None else None
+            if status == 429 and attempt < 2:
+                time.sleep(1.5 * (attempt + 1))
+                continue
+            logger.error("Open-Meteo API error: %s", exc)
+            return None
+        except requests.RequestException as exc:
+            logger.error("Open-Meteo API error: %s", exc)
+            return None
+    return None
 
 
 def _fetch_batch(
@@ -39,12 +59,13 @@ def _fetch_batch(
         "end_date": end_date.strftime("%Y-%m-%d"),
     }
 
-    try:
-        resp = requests.get(OPEN_METEO_URL, params=params, timeout=30)
-        resp.raise_for_status()
-        data = resp.json()
-    except requests.RequestException as exc:
-        logger.error("Open-Meteo API error: %s", exc)
+    data = _request_forecast(params)
+    if data is None:
+        if len(sites) > 1:
+            mid = max(1, len(sites) // 2)
+            left = _fetch_batch(sites[:mid], start_date, end_date)
+            right = _fetch_batch(sites[mid:], start_date, end_date)
+            return {**left, **right}
         return {}
 
     results: dict[str, list[tuple[str, int]]] = {}
@@ -89,6 +110,8 @@ def get_cloud_cover_forecast(
         batch = sites[i : i + BATCH_SIZE]
         batch_results = _fetch_batch(batch, start_date, end_date)
         all_results.update(batch_results)
+        if i + BATCH_SIZE < len(sites):
+            time.sleep(0.35)
 
     return all_results
 
