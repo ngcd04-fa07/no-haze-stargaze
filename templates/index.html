@@ -834,6 +834,33 @@ const API_BASE = (() => {
   return configured ? configured.replace(/\/$/, '') : '';
 })();
 const apiUrl = (path) => (API_BASE ? `${API_BASE}${path}` : path);
+const IS_GITHUB_PAGES = /github\.io$/i.test(window.location.hostname || '');
+const API_SETUP_HINT = 'Backend not configured. Open with ?api=https://<your-backend-url> (example: https://your-backend.onrender.com).';
+
+function hasConfiguredBackend() {
+  return !(IS_GITHUB_PAGES && !API_BASE);
+}
+
+async function requestJson(path, options = {}) {
+  const resp = await fetch(apiUrl(path), options);
+  const raw = await resp.text();
+  let data = null;
+  if (raw) {
+    try {
+      data = JSON.parse(raw);
+    } catch (_) {
+      data = null;
+    }
+  }
+  if (!resp.ok) {
+    const msg = (data && data.error) ? data.error : `Server error ${resp.status}`;
+    throw new Error(msg);
+  }
+  if (!data) {
+    throw new Error('Server returned non-JSON response. Check backend URL (?api=...).');
+  }
+  return data;
+}
 
 function highlightMarker(idx) {
   // Restore previously highlighted marker to its original appearance
@@ -919,13 +946,11 @@ async function _enableCloud() {
   btn.disabled = true;
   btn.textContent = '⏳ Loading…';
   try {
+    if (!hasConfiguredBackend()) {
+      throw new Error(API_SETUP_HINT);
+    }
     if (!_cloudGridData) {
-      const resp = await fetch(apiUrl('/api/cloud_cover'));
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
-        throw new Error(err.error || `HTTP ${resp.status}`);
-      }
-      _cloudGridData = await resp.json();
+      _cloudGridData = await requestJson('/api/cloud_cover');
     }
     _cloudOverlayOn = true;
     _cloudTimeIdx   = _findCurrentHourIdx();
@@ -1198,8 +1223,15 @@ function initForm() {
       document.getElementById('time-help').textContent = 'Choose a date to see the night window.';
       return;
     }
+    if (!hasConfiguredBackend()) {
+      const sunInfo = document.getElementById('sun-info');
+      sunInfo.innerHTML = '<div class="sun-item">🌙 <b>—</b></div>';
+      sunInfo.style.display = 'flex';
+      document.getElementById('time-help').textContent = API_SETUP_HINT;
+      return;
+    }
     try {
-      const resp = await fetch(apiUrl('/api/sunrise_sunset'), {
+      const data = await requestJson('/api/sunrise_sunset', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1208,8 +1240,6 @@ function initForm() {
         all_uk: allUkChk.checked,
       }),
       });
-      const data = await resp.json();
-      if (!resp.ok || data.error) throw new Error(data.error || 'unavailable');
       const sunrise = data.sunrise || '00:00';
       const sunset = data.sunset || '00:00';
       const sunInfo = document.getElementById('sun-info');
@@ -1255,9 +1285,13 @@ function initForm() {
 
 // ── Status polling ─────────────────────────────────────────────────────────
 async function pollStatus() {
+  if (!hasConfiguredBackend()) {
+    document.getElementById('status-text').textContent = API_SETUP_HINT;
+    document.getElementById('search-btn').disabled = true;
+    return;
+  }
   try {
-    const r = await fetch(apiUrl('/api/status'));
-    const d = await r.json();
+    const d = await requestJson('/api/status');
     const dot = document.getElementById('status-dot');
     const txt = document.getElementById('status-text');
 
@@ -1301,6 +1335,10 @@ function toggleForm() {
 
 // ── Search ─────────────────────────────────────────────────────────────────
 async function search() {
+  if (!hasConfiguredBackend()) {
+    alert(API_SETUP_HINT);
+    return;
+  }
   const allUk = document.getElementById('all-uk').checked;
   const loc = document.getElementById('loc-input').value.trim();
   if (!allUk && !loc) { alert('Please enter a location.'); return; }
@@ -1324,15 +1362,12 @@ async function search() {
   showLoading('Fetching weather & scoring sites…');
 
   try {
-    const r = await fetch(apiUrl('/api/recommend'), {
+    const d = await requestJson('/api/recommend', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    const d = await r.json();
     hideLoading();
-
-    if (d.error) { alert(d.error); return; }
 
     window._forecastConfidenceLabel = forecastConfidenceLabel(d.query?.date);
     renderResults(d);
