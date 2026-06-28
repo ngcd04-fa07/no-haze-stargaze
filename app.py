@@ -344,11 +344,6 @@ def api_sunrise_sunset():
     return jsonify({"error": "Sunrise/sunset not available for that date"}), 502
 
 
-@app.route("/api/cloud_cover")
-def api_cloud_cover():
-    return jsonify({"error": "Cloud cover overlay is disabled."}), 410
-
-
 @app.route("/api/refresh", methods=["POST"])
 def api_refresh():
     with _state["lock"]:
