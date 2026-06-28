@@ -47,6 +47,7 @@ app = Flask(__name__)
 FORECAST_CACHE_FILE = "forecast_cache.json"
 FORECAST_REFRESH_INTERVAL_SECONDS = 3600   # 1 hour
 FORECAST_LOOKAHEAD_DAYS = 14
+FORECAST_SITE_LIMIT = 500  # fetch weather only for the top N quality sites
 
 _forecast_state = {
     "data": {},          # slug -> [(time_str, cloud_pct), ...]
@@ -257,10 +258,18 @@ def _do_forecast_refresh() -> None:
 
     try:
         with _state["lock"]:
-            sites = list(_state["sites"])
-        if not sites:
+            all_sites = list(_state["sites"])
+        if not all_sites:
             logger.warning("Forecast refresh skipped: no sites loaded yet.")
             return
+
+        # Only cache the top N sites by quality to stay within Open-Meteo rate limits.
+        def _quality(site: dict) -> float:
+            pol = rec.LIGHT_POLLUTION_SCORE.get(site.get("light_pollution", "unknown"), 50)
+            typ = rec.SITE_TYPE_SCORE.get(site.get("site_type", "Unknown"), 50)
+            return pol * 0.7 + typ * 0.3
+
+        sites = sorted(all_sites, key=_quality, reverse=True)[:FORECAST_SITE_LIMIT]
 
         today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         end_date = today + timedelta(days=FORECAST_LOOKAHEAD_DAYS)
