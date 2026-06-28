@@ -1,0 +1,84 @@
+"""
+geocoder.py — Convert a user-supplied location string to lat/lng.
+
+Strategy:
+  1. If it looks like a UK postcode → postcodes.io (fast, precise).
+  2. Otherwise → Nominatim (OpenStreetMap), biased to Great Britain.
+"""
+
+import logging
+import re
+from typing import Optional
+
+import requests
+
+logger = logging.getLogger(__name__)
+
+_POSTCODE_RE = re.compile(
+    r"^[A-Z]{1,2}\d{1,2}[A-Z]?\s*\d[A-Z]{2}$", re.IGNORECASE
+)
+
+NOMINATIM_HEADERS = {
+    "User-Agent": "StargazingRecommender/1.0 (educational project)"
+}
+
+
+def _geocode_postcode(postcode: str) -> Optional[tuple[float, float, str]]:
+    clean = postcode.replace(" ", "").upper()
+    try:
+        resp = requests.get(
+            f"https://api.postcodes.io/postcodes/{clean}", timeout=10
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        if data.get("status") == 200 and data.get("result"):
+            r = data["result"]
+            display = r.get("postcode", clean)
+            return float(r["latitude"]), float(r["longitude"]), display
+    except requests.RequestException as exc:
+        logger.debug("postcodes.io error for %s: %s", postcode, exc)
+    return None
+
+
+def _geocode_nominatim(place: str) -> Optional[tuple[float, float, str]]:
+    params = {
+        "q": place,
+        "format": "json",
+        "limit": 1,
+        "countrycodes": "gb,ie",
+        "addressdetails": 0,
+    }
+    try:
+        resp = requests.get(
+            "https://nominatim.openstreetmap.org/search",
+            params=params,
+            headers=NOMINATIM_HEADERS,
+            timeout=10,
+        )
+        resp.raise_for_status()
+        results = resp.json()
+        if results:
+            r = results[0]
+            return float(r["lat"]), float(r["lon"]), r.get("display_name", place)
+    except requests.RequestException as exc:
+        logger.debug("Nominatim error for '%s': %s", place, exc)
+    return None
+
+
+def geocode(location_string: str) -> Optional[tuple[float, float, str]]:
+    """
+    Return (latitude, longitude, display_name) or None if not found.
+
+    Accepts UK postcodes or any place name in Great Britain / Ireland.
+    """
+    loc = location_string.strip()
+    if not loc:
+        return None
+
+    if _POSTCODE_RE.match(loc):
+        result = _geocode_postcode(loc)
+        if result:
+            return result
+
+    # Fall back to Nominatim (also used for postcodes that failed above)
+    return _geocode_nominatim(loc)

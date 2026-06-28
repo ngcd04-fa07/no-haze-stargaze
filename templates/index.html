@@ -1,0 +1,1731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>No-Haze Stargaze</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔭</text></svg>" />
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    /* ── reset & base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    :root {
+      --bg:        #0b0e17;
+      --surface:   #131929;
+      --border:    #1e2d4a;
+      --text:      #c8d6f0;
+      --muted:     #6b80a8;
+      --accent:    #4e9af1;
+      --accent2:   #a78bfa;
+      --good:      #34d399;
+      --warn:      #fbbf24;
+      --bad:       #f87171;
+      --radius:    8px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background:
+        radial-gradient(circle at 12% 12%, rgba(119,179,255,0.16), transparent 18%),
+        radial-gradient(circle at 92% 18%, rgba(255,255,255,0.06), transparent 16%),
+        linear-gradient(180deg, #050913 0%, #070e1b 45%, #03060f 100%);
+      color: var(--text);
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+    body::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        radial-gradient(circle at 15% 10%, rgba(255,255,255,0.08), transparent 0.35rem),
+        radial-gradient(circle at 80% 15%, rgba(255,255,255,0.06), transparent 0.3rem),
+        radial-gradient(circle at 45% 70%, rgba(255,255,255,0.05), transparent 0.25rem);
+      opacity: 0.35;
+      pointer-events: none;
+    }
+
+    /* ── header ── */
+    header {
+      background: linear-gradient(110deg, rgba(10,16,31,0.98), rgba(5,9,19,0.98));
+      border-bottom: 1px solid rgba(94,157,255,0.15);
+      padding: 1rem 1.4rem;
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+      box-shadow: inset 0 -1px 0 rgba(255,255,255,0.02), 0 12px 36px rgba(0,0,0,0.22);
+      position: relative;
+      z-index: 1;
+    }
+    header h1 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #f8fbff;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.18);
+      margin: 0;
+    }
+    header .subtitle {
+      font-size: 0.78rem;
+      color: rgba(210,227,255,0.75);
+      margin-left: auto;
+      letter-spacing: 0.02em;
+    }
+
+    /* ── layout ── */
+    .layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      min-height: 0;
+      position: relative;
+      z-index: 0;
+    }
+
+    /* ── sidebar ── */
+    aside {
+      width: 370px;
+      min-width: 320px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .form-section {
+      padding: 1rem;
+      border-bottom: 1px solid rgba(94,157,255,0.12);
+      flex-shrink: 0;
+      background: rgba(7, 13, 25, 0.95);
+      backdrop-filter: blur(12px);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
+    }
+    .form-section h2 {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: rgba(186,209,255,0.8);
+      margin-bottom: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .form-toggle-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.65rem;
+      padding: 0.1rem 0.45rem;
+      border-radius: 4px;
+      cursor: pointer;
+      text-transform: none;
+      letter-spacing: 0;
+      font-weight: 400;
+    }
+    .form-toggle-btn:hover { color: var(--text); border-color: var(--accent); }
+    #form-body {
+      overflow: hidden;
+      max-height: 900px;
+      opacity: 1;
+      transition: max-height 0.35s ease, opacity 0.25s ease;
+    }
+    #form-body.collapsed {
+      max-height: 0;
+      opacity: 0;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 0.2rem;
+      margin-top: 0.6rem;
+    }
+    label:first-child { margin-top: 0; }
+
+    input, select {
+      width: 100%;
+      background: rgba(7, 14, 24, 0.95);
+      border: 1px solid rgba(78,154,241,0.2);
+      border-radius: var(--radius);
+      color: var(--text);
+      padding: 0.45rem 0.65rem;
+      font-size: 0.875rem;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.025);
+    }
+    input:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(78,154,241,0.16);
+      transform: translateY(-1px);
+    }
+    input[type="range"] {
+      padding: 0;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(1) brightness(1.5);
+      cursor: pointer;
+      opacity: 0.75;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+    .date-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-top: 0.15rem;
+    }
+    .date-wrap input[type="text"] { flex: 1; }
+    .date-picker-btn {
+      background: #0d1422;
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: var(--radius);
+      padding: 0.45rem 0.6rem;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .date-picker-btn:hover { border-color: var(--accent); }
+    #date-input-native { position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; }
+    .sun-info {
+      margin-top: 0.45rem;
+      padding: 0.45rem 0.55rem;
+      border: 1px solid rgba(78,154,241,0.16);
+      background: linear-gradient(180deg, rgba(7,14,24,0.95), rgba(12,19,31,0.95));
+      border-radius: var(--radius);
+      font-size: 0.74rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.7rem;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    }
+    .sun-item { display: inline-flex; align-items: center; gap: 0.35rem; }
+    .sun-item b { color: var(--text); font-weight: 600; }
+    .time-window-block { margin-top: 0.35rem; display: flex; flex-direction: column; gap: 0.45rem; }
+    .time-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; align-items: end; }
+    .time-field { display: flex; flex-direction: column; gap: 0.2rem; }
+    .time-field input[type="number"] {
+      padding: 0.35rem 0.45rem;
+      font-size: 0.8rem;
+      text-align: center;
+    }
+    .time-field input,
+    .time-field select {
+      width: 100%;
+      padding: 0.35rem 0.45rem;
+      font-size: 0.9rem;
+      background: #090f1d;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+    }
+    .time-field select { appearance: none; -webkit-appearance: none; }
+    .time-help { font-size: 0.72rem; color: var(--muted); }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+    .range-row { display: flex; align-items: center; gap: 0.5rem; }
+    .range-row input { flex: 1; }
+    .range-val {
+      font-size: 0.8rem;
+      color: var(--accent);
+      min-width: 52px;
+      text-align: right;
+    }
+    .checkbox-row { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.1rem; }
+    .checkbox-label { display: flex; align-items: center; gap: 0.45rem; font-size: 0.82rem; color: var(--text); cursor: pointer; }
+    .checkbox-label input[type="checkbox"] { accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer; }
+    .chip-amenity  { color: #86efac; border-color: #14532d; background: #052010; }
+    .chip-moon-excellent { color: #a78bfa; border-color: #4c1d95; background: #1e0a40; }
+    .chip-moon-good      { color: #6ee7b7; border-color: #065f46; background: #022c22; }
+    .chip-moon-fair      { color: #fbbf24; border-color: #78350f; background: #2c1a00; }
+    .chip-moon-poor,
+    .chip-moon-very-poor { color: #f87171; border-color: #7f1d1d; background: #2a0a0a; }
+    .chip-confidence { color: #fbbf24; border-color: #f59e0b; background: rgba(251, 146, 60, 0.12); }
+    .lunar-banner {
+      padding: 0.35rem 1rem;
+      font-size: 0.72rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--muted);
+    }
+    .lunar-banner .moon-emoji { font-size: 1rem; }
+    .lunar-banner strong { color: var(--text); }
+
+    .btn {
+      display: block;
+      width: 100%;
+      margin-top: 0.85rem;
+      padding: 0.6rem 1rem;
+      background: linear-gradient(90deg, var(--accent), #6aa9f9);
+      color: #fff;
+      font-size: 0.875rem;
+      font-weight: 600;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s;
+      box-shadow: 0 8px 18px rgba(78,154,241,0.18);
+    }
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 20px rgba(78,154,241,0.22);
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── status bar ── */
+    .status-bar {
+      padding: 0.45rem 1rem;
+      font-size: 0.72rem;
+      color: var(--muted);
+      border-bottom: 1px solid rgba(78,154,241,0.12);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(255,255,255,0.02);
+    }
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--good);
+      flex-shrink: 0;
+    }
+    .status-dot.spinning {
+      animation: pulse 1s infinite;
+      background: var(--warn);
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* ── results list ── */
+    .results-header {
+      padding: 0.55rem 1rem;
+      font-size: 0.72rem;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* results search bar */
+    .search-wrap {
+      display: flex;
+      align-items: center;
+      padding: 0.45rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      gap: 0;
+    }
+    .search-wrap input {
+      flex: 1;
+      background: #0d1422;
+      border: 1px solid var(--border);
+      border-right: none;
+      color: var(--text);
+      padding: 0.32rem 0.55rem;
+      border-radius: var(--radius) 0 0 var(--radius);
+      font-size: 0.78rem;
+    }
+    .search-wrap input::placeholder { color: var(--muted); }
+    .search-wrap input:focus { outline: none; border-color: var(--accent); }
+    .search-clear {
+      background: #0d1422;
+      border: 1px solid var(--border);
+      border-left: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.78rem;
+      padding: 0.32rem 0.55rem;
+      border-radius: 0 var(--radius) var(--radius) 0;
+      line-height: 1;
+      transition: color 0.15s;
+      white-space: nowrap;
+    }
+    .search-clear:hover { color: var(--text); }
+    .results-list {
+      flex: 1;
+      overflow-y: auto;
+    }
+    .results-list::-webkit-scrollbar { width: 6px; }
+    .results-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    .site-card {
+      background: linear-gradient(180deg, rgba(10,15,28,0.96), rgba(5,8,16,0.98));
+      border: 1px solid rgba(120,168,255,0.1);
+      border-left: 4px solid transparent;
+      border-radius: 16px;
+      padding: 1rem 1.05rem;
+      cursor: pointer;
+      transition: transform 0.24s ease, box-shadow 0.24s ease, border-color 0.24s ease, background 0.24s ease;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
+    }
+    .site-card:hover, .site-card.active {
+      background: radial-gradient(circle at 10% 15%, rgba(78,154,241,0.15), transparent 24%),
+                  linear-gradient(180deg, rgba(20,30,50,0.96), rgba(7,11,19,0.98));
+      transform: translateY(-1px);
+      box-shadow: 0 22px 44px rgba(0,0,0,0.22);
+      border-left-color: rgba(78,154,241,0.9);
+    }
+    .site-card .rank {
+      font-size: 0.75rem;
+      color: rgba(187,210,255,0.78);
+      margin-bottom: 0.22rem;
+      letter-spacing: 0.02em;
+    }
+    .site-card .name {
+      font-size: 0.98rem;
+      font-weight: 700;
+      color: #f7fbff;
+      margin-bottom: 0.18rem;
+      line-height: 1.3;
+    }
+    .site-card .address {
+      font-size: 0.78rem;
+      color: rgba(174,196,223,0.85);
+      margin-bottom: 0.55rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .chips { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-bottom: 0.45rem; }
+    .chip {
+      font-size: 0.72rem;
+      padding: 0.24rem 0.55rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.08);
+      white-space: nowrap;
+      background: rgba(10,14,24,0.92);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+    }
+    .chip-dark     { color: #c6b0ff; border-color: #4f2c9b; background: rgba(55,31,120,0.16); }
+    .chip-rural    { color: #b5f0cb; border-color: #11674d; background: rgba(8,36,23,0.15); }
+    .chip-semirural{ color: #81e6d9; border-color: #0f766e; background: rgba(4,36,30,0.16); }
+    .chip-suburban { color: #facc15; border-color: #92400e; background: rgba(74,42,0,0.14); }
+    .chip-urban    { color: #fb7185; border-color: #991b1b; background: rgba(49,10,10,0.16); }
+    .chip-unknown  { color: rgba(172,190,214,0.92); border-color: rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); }
+    .chip-type     { color: #78b5ff; border-color: #1d3a6e; background: rgba(10,23,44,0.18); }
+    .chip-cloud    { color: #9ad2ff; border-color: #2a4e80; background: rgba(10,18,34,0.18); }
+
+    .score-bar-wrap { display: flex; align-items: center; gap: 0.5rem; }
+    .score-bar {
+      flex: 1;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .score-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      background: linear-gradient(90deg, var(--accent2), var(--accent));
+      transition: width 0.3s;
+    }
+    .score-val {
+      font-size: 0.72rem;
+      color: var(--accent);
+      min-width: 38px;
+      text-align: right;
+    }
+    .dist-val { font-size: 0.7rem; color: var(--muted); }
+
+    /* score breakdown tooltip */
+    #score-tip {
+      display: none;
+      position: fixed;
+      z-index: 99999;
+      background: #0d1422;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.55rem 0.75rem;
+      font-size: 0.72rem;
+      color: var(--text);
+      pointer-events: none;
+      min-width: 210px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.55);
+    }
+    .stip-title {
+      font-size: 0.65rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.35rem;
+    }
+    .stip-rows { display: flex; flex-direction: column; gap: 0.15rem; }
+    .stip-row {
+      display: grid;
+      grid-template-columns: 1fr 2.2rem 2.5rem 2.8rem;
+      gap: 0.15rem;
+      align-items: center;
+    }
+    .stip-val  { text-align: right; color: var(--accent); }
+    .stip-w    { text-align: right; color: var(--muted); font-size: 0.66rem; }
+    .stip-cont { text-align: right; color: var(--accent2); }
+    .stip-sep  { border-top: 1px solid var(--border); margin: 0.3rem 0; }
+    .stip-total { display: flex; justify-content: space-between; font-weight: 700; }
+    .stip-total-val { color: var(--accent); }
+    .score-bar-wrap { cursor: help; }
+    .popup-score    { cursor: help; }
+
+    /* confidence chip */
+    .chip-confidence {
+      color: #fbbf24;
+      border-color: #f59e0b;
+      background: rgba(251, 146, 60, 0.12);
+    }
+
+    /* amenity distance row */
+    .amenity-row {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-top: 0.3rem;
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+    .amenity-item { display: flex; align-items: center; gap: 0.25rem; }
+    .amenity-free { color: #34d399; }
+    .amenity-paid { color: var(--warn); }
+
+    /* amenity map markers (DivIcon) */
+    .am-marker {
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.6rem;
+      font-weight: 700;
+      border: 2px solid;
+      line-height: 1;
+      white-space: nowrap;
+      padding: 1px 3px;
+    }
+    .am-parking { background:#0d1c38; color:#4e9af1; border-color:#4e9af1; }
+    .am-toilet  { background:#052e16; color:#34d399; border-color:#34d399; }
+
+    /* ── detail panel (popup replacement) ── */
+    .detail-panel {
+      display: none;
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 0.75rem 1rem;
+      z-index: 999;
+    }
+    .detail-panel.visible { display: block; }
+    .detail-panel .dp-title {
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin-bottom: 0.3rem;
+    }
+    .detail-panel .dp-close {
+      float: right;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1;
+    }
+    .hourly-chart {
+      display: flex;
+      gap: 2px;
+      margin-top: 0.5rem;
+      align-items: flex-end;
+    }
+    .bar-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 0;
+    }
+    .bar-lbl-top {
+      font-size: 0.5rem;
+      color: var(--muted);
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+    .bar-area {
+      width: 100%;
+      height: 30px;
+      display: flex;
+      align-items: flex-end;
+    }
+    .bar-fill {
+      width: 100%;
+      border-radius: 2px 2px 0 0;
+      min-height: 2px;
+    }
+    .bar-lbl-btm {
+      font-size: 0.48rem;
+      color: var(--muted);
+      white-space: nowrap;
+      margin-top: 3px;
+      line-height: 1;
+    }
+
+    /* ── map ── */
+    main {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+    #map { width: 100%; height: 100%; }
+
+    /* cloud time slider */
+    #cloud-slider-wrap {
+      position: absolute;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 2rem;
+      padding: 0.4rem 0.9rem;
+      display: none;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.71rem;
+      color: var(--text);
+      min-width: 260px;
+      max-width: calc(100% - 1.5rem);
+      box-shadow: 0 2px 14px rgba(0,0,0,0.45);
+      white-space: nowrap;
+    }
+    #cloud-time-slider {
+      flex: 1;
+      min-width: 120px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    #cloud-time-label {
+      min-width: 100px;
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .cloud-err {
+      position: absolute;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #2a0a0a;
+      border: 1px solid #7f2020;
+      color: #f87171;
+      font-size: 0.72rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: var(--radius);
+      z-index: 1001;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    /* Leaflet popup override */
+    .leaflet-popup-content-wrapper {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .leaflet-popup-tip { background: var(--surface); }
+    .leaflet-popup-content { margin: 10px 14px; font-size: 0.8rem; line-height: 1.5; }
+    .popup-score { color: var(--accent); font-weight: 700; font-size: 1rem; }
+
+    /* ── loading overlay ── */
+    #loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(11,14,23,0.85);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 500;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    #loading-overlay.visible { display: flex; }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading-overlay p { font-size: 0.8rem; color: var(--muted); }
+
+    /* ── empty state ── */
+    .empty-state {
+      padding: 2rem 1rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.8rem;
+      line-height: 1.7;
+    }
+    .empty-state .icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+
+    /* scrollbar for results */
+    .results-list { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+
+    /* responsive */
+    @media (max-width: 640px) {
+      .layout { flex-direction: column; height: 100%; }
+      aside { width: 100%; height: auto; min-width: unset; }
+      main { height: 50vh; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>No-Haze Stargaze</h1>
+  <span class="subtitle">Data: gostargazing.co.uk · Weather: Open-Meteo</span>
+</header>
+
+<div class="layout">
+  <!-- ── Sidebar ── -->
+  <aside>
+    <div class="form-section">
+      <h2>Search settings <button class="form-toggle-btn" id="form-toggle" onclick="toggleForm()">▲ hide</button></h2>
+      <div id="form-body">
+      <label for="loc-input">Postcode or town name</label>
+      <input id="loc-input" type="text" placeholder="e.g. M1 1AE or Manchester" />
+
+      <label for="date-input">Date (night of)</label>
+      <div class="date-wrap">
+        <input id="date-input" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" autocomplete="off" />
+        <button class="date-picker-btn" id="date-picker-btn" type="button" aria-label="Open calendar">📅</button>
+        <input id="date-input-native" type="date" />
+      </div>
+      <div class="sun-info" id="sun-info" style="display:none"></div>
+
+      <label>Night window</label>
+      <div class="time-window-block">
+        <div class="time-row">
+          <div class="time-field">
+            <label for="start-hour">Start</label>
+            <select id="start-hour"></select>
+          </div>
+          <div class="time-field">
+            <label for="end-hour">End</label>
+            <select id="end-hour"></select>
+          </div>
+        </div>
+        <div class="time-help" id="time-help">Choose the window for the selected night.</div>
+      </div>
+
+      <label>Max distance</label>
+      <div class="range-row">
+        <input id="dist-range" type="range" min="10" max="200" step="5" value="60" />
+        <span class="range-val" id="dist-label">60 mi</span>
+      </div>
+      <div class="checkbox-row" style="margin-top:0.35rem">
+        <label class="checkbox-label">
+          <input type="checkbox" id="all-uk" />
+          🇬🇧 Include all of UK
+        </label>
+      </div>
+
+      <label for="pollution-filter">Min light-pollution quality</label>
+      <select id="pollution-filter">
+        <option value="">Any (include urban)</option>
+        <option value="suburban">Suburban or better</option>
+        <option value="semi-rural">Semi-rural or better</option>
+        <option value="rural">Rural or better</option>
+        <option value="dark site">Dark site only</option>
+      </select>
+
+      <label>Amenities</label>
+      <div class="checkbox-row">
+        <label class="checkbox-label">
+          <input type="checkbox" id="filter-parking" />
+          🅿 Parking available
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="filter-toilets" />
+          🚻 Toilets / washrooms
+        </label>
+      </div>
+
+      <button class="btn" id="search-btn" onclick="search()">Find Best Sites</button>
+      </div>
+    </div>
+
+    <!-- Status bar -->
+    <div class="status-bar">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">Checking status…</span>
+    </div>
+
+    <!-- Results header -->
+    <div class="results-header" id="results-header">Enter your location and click search.</div>
+    <div class="lunar-banner" id="lunar-banner" style="display:none"></div>
+
+    <!-- results search bar (shown once results load) -->
+    <div class="search-wrap" id="search-wrap" style="display:none">
+      <input id="results-search" type="text" placeholder="Filter by name or area…"
+             oninput="onResultsSearch(this.value)" />
+      <button class="search-clear" id="search-clear" onclick="clearResultsSearch()" style="display:none">&times;</button>
+    </div>
+
+    <!-- Results list -->
+    <div class="results-list" id="results-list">
+      <div class="empty-state">
+        <div class="icon">🌌</div>
+        <div>Recommendations will appear here.</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Map ── -->
+  <main>
+    <div id="map"></div>
+    <!-- cloud cover time slider (shown when overlay is active) -->
+    <div id="cloud-slider-wrap">
+      <span style="color:var(--muted)">☁</span>
+      <span id="cloud-time-label">Now</span>
+      <input type="range" id="cloud-time-slider" min="0" max="47" step="1" value="0"
+             oninput="onCloudSlider(this.value)" />
+    </div>
+    <div id="loading-overlay">
+      <div class="spinner"></div>
+      <p id="loading-msg">Searching…</p>
+    </div>
+  </main>
+</div>
+
+<!-- floating score breakdown tooltip -->
+<div id="score-tip"></div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let map, originMarker, siteMarkers = [], activeSiteIdx = -1;
+let _activeMarkerIdx = -1;
+let amenityMarkers = [];
+let currentRecs = [];
+
+const API_BASE = (() => {
+  const qsApi = new URLSearchParams(window.location.search).get('api');
+  if (qsApi) {
+    localStorage.setItem('stargaze_api_base', qsApi);
+    return qsApi.replace(/\/$/, '');
+  }
+  const stored = localStorage.getItem('stargaze_api_base') || '';
+  const configured = window.STARGAZE_API_BASE || stored;
+  return configured ? configured.replace(/\/$/, '') : '';
+})();
+const apiUrl = (path) => (API_BASE ? `${API_BASE}${path}` : path);
+
+function highlightMarker(idx) {
+  // Restore previously highlighted marker to its original appearance
+  if (_activeMarkerIdx >= 0 && siteMarkers[_activeMarkerIdx]) {
+    const prev = siteMarkers[_activeMarkerIdx];
+    prev.setStyle({ radius: 8, weight: 1.5, fillOpacity: 0.85,
+                    color: prev._origColor, fillColor: prev._origColor });
+  }
+  // Clear amenity markers from previous selection
+  amenityMarkers.forEach(m => map.removeLayer(m));
+  amenityMarkers = [];
+
+  // Apply highlight: white ring, larger radius, bring to front
+  if (idx >= 0 && siteMarkers[idx]) {
+    const m = siteMarkers[idx];
+    m.setStyle({ radius: 14, weight: 3, fillOpacity: 1,
+                 color: '#ffffff', fillColor: m._origColor });
+    m.bringToFront();
+    // Add amenity markers for this site
+    if (currentRecs[idx]) addAmenityMarkers(currentRecs[idx]);
+  }
+  _activeMarkerIdx = idx;
+}
+
+function addAmenityMarkers(rec) {
+  const site = rec.site;
+
+  if (site.nearest_parking) {
+    const p = site.nearest_parking;
+    const feeLabel = p.fee === 'no' ? 'Free' : p.fee === 'yes' ? 'Paid' : '';
+    const icon = L.divIcon({
+      html: `<div class="am-marker am-parking">${feeLabel ? feeLabel[0] : ''}P</div>`,
+      className: '', iconSize: [26, 18], iconAnchor: [13, 9],
+    });
+    amenityMarkers.push(
+      L.marker([p.lat, p.lng], { icon })
+        .addTo(map)
+        .bindTooltip(`🅿 ${esc(p.name)}<br>${feeLabel ? feeLabel + ' parking · ' : ''}${distMiStr(p.distance_m)} away`)
+    );
+  }
+
+  if (site.nearest_toilets) {
+    const t = site.nearest_toilets;
+    const feeLabel = t.fee === 'no' ? 'Free' : t.fee === 'yes' ? 'Paid' : '';
+    const icon = L.divIcon({
+      html: `<div class="am-marker am-toilet">WC</div>`,
+      className: '', iconSize: [26, 18], iconAnchor: [13, 9],
+    });
+    amenityMarkers.push(
+      L.marker([t.lat, t.lng], { icon })
+        .addTo(map)
+        .bindTooltip(`🚻 ${esc(t.name)}<br>${feeLabel ? feeLabel + ' toilets · ' : ''}${distMiStr(t.distance_m)} away`)
+    );
+  }
+}
+
+function distMiStr(metres) {
+  const mi = metres / 1609.34;
+  return mi < 0.1 ? Math.round(metres) + 'm' : mi.toFixed(1) + ' mi';
+}
+
+function feeStr(fee) {
+  if (fee === 'no') return 'Free';
+  if (fee === 'yes') return 'Paid';
+  return '';
+}
+
+// ── Cloud overlay (Open-Meteo grid) ──────────────────────────────────────────────
+let _cloudGridData  = null;   // fetched from /api/cloud_cover
+let _cloudCircles   = [];     // L.circle instances on map
+let _cloudOverlayOn = false;
+let _cloudTimeIdx   = 0;
+let _cloudAttrAdded = false;
+
+function toggleCloudOverlay() {
+  const btn = document.getElementById('cloud-toggle');
+  if (btn.disabled) return;
+  _cloudOverlayOn ? _disableCloud() : _enableCloud();
+}
+
+async function _enableCloud() {
+  const btn = document.getElementById('cloud-toggle');
+  btn.disabled = true;
+  btn.textContent = '⏳ Loading…';
+  try {
+    if (!_cloudGridData) {
+      const resp = await fetch(apiUrl('/api/cloud_cover'));
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error || `HTTP ${resp.status}`);
+      }
+      _cloudGridData = await resp.json();
+    }
+    _cloudOverlayOn = true;
+    _cloudTimeIdx   = _findCurrentHourIdx();
+
+    // Build all circles once; slider moves just update fillOpacity (no re-render)
+    _buildCloudCircles(_cloudTimeIdx);
+
+    const slider = document.getElementById('cloud-time-slider');
+    slider.max   = _cloudGridData.hours.length - 1;
+    slider.value = _cloudTimeIdx;
+    _updateCloudLabel(_cloudTimeIdx);
+    document.getElementById('cloud-slider-wrap').style.display = 'flex';
+
+    // Attribution added once, persists
+    if (!_cloudAttrAdded) {
+      map.attributionControl.addAttribution(
+        '☁ <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a>'
+      );
+      _cloudAttrAdded = true;
+    }
+    btn.disabled = false;
+    btn.textContent = '☁ Overlay ON';
+    btn.classList.add('active');
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = '☁ Cloud overlay';
+    _showCloudErr('Cloud data unavailable: ' + err.message);
+  }
+}
+
+function _disableCloud() {
+  _cloudCircles.forEach(c => map.removeLayer(c));
+  _cloudCircles = [];
+  _cloudOverlayOn = false;
+  document.getElementById('cloud-slider-wrap').style.display = 'none';
+  const btn = document.getElementById('cloud-toggle');
+  btn.textContent = '☁ Cloud overlay';
+  btn.classList.remove('active');
+}
+
+function _buildCloudCircles(hourIdx) {
+  _cloudCircles.forEach(c => map.removeLayer(c));
+  _cloudCircles = [];
+  if (!_cloudGridData) return;
+  _cloudGridData.points.forEach(pt => {
+    const pct = pt.layers.total[hourIdx] ?? 0;
+    const circle = L.circle([pt.lat, pt.lng], {
+      radius:      85000,         // ~85 km — fills the 1° grid gaps
+      color:       'none',
+      fillColor:   '#607d9e',
+      fillOpacity: pct / 100 * 0.5,
+      interactive: false,
+    }).addTo(map);
+    _cloudCircles.push(circle);
+  });
+}
+
+function _updateCloudOpacities(hourIdx) {
+  if (!_cloudGridData) return;
+  _cloudGridData.points.forEach((pt, i) => {
+    if (!_cloudCircles[i]) return;
+    const pct = pt.layers.total[hourIdx] ?? 0;
+    _cloudCircles[i].setStyle({ fillOpacity: pct / 100 * 0.5 });
+  });
+}
+
+function _findCurrentHourIdx() {
+  if (!_cloudGridData) return 0;
+  const now    = new Date();
+  const ukISO  = now.toLocaleDateString('sv-SE', { timeZone: 'Europe/London' });
+  const ukHour = now.toLocaleTimeString('en-GB', { timeZone: 'Europe/London', hour: '2-digit', hour12: false });
+  const prefix = `${ukISO}T${ukHour}`;
+  const idx    = _cloudGridData.hours.findIndex(h => h.startsWith(prefix));
+  return idx >= 0 ? idx : 0;
+}
+
+function _updateCloudLabel(idx) {
+  const label = document.getElementById('cloud-time-label');
+  if (!_cloudGridData || idx >= _cloudGridData.hours.length) return;
+  const iso     = _cloudGridData.hours[idx];  // "2026-06-28T21:00"
+  const dateStr = iso.slice(0, 10);
+  const timeStr = iso.slice(11, 16);
+  const today   = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/London' });
+  const curHour = new Date().toLocaleTimeString('en-GB', { timeZone: 'Europe/London', hour: '2-digit', hour12: false });
+  if (dateStr === today && timeStr.startsWith(curHour)) {
+    label.textContent = `Now (${timeStr})`;
+  } else {
+    const dayAbbr = new Date(dateStr + 'T12:00:00Z')
+      .toLocaleDateString('en-GB', { weekday: 'short' });
+    label.textContent = `${dayAbbr} ${timeStr}`;
+  }
+}
+
+function onCloudSlider(val) {
+  _cloudTimeIdx = parseInt(val, 10);
+  _updateCloudOpacities(_cloudTimeIdx);
+  _updateCloudLabel(_cloudTimeIdx);
+}
+
+function _showCloudErr(msg) {
+  document.querySelectorAll('.cloud-err').forEach(e => e.remove());
+  const el = document.createElement('div');
+  el.className   = 'cloud-err';
+  el.textContent = msg;
+  document.getElementById('map').appendChild(el);
+  setTimeout(() => el.remove(), 6000);
+}
+
+const formatDateForDisplay = (value) => {
+  const raw = `${value || ''}`.trim();
+  const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) {
+    return `${isoMatch[3]}/${isoMatch[2]}/${isoMatch[1]}`;
+  }
+  const digits = raw.replace(/\D/g, '').slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2, 4)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4, 8)}`;
+};
+
+const normalizeDateInput = (value) => {
+  const digits = `${value || ''}`.replace(/\D/g, '').slice(0, 8);
+  if (digits.length === 8) {
+    const day = digits.slice(0, 2);
+    const month = digits.slice(2, 4);
+    const year = digits.slice(4, 8);
+    const safe = new Date(Number(year), Number(month) - 1, Number(day));
+    if (safe.getFullYear() === Number(year) && safe.getMonth() === Number(month) - 1 && safe.getDate() === Number(day)) {
+      return `${year}-${month}-${day}`;
+    }
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value || '')) {
+    const [year, month, day] = (value || '').split('-');
+    const safe = new Date(Number(year), Number(month) - 1, Number(day));
+    if (safe.getFullYear() === Number(year) && safe.getMonth() === Number(month) - 1 && safe.getDate() === Number(day)) {
+      return `${year}-${month}-${day}`;
+    }
+  }
+  return '';
+};
+
+// ── Map init ───────────────────────────────────────────────────────────────
+function initMap() {
+  const ukBounds = L.latLngBounds([49.5, -10.5], [61.0, 2.0]);
+  map = L.map('map', {
+    center: [54.5, -3.5],
+    zoom: 6,
+    maxBounds: ukBounds,
+    maxBoundsViscosity: 1.0,
+    minZoom: 5,
+  });
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://carto.com">CARTO</a> &copy; <a href="https://openstreetmap.org">OSM</a>',
+    subdomains: 'abcd',
+    maxZoom: 19,
+  }).addTo(map);
+
+  map.on('click', clearSelection);
+}
+
+const todayAtMidnight = () => {
+  const t = new Date();
+  t.setHours(0, 0, 0, 0);
+  return t;
+};
+const forecastConfidenceLabel = (dateStr) => {
+  if (!dateStr) return '';
+  const queryDate = new Date(`${dateStr}T00:00:00`);
+  if (Number.isNaN(queryDate.getTime())) return '';
+  const diffDays = Math.round((queryDate - todayAtMidnight()) / 86400000);
+  if (diffDays <= 3) return 'Mostly accurate';
+  if (diffDays <= 7) return 'Moderately accurate';
+  return 'Likely to change';
+};
+
+// ── Init form defaults ─────────────────────────────────────────────────────
+function initForm() {
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const dateInput = document.getElementById('date-input');
+  const nativeDateInput = document.getElementById('date-input-native');
+  dateInput.value = formatDateForDisplay(todayStr);
+  nativeDateInput.value = todayStr;
+
+  const startHourSelect = document.getElementById('start-hour');
+  const endHourSelect = document.getElementById('end-hour');
+
+  const clampHour = (value) => Math.max(0, Math.min(23, parseInt(value || 0, 10) || 0));
+  const formatHour = (hour) => `${String(hour).padStart(2, '0')}:00`;
+
+  const setSelectOptions = (selectEl, values) => {
+    selectEl.innerHTML = values.map((h) => `<option value="${h}">${formatHour(h)}</option>`).join('');
+  };
+  const buildStartHourOptions = (startHour, endHour) => {
+    const hours = [];
+    let current = clampHour(startHour);
+    const target = clampHour(endHour) - 1;
+    while (hours.length < 24) {
+      const wrapped = current % 24;
+      hours.push(wrapped);
+      if (wrapped === ((target % 24) + 24) % 24) break;
+      current += 1;
+    }
+    return hours;
+  };
+
+  const setDefaultWindow = (startHour, endHour) => {
+    const displayStart = clampHour(startHour);
+    const displayEnd = clampHour(endHour);
+    setSelectOptions(startHourSelect, buildStartHourOptions(displayStart, displayEnd));
+    setSelectOptions(endHourSelect, Array.from({ length: displayEnd + 1 }, (_, i) => i));
+    startHourSelect.value = String(displayStart);
+    endHourSelect.value = String(displayEnd);
+    document.getElementById('time-help').textContent = `Night window available from ${formatHour(displayStart)} to ${formatHour(displayEnd)}.`;
+  };
+
+  const refreshWindowHelp = () => {
+    const startVal = clampHour(startHourSelect.value);
+    const endVal = clampHour(endHourSelect.value);
+    document.getElementById('time-help').textContent = `Night window available from ${formatHour(startVal)} to ${formatHour(endVal)}.`;
+  };
+
+  startHourSelect.addEventListener('change', refreshWindowHelp);
+  endHourSelect.addEventListener('change', refreshWindowHelp);
+
+  const applyDateValue = (value) => {
+    const normalized = normalizeDateInput(value);
+    if (normalized) {
+      dateInput.value = formatDateForDisplay(normalized);
+      nativeDateInput.value = normalized;
+      return normalized;
+    }
+    dateInput.value = formatDateForDisplay(value);
+    return '';
+  };
+
+  dateInput.addEventListener('input', () => {
+    const displayed = formatDateForDisplay(dateInput.value);
+    dateInput.value = displayed;
+    const normalized = normalizeDateInput(displayed);
+    if (normalized) {
+      nativeDateInput.value = normalized;
+      refreshSunInfo();
+    }
+  });
+  dateInput.addEventListener('blur', () => {
+    const normalized = applyDateValue(dateInput.value);
+    if (normalized) refreshSunInfo();
+  });
+  document.getElementById('date-picker-btn').addEventListener('click', () => {
+    if (nativeDateInput.showPicker) {
+      nativeDateInput.showPicker();
+    } else {
+      nativeDateInput.click();
+    }
+  });
+  nativeDateInput.addEventListener('change', () => {
+    applyDateValue(nativeDateInput.value);
+    refreshSunInfo();
+  });
+
+  const locInput = document.getElementById('loc-input');
+  locInput.addEventListener('change', refreshSunInfo);
+  locInput.addEventListener('blur', refreshSunInfo);
+
+  async function refreshSunInfo() {
+    const selectedDate = applyDateValue(dateInput.value);
+    if (!selectedDate) {
+      document.getElementById('sun-info').style.display = 'none';
+      document.getElementById('time-help').textContent = 'Choose a date to see the night window.';
+      return;
+    }
+    try {
+      const resp = await fetch(apiUrl('/api/sunrise_sunset'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+        location: locInput.value.trim() || 'United Kingdom',
+        date: selectedDate,
+        all_uk: allUkChk.checked,
+      }),
+      });
+      const data = await resp.json();
+      if (!resp.ok || data.error) throw new Error(data.error || 'unavailable');
+      const sunrise = data.sunrise || '00:00';
+      const sunset = data.sunset || '00:00';
+      const sunInfo = document.getElementById('sun-info');
+      sunInfo.innerHTML = `
+        <div class="sun-item">🔆⬇️ <span>Sunset</span> <b>${sunset}</b></div>
+        <div class="sun-item">🔆⬆️ <span>Sunrise</span> <b>${sunrise}</b></div>`;
+      sunInfo.style.display = 'flex';
+      const sunsetHour = parseInt(sunset.slice(0, 2), 10);
+      const sunriseHour = parseInt(sunrise.slice(0, 2), 10);
+      const sunriseMinute = parseInt(sunrise.slice(3, 5), 10);
+      const startHour = Math.floor(sunsetHour);
+      const endHour = Math.max(0, Math.min(23, sunriseHour + (sunriseMinute > 0 ? 1 : 0)));
+      setDefaultWindow(startHour, endHour);
+    } catch (_) {
+      const sunInfo = document.getElementById('sun-info');
+      sunInfo.innerHTML = '<div class="sun-item">🌙 <b>—</b></div>';
+      sunInfo.style.display = 'flex';
+      document.getElementById('time-help').textContent = 'Sunrise/sunset unavailable — the window can still be adjusted manually.';
+    }
+  }
+
+  // Distance range
+  const distRange = document.getElementById('dist-range');
+  const distLabel = document.getElementById('dist-label');
+  const allUkChk  = document.getElementById('all-uk');
+
+  distRange.addEventListener('input', () => {
+    distLabel.textContent = distRange.value + ' mi';
+  });
+
+  allUkChk.addEventListener('change', () => {
+    const disabled = allUkChk.checked;
+    distRange.disabled = disabled;
+    distLabel.style.opacity = disabled ? '0.35' : '1';
+    document.getElementById('loc-input').disabled = disabled;
+    document.getElementById('loc-input').style.opacity = disabled ? '0.35' : '1';
+    refreshSunInfo();
+  });
+
+  setDefaultWindow(20, 6);
+  refreshSunInfo();
+}
+
+// ── Status polling ─────────────────────────────────────────────────────────
+async function pollStatus() {
+  try {
+    const r = await fetch(apiUrl('/api/status'));
+    const d = await r.json();
+    const dot = document.getElementById('status-dot');
+    const txt = document.getElementById('status-text');
+
+    if (d.scraping) {
+      dot.classList.add('spinning');
+      const p = d.progress;
+      txt.textContent = p.total > 0
+        ? `Scraping sites… ${p.done}/${p.total} checked, ${p.found} found`
+        : 'Starting scrape…';
+      document.getElementById('search-btn').disabled = d.sites_loaded === 0;
+    } else {
+      dot.classList.remove('spinning');
+      if (d.sites_loaded > 0) {
+        const age = d.scraped_at > 0
+          ? Math.round((Date.now() / 1000 - d.scraped_at) / 3600)
+          : '?';
+        let nextStr = '';
+        if (d.next_refresh_at > 0) {
+          const hoursUntil = Math.round((d.next_refresh_at - Date.now() / 1000) / 3600);
+          nextStr = hoursUntil > 0 ? ` · next refresh in ${hoursUntil}h` : ' · refresh due';
+        }
+        txt.textContent = `${d.sites_loaded} sites loaded (${age}h ago${nextStr})`;
+        document.getElementById('search-btn').disabled = false;
+      } else {
+        txt.textContent = 'No site data — the server is warming up';
+        document.getElementById('search-btn').disabled = true;
+      }
+    }
+  } catch (_) {
+    document.getElementById('status-text').textContent = 'Cannot reach server';
+  }
+}
+
+// ── Form toggle ───────────────────────────────────────────────────────────
+function toggleForm() {
+  const body = document.getElementById('form-body');
+  const btn  = document.getElementById('form-toggle');
+  const nowCollapsed = body.classList.toggle('collapsed');
+  btn.textContent = nowCollapsed ? '▼ show' : '▲ hide';
+}
+
+// ── Search ─────────────────────────────────────────────────────────────────
+async function search() {
+  const allUk = document.getElementById('all-uk').checked;
+  const loc = document.getElementById('loc-input').value.trim();
+  if (!allUk && !loc) { alert('Please enter a location.'); return; }
+
+  const MILES_TO_KM = 1.60934;
+  const distMiles = parseFloat(document.getElementById('dist-range').value);
+
+  const dateInput = document.getElementById('date-input');
+  const payload = {
+    location: allUk ? (loc || 'United Kingdom') : loc,
+    date: normalizeDateInput(dateInput.value) || dateInput.value,
+    night_start_hour: parseInt(document.getElementById('start-hour').value),
+    night_end_hour: parseInt(document.getElementById('end-hour').value),
+    max_distance_km: allUk ? 2000 : Math.round(distMiles * MILES_TO_KM),
+    min_pollution_level: document.getElementById('pollution-filter').value || null,
+    require_parking: document.getElementById('filter-parking').checked,
+    require_toilets: document.getElementById('filter-toilets').checked,
+    all_uk: allUk,
+  };
+
+  showLoading('Fetching weather & scoring sites…');
+
+  try {
+    const r = await fetch(apiUrl('/api/recommend'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const d = await r.json();
+    hideLoading();
+
+    if (d.error) { alert(d.error); return; }
+
+    window._forecastConfidenceLabel = forecastConfidenceLabel(d.query?.date);
+    renderResults(d);
+    window._lunarByDate = d.lunar_by_date || {};
+    // Auto-collapse the search form once results are in
+    const formBody = document.getElementById('form-body');
+    if (!formBody.classList.contains('collapsed')) toggleForm();
+  } catch (e) {
+    hideLoading();
+    alert('Request failed: ' + e.message);
+  }
+}
+
+// ── Rendering ──────────────────────────────────────────────────────────────
+function renderResults(data) {
+  const recs = data.recommendations || [];
+  const origin = data.origin;
+  window._allUk = data.all_uk === true;
+  const header = document.getElementById('results-header');
+  const list = document.getElementById('results-list');
+
+  // Clear old markers
+  siteMarkers.forEach(m => map.removeLayer(m));
+  siteMarkers = [];
+  _activeMarkerIdx = -1;
+  amenityMarkers.forEach(m => map.removeLayer(m));
+  amenityMarkers = [];
+  currentRecs = [];
+  if (originMarker) map.removeLayer(originMarker);
+
+  // Origin marker
+  if (origin) {
+    originMarker = L.circleMarker([origin.lat, origin.lon], {
+      radius: 10, color: '#fff', fillColor: '#4e9af1', fillOpacity: 0.9, weight: 2,
+    }).addTo(map).bindPopup(`<b>Your location</b><br>${origin.name}`);
+  }
+
+  if (recs.length === 0) {
+    header.textContent = data.message || 'No sites found with these criteria.';
+    list.innerHTML = '<div class="empty-state"><div class="icon">🌫️</div><div>' +
+      (data.message || 'No matching sites found.') + '</div></div>';
+    if (origin) map.setView([origin.lat, origin.lon], 8);
+    return;
+  }
+
+  header.textContent = `${recs.length} sites found (checking ${data.sites_checked} within range)`;
+
+  // Lunar banner
+  const lunar = data.lunar;
+  const lunarBanner = document.getElementById('lunar-banner');
+  if (lunar) {
+    const qualityClass = `chip-moon-${lunar.quality}`;
+    lunarBanner.innerHTML =
+      `<span class="moon-emoji">${lunar.emoji}</span>` +
+      `<span>Moon: <strong>${lunar.phase_name}</strong> &mdash; ` +
+      `<span class="chip ${qualityClass}" style="display:inline-flex">${lunar.illumination_pct}% illuminated &middot; ${lunar.quality}</span></span>`;
+    lunarBanner.style.display = 'flex';
+  } else {
+    lunarBanner.style.display = 'none';
+  }
+
+  // Site markers
+  const bounds = origin ? [[origin.lat, origin.lon]] : [];
+  recs.forEach((rec, idx) => {
+    const site = rec.site;
+    const color = scoreColor(rec.total_score);
+    const marker = L.circleMarker([site.latitude, site.longitude], {
+      radius: 8, color: color, fillColor: color, fillOpacity: 0.85, weight: 1.5,
+    }).addTo(map);
+    marker._origColor = color;  // store for highlight restore
+
+    marker.bindPopup(buildPopup(rec, idx + 1));
+    marker.on('click', (event) => {
+      L.DomEvent.stopPropagation(event);
+      highlightCard(idx);
+      highlightMarker(idx);
+    });
+    siteMarkers.push(marker);
+    bounds.push([site.latitude, site.longitude]);
+  });
+
+  map.fitBounds(bounds, { padding: [40, 40] });
+
+  currentRecs = recs;  // store for amenity marker access
+  _lastSitesChecked = data.sites_checked || recs.length;
+
+  // Reset + show search bar
+  const searchWrap = document.getElementById('search-wrap');
+  const searchInput = document.getElementById('results-search');
+  searchInput.value = '';
+  document.getElementById('search-clear').style.display = 'none';
+  searchWrap.style.display = 'flex';
+
+  // Cards
+  list.innerHTML = recs.map((rec, idx) => buildCard(rec, idx)).join('');
+  list.querySelectorAll('.site-card').forEach((card, idx) => {
+    card.addEventListener('click', () => {
+      highlightCard(idx);
+      highlightMarker(idx);
+      siteMarkers[idx].openPopup();
+      map.panTo([recs[idx].site.latitude, recs[idx].site.longitude]);
+    });
+  });
+}
+
+function buildCard(rec, idx) {
+  const site = rec.site;
+  const cloudTxt = rec.avg_cloud_cover !== null
+    ? `☁ ${rec.avg_cloud_cover}% cloud`
+    : '☁ No forecast';
+  const cloudColor = cloudColorHex(rec.avg_cloud_cover);
+  const pollChip = pollutionChip(rec.site.light_pollution);
+  const typeChip = rec.site.site_type !== 'Unknown'
+    ? `<span class="chip chip-type">${rec.site.site_type}</span>` : '';
+  const parkingChip = site.has_parking === true
+    ? '<span class="chip chip-amenity">🅿 Parking</span>' : '';
+  const toiletsChip = site.has_toilets === true
+    ? '<span class="chip chip-amenity">🚻 Toilets</span>' : '';
+  // Moon chip — uses best_date's lunar illumination if available
+  const moonIllum = rec.lunar_illumination_pct !== undefined
+    ? rec.lunar_illumination_pct
+    : (rec._lunarIllum || null);
+  const moonQuality = rec.weather && rec.weather.best_date && window._lunarByDate
+    ? lunarQuality(window._lunarByDate[rec.weather.best_date] || 0)
+    : null;
+  const moonIllumVal = rec.weather && rec.weather.best_date && window._lunarByDate
+    ? (window._lunarByDate[rec.weather.best_date] ?? null) : null;
+  const moonChip = moonIllumVal !== null
+    ? `<span class="chip chip-moon-${lunarQuality(moonIllumVal)}">🌙 ${moonIllumVal}%</span>`
+    : '';
+  const confidenceChip = window._forecastConfidenceLabel
+    ? `<span class="chip chip-confidence">${window._forecastConfidenceLabel}</span>`
+    : '';
+
+  // OSM amenity distances
+  const parkingRow = site.nearest_parking
+    ? `<span class="amenity-item">🅿 <span class="${site.nearest_parking.fee === 'no' ? 'amenity-free' : site.nearest_parking.fee === 'yes' ? 'amenity-paid' : ''}">${feeStr(site.nearest_parking.fee) || 'Parking'}</span> · ${distMiStr(site.nearest_parking.distance_m)}</span>`
+    : '';
+  const toiletRow = site.nearest_toilets
+    ? `<span class="amenity-item">🚻 <span class="${site.nearest_toilets.fee === 'no' ? 'amenity-free' : site.nearest_toilets.fee === 'yes' ? 'amenity-paid' : ''}">${feeStr(site.nearest_toilets.fee) || 'Toilets'}</span> · ${distMiStr(site.nearest_toilets.distance_m)}</span>`
+    : '';
+  const amenityRow = (parkingRow || toiletRow)
+    ? `<div class="amenity-row">${parkingRow}${toiletRow}</div>` : '';
+
+  const rankText = window._allUk
+    ? `#${idx + 1}`
+    : `#${idx + 1} · ${rec.distance_km} km away`;
+  return `
+    <div class="site-card" id="card-${idx}">
+      <div class="rank">${rankText}</div>
+      <div class="name">${esc(site.name)}</div>
+      <div class="address">${esc(site.address || 'No address')}</div>
+      <div class="chips">
+        ${pollChip}
+        ${typeChip}
+        ${parkingChip}
+        ${toiletsChip}
+        ${confidenceChip}
+        <span class="chip chip-cloud" style="color:${cloudColor}">${cloudTxt}</span>
+        ${moonChip}
+      </div>
+      <div class="score-bar-wrap" onmouseenter="showScoreTip(event,currentRecs[${idx}])" onmouseleave="hideScoreTip()" onmousemove="positionScoreTip(event)">
+        <div class="score-bar">
+          <div class="score-bar-fill" style="width:${rec.total_score}%"></div>
+        </div>
+        <span class="score-val">${rec.total_score} <span style="font-size:0.6rem;color:var(--muted)">/ 100 ⓘ</span></span>
+      </div>
+      ${amenityRow}
+      ${buildMiniHourlyChart(rec)}
+    </div>`;
+}
+
+function buildMiniHourlyChart(rec) {
+  if (!rec.weather || !rec.weather.hourly || rec.weather.hourly.length === 0) return '';
+  const cols = rec.weather.hourly.map(h => {
+    const pct = h.cloud_cover;
+    const color = cloudColorHex(pct);
+    const barH = Math.max(4, Math.round(pct * 0.28)); // max ~28px
+    const timeLabel = h.time.length > 5 ? h.time.slice(11, 16) : h.time;
+    return `
+      <div class="bar-col">
+        <div class="bar-lbl-top">${pct}%</div>
+        <div class="bar-area">
+          <div class="bar-fill" style="height:${barH}px;background:${color}"></div>
+        </div>
+        <div class="bar-lbl-btm">${timeLabel}</div>
+      </div>`;
+  }).join('');
+  return `<div class="hourly-chart">${cols}</div>`;
+}
+
+function buildPopup(rec, rank) {
+  const site = rec.site;
+  const cloudStr = rec.avg_cloud_cover !== null
+    ? `${rec.avg_cloud_cover}% avg cloud` : 'No forecast';
+  const locationLine = window._allUk
+    ? `📍 ${rec.light_pollution_label}`
+    : `📍 ${rec.distance_km} km · ${rec.light_pollution_label}`;
+  const amenities = [
+    site.has_parking === true ? '🅿 Parking' : null,
+    site.has_toilets === true ? '🚻 Toilets' : null,
+  ].filter(Boolean).join(' · ');
+  const moonIllumVal = rec.weather && rec.weather.best_date && window._lunarByDate
+    ? (window._lunarByDate[rec.weather.best_date] ?? null) : null;
+  const moonStr = moonIllumVal !== null
+    ? `🌙 ${moonIllumVal}% moon (${lunarQuality(moonIllumVal)})<br>` : '';
+  const parkingStr = site.nearest_parking
+    ? `🅿 ${feeStr(site.nearest_parking.fee) || 'Parking'} · ${distMiStr(site.nearest_parking.distance_m)}<br>` : '';
+  const toiletStr = site.nearest_toilets
+    ? `🚻 ${feeStr(site.nearest_toilets.fee) || 'Toilets'} · ${distMiStr(site.nearest_toilets.distance_m)}<br>` : '';
+  return `
+    <div>
+      <b>#${rank} ${esc(site.name)}</b><br>
+      <span class="popup-score" onmouseenter="showScoreTip(event,currentRecs[${rank-1}])" onmouseleave="hideScoreTip()" onmousemove="positionScoreTip(event)">${rec.total_score}/100 ⓘ</span><br>
+      ${locationLine}<br>
+      ☁ ${cloudStr}<br>
+      ${moonStr}${parkingStr}${toiletStr}
+      <a href="${site.url}" target="_blank" rel="noopener" style="color:#4e9af1">
+        View on gostargazing.co.uk ↗
+      </a>
+    </div>`;
+}
+
+function highlightCard(idx) {
+  document.querySelectorAll('.site-card').forEach(c => c.classList.remove('active'));
+  if (idx < 0) {
+    activeSiteIdx = -1;
+    return;
+  }
+  const card = document.getElementById(`card-${idx}`);
+  if (card) {
+    card.classList.add('active');
+    const list = card.closest('.results-list');
+    if (list) {
+      list.scrollTop = card.offsetTop - list.offsetTop;
+    } else {
+      card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+  activeSiteIdx = idx;
+}
+
+function clearSelection() {
+  highlightMarker(-1);
+  highlightCard(-1);
+  map.closePopup();
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function lunarQuality(pct) {
+  if (pct < 15) return 'excellent';
+  if (pct < 40) return 'good';
+  if (pct < 65) return 'fair';
+  if (pct < 85) return 'poor';
+  return 'very-poor';
+}
+
+// ── Results search / filter ───────────────────────────────────────────────
+function onResultsSearch(val) {
+  document.getElementById('search-clear').style.display = val ? 'block' : 'none';
+  filterCards(val.trim());
+}
+function clearResultsSearch() {
+  const inp = document.getElementById('results-search');
+  inp.value = '';
+  document.getElementById('search-clear').style.display = 'none';
+  filterCards('');
+  inp.focus();
+}
+function filterCards(query) {
+  if (!currentRecs.length) return;
+  const cards = document.querySelectorAll('#results-list .site-card');
+  const header = document.getElementById('results-header');
+  const q = query.toLowerCase();
+  if (q.length <= 2) {
+    cards.forEach(c => c.style.display = '');
+    header.textContent = `${currentRecs.length} sites found (checking ${_lastSitesChecked} within range)`;
+    return;
+  }
+  let shown = 0;
+  cards.forEach((card, idx) => {
+    const rec = currentRecs[idx];
+    if (!rec) { card.style.display = 'none'; return; }
+    const haystack = [rec.site.name, rec.site.address, rec.site.site_type, rec.light_pollution_label]
+      .filter(Boolean).join(' ').toLowerCase();
+    const match = haystack.includes(q);
+    card.style.display = match ? '' : 'none';
+    if (match) shown++;
+  });
+  header.textContent = `${shown} of ${currentRecs.length} sites match “${query}”`;
+}
+
+// ── Score breakdown tooltip ─────────────────────────────────────────────────────
+function scoreBreakdownHtml(rec) {
+  const useUkWeights = Boolean(window._allUk);
+  const weights = useUkWeights
+    ? { cloud: 0.4118, pollution: 0.3529, type: 0.1176, lunar: 0.1176 }
+    : { cloud: 0.35, pollution: 0.30, distance: 0.15, type: 0.10, lunar: 0.10 };
+  const rows = [
+    ['☁ Cloud',      rec.cloud_score,     weights.cloud],
+    ['💡 Pollution', rec.pollution_score, weights.pollution],
+    ...(!useUkWeights ? [['📍 Distance', rec.distance_score, weights.distance]] : []),
+    ['🏕 Site type', rec.type_score,      weights.type],
+    ['🌙 Lunar',      rec.lunar_score,     weights.lunar],
+  ].map(([label, val, w]) => {
+    const contrib = (val * w).toFixed(1);
+    const pct = Math.round(w * 100);
+    return `<div class="stip-row">
+      <span>${label}</span>
+      <span class="stip-val">${val}</span>
+      <span class="stip-w">×${pct}%</span>
+      <span class="stip-cont">= ${contrib}</span>
+    </div>`;
+  }).join('');
+  return `
+    <div class="stip-title">Score breakdown</div>
+    <div class="stip-rows">${rows}</div>
+    <div class="stip-sep"></div>
+    <div class="stip-total"><span>Total</span><span class="stip-total-val">${rec.total_score} / 100</span></div>`;
+}
+function showScoreTip(e, rec) {
+  if (!rec) return;
+  const tip = document.getElementById('score-tip');
+  tip.innerHTML = scoreBreakdownHtml(rec);
+  tip.style.display = 'block';
+  positionScoreTip(e);
+}
+function positionScoreTip(e) {
+  const tip = document.getElementById('score-tip');
+  if (tip.style.display === 'none') return;
+  const x = e.clientX + 14;
+  const y = e.clientY - tip.offsetHeight - 10;
+  tip.style.left = Math.min(x, window.innerWidth  - tip.offsetWidth  - 6) + 'px';
+  tip.style.top  = Math.max(6, y) + 'px';
+}
+function hideScoreTip() {
+  document.getElementById('score-tip').style.display = 'none';
+}
+
+function scoreColor(score) {
+  if (score >= 75) return '#34d399';
+  if (score >= 55) return '#6ee7b7';
+  if (score >= 40) return '#fbbf24';
+  return '#f87171';
+}
+
+function cloudColorHex(pct) {
+  if (pct === null || pct === undefined) return '#6b80a8';
+  if (pct <= 20) return '#34d399';
+  if (pct <= 40) return '#6ee7b7';
+  if (pct <= 60) return '#fbbf24';
+  if (pct <= 80) return '#f59e0b';
+  return '#f87171';
+}
+
+function pollutionChip(level) {
+  const map = {
+    'dark site':  ['chip-dark',     '🌑 Dark site'],
+    'rural':      ['chip-rural',    '🌿 Rural'],
+    'semi-rural': ['chip-semirural','🌾 Semi-rural'],
+    'suburban':   ['chip-suburban', '🏘 Suburban'],
+    'urban':      ['chip-urban',    '🏙 Urban'],
+  };
+  const [cls, label] = map[level] || ['chip-unknown', '❓ Unknown'];
+  return `<span class="chip ${cls}">${label}</span>`;
+}
+
+function esc(str) {
+  const d = document.createElement('div');
+  d.textContent = str || '';
+  return d.innerHTML;
+}
+
+function showLoading(msg) {
+  document.getElementById('loading-msg').textContent = msg;
+  document.getElementById('loading-overlay').classList.add('visible');
+}
+
+function hideLoading() {
+  document.getElementById('loading-overlay').classList.remove('visible');
+}
+
+// Allow pressing Enter in location input to search
+document.addEventListener('DOMContentLoaded', () => {
+  initMap();
+  initForm();
+  pollStatus();
+  setInterval(pollStatus, 4000);
+
+  document.getElementById('loc-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') search();
+  });
+});
+</script>
+</body>
+</html>
