@@ -823,6 +823,10 @@ let _activeMarkerIdx = -1;
 let amenityMarkers = [];
 let currentRecs = [];
 
+if (!window.STARGAZE_API_BASE && /github\.io$/i.test(window.location.hostname || '')) {
+  window.STARGAZE_API_BASE = 'https://no-haze-stargaze.onrender.com';
+}
+
 const API_BASE = (() => {
   const qsApi = new URLSearchParams(window.location.search).get('api');
   if (qsApi) {
