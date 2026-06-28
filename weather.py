@@ -320,7 +320,7 @@ def best_window_cloud_cover(
 # ---------------------------------------------------------------------------
 
 BACKGROUND_BATCH_SIZE = 20          # sites per Open-Meteo call
-BACKGROUND_BATCH_DELAY_SECONDS = 5.0  # pause between batches
+BACKGROUND_BATCH_DELAY_SECONDS = 3.0  # pause between batches
 BACKGROUND_RATE_LIMIT_PAUSE_SECONDS = 10 * 60  # 10-min back-off on 429
 
 
