@@ -1302,9 +1302,20 @@ async function pollStatus() {
     if (d.scraping) {
       dot.classList.add('spinning');
       const p = d.progress;
+      let etaText = '';
+      if (p.total > 0 && p.done > 0 && d.scrape_started_at > 0) {
+        const elapsedSec = Math.max(1, (Date.now() / 1000) - d.scrape_started_at);
+        const perItemSec = elapsedSec / p.done;
+        const remainingSec = Math.max(0, Math.round((p.total - p.done) * perItemSec));
+        const mins = Math.floor(remainingSec / 60);
+        const secs = remainingSec % 60;
+        etaText = ` · ~${mins}m ${String(secs).padStart(2, '0')}s remaining`;
+      } else if (p.total > 0) {
+        etaText = ' · estimating time remaining…';
+      }
       txt.textContent = p.total > 0
-        ? `Scraping sites… ${p.done}/${p.total} checked, ${p.found} found`
-        : 'Starting scrape…';
+        ? `Scraping sites… ${p.done}/${p.total} checked, ${p.found} found${etaText}`
+        : 'Starting scrape… · estimating time remaining…';
       document.getElementById('search-btn').disabled = d.sites_loaded === 0;
     } else {
       dot.classList.remove('spinning');

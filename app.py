@@ -56,6 +56,7 @@ _state = {
     "sites": [],
     "scraping": False,
     "scrape_progress": {"done": 0, "total": 0, "found": 0},
+    "scrape_started_at": 0.0,
     "scraped_at": 0.0,
     "next_refresh_at": 0.0,
     "lock": threading.Lock(),
@@ -93,6 +94,7 @@ def _do_scrape(force: bool = False) -> None:
         if _state["scraping"]:
             return
         _state["scraping"] = True
+        _state["scrape_started_at"] = time.time()
 
     try:
         # Try loading from cache first
@@ -141,6 +143,7 @@ def _do_scrape(force: bool = False) -> None:
     finally:
         with _state["lock"]:
             _state["scraping"] = False
+            _state["scrape_started_at"] = 0.0
 
 
 def _start_background_scrape(force: bool = False) -> None:
@@ -282,6 +285,7 @@ def api_status():
                 "sites_loaded": len(_state["sites"]),
                 "scraping": _state["scraping"],
                 "progress": _state["scrape_progress"],
+                "scrape_started_at": _state["scrape_started_at"],
                 "scraped_at": _state["scraped_at"],
                 "next_refresh_at": _state["next_refresh_at"],
             }
