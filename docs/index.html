@@ -1302,20 +1302,35 @@ async function pollStatus() {
     if (d.scraping) {
       dot.classList.add('spinning');
       const p = d.progress;
+      const formatDuration = (seconds) => {
+        const s = Math.max(0, Math.round(seconds));
+        const mins = Math.floor(s / 60);
+        const secs = s % 60;
+        return `${mins}m ${String(secs).padStart(2, '0')}s`;
+      };
+      const elapsedSec = d.scrape_started_at > 0
+        ? Math.max(0, (Date.now() / 1000) - d.scrape_started_at)
+        : 0;
       let etaText = '';
       if (p.total > 0 && p.done > 0 && d.scrape_started_at > 0) {
-        const elapsedSec = Math.max(1, (Date.now() / 1000) - d.scrape_started_at);
-        const perItemSec = elapsedSec / p.done;
+        const perItemSec = Math.max(0.01, elapsedSec / p.done);
         const remainingSec = Math.max(0, Math.round((p.total - p.done) * perItemSec));
-        const mins = Math.floor(remainingSec / 60);
-        const secs = remainingSec % 60;
-        etaText = ` · ~${mins}m ${String(secs).padStart(2, '0')}s remaining`;
+        etaText = ` · ~${formatDuration(remainingSec)} remaining`;
       } else if (p.total > 0) {
-        etaText = ' · estimating time remaining…';
+        // Fallback ETA before first progress tick arrives.
+        const assumedTotalSec = Math.max(600, Math.round(p.total * 0.32));
+        const remainingSec = Math.max(0, assumedTotalSec - elapsedSec);
+        etaText = ` · ~${formatDuration(remainingSec)} remaining`;
+      } else if (elapsedSec > 0) {
+        // Early phase while sitemap/slugs are being fetched.
+        const warmupRemaining = Math.max(0, 90 - elapsedSec);
+        etaText = warmupRemaining > 0
+          ? ` · ~${formatDuration(warmupRemaining)} until estimate`
+          : ' · calculating remaining time…';
       }
       txt.textContent = p.total > 0
         ? `Scraping sites… ${p.done}/${p.total} checked, ${p.found} found${etaText}`
-        : 'Starting scrape… · estimating time remaining…';
+        : `Starting scrape…${etaText || ' · calculating remaining time…'}`;
       document.getElementById('search-btn').disabled = d.sites_loaded === 0;
     } else {
       dot.classList.remove('spinning');
