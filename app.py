@@ -154,16 +154,42 @@ def _start_background_scrape(force: bool = False) -> None:
 _WEEKLY_CHECK_INTERVAL = 3600  # how often (seconds) the scheduler wakes to check
 
 
+def _preload_cached_sites_on_startup() -> bool:
+    """Load cached sites into shared state without triggering a scrape."""
+    cached_sites, scraped_at = scraper.load_cache()
+    if not cached_sites:
+        return False
+
+    with _state["lock"]:
+        _state["sites"] = cached_sites
+        _state["scraped_at"] = scraped_at
+        if scraped_at > 0:
+            _state["next_refresh_at"] = scraped_at + scraper.CACHE_MAX_AGE_SECONDS
+
+    cache_age_hours = (time.time() - scraped_at) / 3600 if scraped_at > 0 else None
+    if cache_age_hours is not None:
+        logger.info(
+            "Preloaded %d cached sites on startup (cache age %.1fh).",
+            len(cached_sites),
+            cache_age_hours,
+        )
+    else:
+        logger.info("Preloaded %d cached sites on startup.", len(cached_sites))
+    return True
+
+
 def _weekly_cache_manager() -> None:
-    """Daemon thread: check every hour; trigger a re-scrape when cache > 7 days old."""
+    """Daemon thread: keep refresh metadata current without auto-scraping stale cache."""
     while True:
         time.sleep(_WEEKLY_CHECK_INTERVAL)
         with _state["lock"]:
             scraping = _state["scraping"]
             scraped_at = _state["scraped_at"]
-        if not scraping and not scraper.is_cache_fresh(scraped_at):
-            logger.info("Weekly cache manager: cache is stale, triggering refresh.")
-            _start_background_scrape()
+            sites_loaded = len(_state["sites"])
+        if scraping or sites_loaded == 0 or scraped_at <= 0:
+            continue
+        if not scraper.is_cache_fresh(scraped_at):
+            logger.info("Weekly cache manager: cache is stale; waiting for manual refresh.")
 
 
 def _normalize_angle(angle: float) -> float:
@@ -221,8 +247,9 @@ def _fallback_sunrise_sunset(date: datetime, latitude: float, longitude: float) 
     return sunrise_local.strftime("%H:%M"), sunset_local.strftime("%H:%M")
 
 
-# Start scraping on app load
-_start_background_scrape()
+# Preload cached data on app load; only scrape immediately if no cache exists.
+if not _preload_cached_sites_on_startup():
+    _start_background_scrape()
 
 # Start the background weekly-refresh scheduler
 threading.Thread(target=_weekly_cache_manager, daemon=True, name="weekly-cache").start()
