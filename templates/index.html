@@ -1262,6 +1262,14 @@ function renderResults(data) {
   }
 
   header.textContent = `${recs.length} sites found (checking ${data.sites_checked} within range)`;
+  if (data.forecast_cached_at) {
+    const ageMin = Math.round((Date.now() / 1000 - data.forecast_cached_at) / 60);
+    const ageStr = ageMin < 2 ? 'just now' : ageMin < 60 ? `${ageMin}m ago` : `${Math.round(ageMin/60)}h ago`;
+    const refreshing = data.forecast_refreshing ? ' · updating…' : '';
+    header.textContent += ` · forecast ${ageStr}${refreshing}`;
+  } else {
+    header.textContent += ' · forecast loading…';
+  }
 
   // Lunar banner
   const lunar = data.lunar;

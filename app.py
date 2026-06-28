@@ -14,6 +14,7 @@ Endpoints:
   POST /api/refresh       — trigger a fresh scrape (invalidates cache)
 """
 
+import json
 import logging
 import math
 import os
@@ -40,7 +41,19 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-WEATHER_CANDIDATE_LIMIT = 75
+# ---------------------------------------------------------------------------
+# Forecast background cache
+# ---------------------------------------------------------------------------
+FORECAST_CACHE_FILE = "forecast_cache.json"
+FORECAST_REFRESH_INTERVAL_SECONDS = 3600   # 1 hour
+FORECAST_LOOKAHEAD_DAYS = 14
+
+_forecast_state = {
+    "data": {},          # slug -> [(time_str, cloud_pct), ...]
+    "cached_at": 0.0,    # Unix timestamp of last successful full refresh
+    "refreshing": False,
+    "lock": threading.Lock(),
+}
 
 
 @app.after_request
@@ -74,36 +87,6 @@ def _progress_cb(done: int, total: int, found: int) -> None:
 
 
 _INCREMENTAL_SAVE_EVERY = 100  # update shared state every N sites found
-
-
-def _pick_weather_candidates(
-    sites: list[dict],
-    origin_lat: float,
-    origin_lon: float,
-    max_distance_km: float,
-    ignore_distance: bool,
-    limit: int = WEATHER_CANDIDATE_LIMIT,
-) -> list[dict]:
-    if len(sites) <= limit:
-        return sites
-
-    scored: list[tuple[float, dict]] = []
-    for site in sites:
-        result = rec.score_site(
-            site,
-            origin_lat,
-            origin_lon,
-            max_distance_km,
-            avg_cloud_cover=None,
-            weather_info=None,
-            lunar_illumination_pct=None,
-            ignore_distance=ignore_distance,
-        )
-        if result is not None:
-            scored.append((result["total_score"], site))
-
-    scored.sort(key=lambda item: item[0], reverse=True)
-    return [site for _, site in scored[:limit]]
 
 
 def _site_found_cb(site: dict, all_sites: list[dict]) -> None:
@@ -223,6 +206,100 @@ def _weekly_cache_manager() -> None:
             logger.info("Weekly cache manager: cache is stale; waiting for manual refresh.")
 
 
+# ---------------------------------------------------------------------------
+# Forecast cache helpers
+# ---------------------------------------------------------------------------
+
+def _load_forecast_cache() -> None:
+    """Load persisted forecast cache from disk into _forecast_state."""
+    try:
+        with open(FORECAST_CACHE_FILE) as f:
+            payload = json.load(f)
+        cached_at = float(payload.get("cached_at", 0))
+        raw = payload.get("data", {})
+        data = {slug: [tuple(x) for x in records] for slug, records in raw.items()}
+        with _forecast_state["lock"]:
+            _forecast_state["data"] = data
+            _forecast_state["cached_at"] = cached_at
+        age_h = (time.time() - cached_at) / 3600
+        logger.info(
+            "Loaded forecast cache from disk: %d sites, age %.1fh.",
+            len(data), age_h,
+        )
+    except FileNotFoundError:
+        logger.info("No forecast cache on disk — will build on first refresh.")
+    except Exception as exc:
+        logger.warning("Could not load forecast cache: %s", exc)
+
+
+def _save_forecast_cache(data: dict, cached_at: float) -> None:
+    """Atomically persist forecast cache to disk."""
+    try:
+        payload = {
+            "cached_at": cached_at,
+            "data": {slug: list(records) for slug, records in data.items()},
+        }
+        tmp = FORECAST_CACHE_FILE + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump(payload, f)
+        os.replace(tmp, FORECAST_CACHE_FILE)
+        logger.info("Forecast cache saved to disk (%d sites).", len(data))
+    except Exception as exc:
+        logger.error("Failed to save forecast cache: %s", exc)
+
+
+def _do_forecast_refresh() -> None:
+    """Fetch fresh cloud-cover forecasts for every known site (background use only)."""
+    with _forecast_state["lock"]:
+        if _forecast_state["refreshing"]:
+            return
+        _forecast_state["refreshing"] = True
+
+    try:
+        with _state["lock"]:
+            sites = list(_state["sites"])
+        if not sites:
+            logger.warning("Forecast refresh skipped: no sites loaded yet.")
+            return
+
+        today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = today + timedelta(days=FORECAST_LOOKAHEAD_DAYS)
+        logger.info(
+            "Starting background forecast refresh for %d sites (%s → %s).",
+            len(sites), today.date(), end_date.date(),
+        )
+
+        new_data = weather.get_full_forecast_background(sites, today, end_date)
+
+        if new_data:
+            cached_at = time.time()
+            with _forecast_state["lock"]:
+                _forecast_state["data"] = new_data
+                _forecast_state["cached_at"] = cached_at
+            _save_forecast_cache(new_data, cached_at)
+            logger.info("Forecast refresh complete: %d sites cached.", len(new_data))
+        else:
+            logger.warning("Forecast refresh returned no data.")
+    except Exception as exc:
+        logger.exception("Forecast refresh failed: %s", exc)
+    finally:
+        with _forecast_state["lock"]:
+            _forecast_state["refreshing"] = False
+
+
+_FORECAST_CHECK_INTERVAL = 300  # wake every 5 min to check if refresh is due
+
+
+def _forecast_cache_manager() -> None:
+    """Daemon thread: refresh the forecast cache once per FORECAST_REFRESH_INTERVAL_SECONDS."""
+    while True:
+        with _forecast_state["lock"]:
+            cached_at = _forecast_state["cached_at"]
+        if time.time() - cached_at >= FORECAST_REFRESH_INTERVAL_SECONDS:
+            _do_forecast_refresh()
+        time.sleep(_FORECAST_CHECK_INTERVAL)
+
+
 def _normalize_angle(angle: float) -> float:
     return angle % 360.0
 
@@ -285,6 +362,10 @@ if not _preload_cached_sites_on_startup():
 # Start the background weekly-refresh scheduler
 threading.Thread(target=_weekly_cache_manager, daemon=True, name="weekly-cache").start()
 
+# Load any persisted forecast data, then start the background refresh loop.
+_load_forecast_cache()
+threading.Thread(target=_forecast_cache_manager, daemon=True, name="forecast-cache").start()
+
 
 # ---------------------------------------------------------------------------
 # Amenity background fetcher
@@ -343,6 +424,8 @@ def api_status():
                 "scrape_started_at": _state["scrape_started_at"],
                 "scraped_at": _state["scraped_at"],
                 "next_refresh_at": _state["next_refresh_at"],
+                "forecast_cached_at": _forecast_state["cached_at"],
+                "forecast_refreshing": _forecast_state["refreshing"],
             }
         )
 
@@ -494,29 +577,16 @@ def api_recommend():
         d.strftime("%Y-%m-%d"): lu.lunar_illumination(d) for d in query_dates
     }
 
-    weather_candidates = _pick_weather_candidates(
-        nearby,
-        origin_lat,
-        origin_lon,
-        max_distance_km,
-        ignore_distance=all_uk,
-    )
-    logger.info(
-        "Weather fetch limited to %d of %d candidate sites.",
-        len(weather_candidates),
-        len(nearby),
-    )
-
-    # ---- Fetch cloud cover for top candidate sites only ----
-    weather_start = query_dates[0]
-    weather_end = query_dates[-1] + timedelta(days=1)
-    hourly_data = weather.get_cloud_cover_forecast(weather_candidates, weather_start, weather_end)
+    # ---- Look up pre-fetched cloud cover from background cache ----
+    with _forecast_state["lock"]:
+        hourly_data = dict(_forecast_state["data"])
+        forecast_cached_at = _forecast_state["cached_at"]
 
     # ---- Build per-site cloud summary ----
     cloud_data: dict[str, float] = {}
     weather_details: dict[str, dict] = {}
 
-    for site in weather_candidates:
+    for site in nearby:
         slug = site["slug"]
         w_info = weather.best_window_cloud_cover(
             slug, hourly_data, night_start_hour, night_end_hour, query_dates,
@@ -530,7 +600,7 @@ def api_recommend():
     recommendations = rec.recommend(
         origin_lat=origin_lat,
         origin_lon=origin_lon,
-        sites=weather_candidates,
+        sites=nearby,
         cloud_data=cloud_data,
         weather_details=weather_details,
         max_distance_km=max_distance_km,
@@ -568,8 +638,8 @@ def api_recommend():
             "lunar": primary_lunar,
             "lunar_by_date": lunar_by_date,
             "sites_checked": len(nearby),
-            "weather_sites_checked": len(weather_candidates),
-            "weather_rate_limit": weather.rate_limit_status(),
+            "forecast_cached_at": forecast_cached_at,
+            "forecast_refreshing": _forecast_state["refreshing"],
             "all_uk": all_uk,
             "query": {
                 "date": base_date.strftime("%Y-%m-%d"),

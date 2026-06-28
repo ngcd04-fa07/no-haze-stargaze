@@ -313,3 +313,50 @@ def best_window_cloud_cover(
 
     return best or {"avg_cover": None, "best_date": None, "window_start": None,
                     "window_end": None, "hourly": []}
+
+
+# ---------------------------------------------------------------------------
+# Background full-cache fetch (slow + conservative; never called from requests)
+# ---------------------------------------------------------------------------
+
+BACKGROUND_BATCH_SIZE = 20          # sites per Open-Meteo call
+BACKGROUND_BATCH_DELAY_SECONDS = 3.0  # pause between batches
+BACKGROUND_RATE_LIMIT_PAUSE_SECONDS = 10 * 60  # 10-min back-off on 429
+
+
+def get_full_forecast_background(
+    sites: list[dict],
+    start_date: datetime,
+    end_date: datetime,
+) -> dict[str, list[tuple[str, int]]]:
+    """
+    Fetch forecasts for ALL sites using conservative rate limits.
+    Designed for background use only — no Gunicorn timeout pressure.
+    On 429: waits 10 minutes then retries once before moving on.
+    """
+    all_results: dict[str, list[tuple[str, int]]] = {}
+
+    for i in range(0, len(sites), BACKGROUND_BATCH_SIZE):
+        batch = sites[i: i + BACKGROUND_BATCH_SIZE]
+        try:
+            batch_results = _fetch_batch(batch, start_date, end_date)
+            all_results.update(batch_results)
+        except ForecastRateLimitError:
+            logger.warning(
+                "Background forecast: rate limit at batch %d/%d — pausing %d min.",
+                i // BACKGROUND_BATCH_SIZE + 1,
+                -(-len(sites) // BACKGROUND_BATCH_SIZE),
+                BACKGROUND_RATE_LIMIT_PAUSE_SECONDS // 60,
+            )
+            time.sleep(BACKGROUND_RATE_LIMIT_PAUSE_SECONDS)
+            try:
+                batch_results = _fetch_batch(batch, start_date, end_date)
+                all_results.update(batch_results)
+            except ForecastRateLimitError:
+                logger.error("Background forecast: still rate limited after pause; aborting.")
+                break
+
+        if i + BACKGROUND_BATCH_SIZE < len(sites):
+            time.sleep(BACKGROUND_BATCH_DELAY_SECONDS)
+
+    return all_results
