@@ -342,18 +342,21 @@ def get_full_forecast_background(
             batch_results = _fetch_batch(batch, start_date, end_date)
             all_results.update(batch_results)
         except ForecastRateLimitError:
+            # Wait until the rate-limit cooldown actually expires, plus a buffer.
+            rl = rate_limit_status()
+            wait_s = max(rl["retry_after_seconds"] + 60, BACKGROUND_RATE_LIMIT_PAUSE_SECONDS)
             logger.warning(
-                "Background forecast: rate limit at batch %d/%d — pausing %d min.",
+                "Background forecast: rate limit at batch %d/%d — pausing %.0f min.",
                 i // BACKGROUND_BATCH_SIZE + 1,
                 -(-len(sites) // BACKGROUND_BATCH_SIZE),
-                BACKGROUND_RATE_LIMIT_PAUSE_SECONDS // 60,
+                wait_s / 60,
             )
-            time.sleep(BACKGROUND_RATE_LIMIT_PAUSE_SECONDS)
+            time.sleep(wait_s)
             try:
                 batch_results = _fetch_batch(batch, start_date, end_date)
                 all_results.update(batch_results)
             except ForecastRateLimitError:
-                logger.error("Background forecast: still rate limited after pause; aborting.")
+                logger.error("Background forecast: still rate limited after full cooldown; aborting.")
                 break
 
         if i + BACKGROUND_BATCH_SIZE < len(sites):

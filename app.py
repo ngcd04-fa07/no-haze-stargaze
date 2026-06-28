@@ -292,7 +292,20 @@ _FORECAST_CHECK_INTERVAL = 300  # wake every 5 min to check if refresh is due
 
 def _forecast_cache_manager() -> None:
     """Daemon thread: refresh the forecast cache once per FORECAST_REFRESH_INTERVAL_SECONDS."""
+    # Short startup delay so the server is fully ready before the first network fetch.
+    time.sleep(15)
     while True:
+        rl = weather.rate_limit_status()
+        if rl["active"]:
+            # Don't start a new refresh while rate-limited; sleep until the window clears.
+            sleep_for = rl["retry_after_seconds"] + 60
+            logger.info(
+                "Forecast refresh deferred: rate limit clears in %.0fs.",
+                rl["retry_after_seconds"],
+            )
+            time.sleep(sleep_for)
+            continue
+
         with _forecast_state["lock"]:
             cached_at = _forecast_state["cached_at"]
         if time.time() - cached_at >= FORECAST_REFRESH_INTERVAL_SECONDS:
