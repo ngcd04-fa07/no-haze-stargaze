@@ -650,7 +650,7 @@
 
 <header>
   <h1>No-Haze Stargaze</h1>
-  <span class="subtitle">Data: gostargazing.co.uk · Weather: Open-Meteo</span>
+  <span class="subtitle">Data: <a href="https://www.gostargazing.co.uk" target="_blank" rel="noopener" style="color:inherit">gostargazing.co.uk</a> · Amenities: <a href="https://www.openstreetmap.org" target="_blank" rel="noopener" style="color:inherit">OpenStreetMap</a> · Weather: <a href="https://open-meteo.com" target="_blank" rel="noopener" style="color:inherit">Open-Meteo</a></span>
 </header>
 
 <div class="layout">
@@ -1246,8 +1246,8 @@ function renderResults(data) {
   currentRecs = [];
   if (originMarker) map.removeLayer(originMarker);
 
-  // Origin marker
-  if (origin) {
+  // Origin marker (skip when showing all of UK — no meaningful single origin)
+  if (origin && !data.all_uk) {
     originMarker = L.circleMarker([origin.lat, origin.lon], {
       radius: 10, color: '#fff', fillColor: '#4e9af1', fillOpacity: 0.9, weight: 2,
     }).addTo(map).bindPopup(`<b>Your location</b><br>${origin.name}`);
@@ -1262,13 +1262,15 @@ function renderResults(data) {
   }
 
   header.textContent = `${recs.length} sites found (checking ${data.sites_checked} within range)`;
-  if (data.forecast_cached_at) {
+  if (data.forecast_refreshing) {
+    header.textContent += ' · forecast updating…';
+  } else if (data.forecast_cached_at) {
     const ageMin = Math.round((Date.now() / 1000 - data.forecast_cached_at) / 60);
-    const ageStr = ageMin < 2 ? 'just now' : ageMin < 60 ? `${ageMin}m ago` : `${Math.round(ageMin/60)}h ago`;
-    const refreshing = data.forecast_refreshing ? ' · updating…' : '';
-    header.textContent += ` · forecast ${ageStr}${refreshing}`;
+    const nextInMin = Math.max(0, 60 - ageMin);
+    const nextStr = nextInMin < 1 ? 'under 1 min' : `${nextInMin} min`;
+    header.textContent += ` · next forecast in ${nextStr}`;
   } else {
-    header.textContent += ' · forecast loading…';
+    header.textContent += ' · next forecast loading…';
   }
 
   // Lunar banner
@@ -1441,6 +1443,9 @@ function buildPopup(rec, rank) {
       ${locationLine}<br>
       ☁ ${cloudStr}<br>
       ${moonStr}${parkingStr}${toiletStr}
+      <a href="https://www.google.com/maps/dir/?api=1&destination=${site.latitude},${site.longitude}" target="_blank" rel="noopener" style="color:#4e9af1">
+        Directions ↗
+      </a><br>
       <a href="${site.url}" target="_blank" rel="noopener" style="color:#4e9af1">
         View on gostargazing.co.uk ↗
       </a>
