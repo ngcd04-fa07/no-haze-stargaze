@@ -2,7 +2,7 @@ name: Update Forecast Cache
 
 on:
   schedule:
-    - cron: '0 */3 * * *'   # every 3 hours
+    - cron: '*/45 * * * *'  # every 45 minutes; only fetches sites searched in last 48 h
   workflow_dispatch:        # allow manual trigger
 
 permissions:

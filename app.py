@@ -45,8 +45,10 @@ app = Flask(__name__)
 # Forecast background cache
 # ---------------------------------------------------------------------------
 FORECAST_CACHE_FILE = "forecast_cache.json"
-FORECAST_REFRESH_INTERVAL_SECONDS = 12 * 3600  # 12 h; GitHub Actions refreshes daily
+FORECAST_REFRESH_INTERVAL_SECONDS = 12 * 3600  # 12 h; kept for reference only (sweep disabled)
 FORECAST_LOOKAHEAD_DAYS = 14
+INLINE_FETCH_MAX_SITES = 60          # cap on sites fetched inline per request
+_BACKGROUND_SWEEP_ENABLED = False    # set True to re-enable the 12-h full-sweep thread
 FORECAST_REMOTE_URL = (
     "https://github.com/ngcd04-fa07/no-haze-stargaze/releases/download/"
     "forecast-latest/forecast_cache.json"
@@ -54,9 +56,10 @@ FORECAST_REMOTE_URL = (
 
 _forecast_state = {
     "data": {},              # slug -> [(time_str, cloud_pct), ...]
-    "site_timestamps": {},   # slug -> unix timestamp when that site was last fetched
-    "cached_at": 0.0,        # Unix timestamp of last successful full refresh
-    "refreshing": False,
+    "site_timestamps": {},   # slug -> unix timestamp when that site's forecast was last fetched
+    "last_requested_at": {}, # slug -> unix timestamp of last user search that included this site
+    "cached_at": 0.0,        # Unix timestamp of last disk save
+    "refreshing": False,     # True while the (disabled) background sweep is running
     "lock": threading.Lock(),
 }
 
@@ -224,9 +227,11 @@ def _load_forecast_cache() -> None:
         raw = payload.get("data", {})
         data = {slug: [tuple(x) for x in records] for slug, records in raw.items()}
         site_timestamps = {slug: float(t) for slug, t in payload.get("site_timestamps", {}).items()}
+        last_requested_at = {slug: float(t) for slug, t in payload.get("last_requested_at", {}).items()}
         with _forecast_state["lock"]:
             _forecast_state["data"] = data
             _forecast_state["site_timestamps"] = site_timestamps
+            _forecast_state["last_requested_at"] = last_requested_at
             _forecast_state["cached_at"] = cached_at
         age_h = (time.time() - cached_at) / 3600
         logger.info(
@@ -239,13 +244,14 @@ def _load_forecast_cache() -> None:
         logger.warning("Could not load forecast cache: %s", exc)
 
 
-def _save_forecast_cache(data: dict, cached_at: float, site_timestamps: dict | None = None) -> None:
+def _save_forecast_cache(data: dict, cached_at: float, site_timestamps: dict | None = None, last_requested_at: dict | None = None) -> None:
     """Atomically persist forecast cache to disk."""
     try:
         payload = {
             "cached_at": cached_at,
             "data": {slug: list(records) for slug, records in data.items()},
             "site_timestamps": site_timestamps or {},
+            "last_requested_at": last_requested_at or {},
         }
         tmp = FORECAST_CACHE_FILE + ".tmp"
         with open(tmp, "w") as f:
@@ -285,12 +291,14 @@ def _download_forecast_cache_bg() -> None:
         raw = payload.get("data", {})
         data = {slug: [tuple(x) for x in records] for slug, records in raw.items()}
         site_timestamps = {slug: float(t) for slug, t in payload.get("site_timestamps", {}).items()}
+        last_requested_at = {slug: float(t) for slug, t in payload.get("last_requested_at", {}).items()}
 
         with _forecast_state["lock"]:
             _forecast_state["data"] = data
             _forecast_state["site_timestamps"] = site_timestamps
+            _forecast_state["last_requested_at"] = last_requested_at
             _forecast_state["cached_at"] = cached_at
-        _save_forecast_cache(data, cached_at, site_timestamps)
+        _save_forecast_cache(data, cached_at, site_timestamps, last_requested_at)
         logger.info(
             "Downloaded forecast cache from GitHub: %d sites, age %.1fh.",
             len(data), (time.time() - cached_at) / 3600,
@@ -299,19 +307,37 @@ def _download_forecast_cache_bg() -> None:
         logger.warning("Could not download forecast cache from GitHub: %s", exc)
 
 
-def _do_forecast_refresh() -> None:
-    """Fetch fresh cloud-cover forecasts for every known site (background use only).
+def _save_forecast_cache_async() -> None:
+    """Snapshot current forecast state and persist it to disk in a background thread."""
+    with _forecast_state["lock"]:
+        data_snap = dict(_forecast_state["data"])
+        ts_snap = dict(_forecast_state["site_timestamps"])
+        lra_snap = dict(_forecast_state["last_requested_at"])
+        cached_at = _forecast_state["cached_at"]
+    threading.Thread(
+        target=_save_forecast_cache,
+        args=(data_snap, cached_at, ts_snap, lra_snap),
+        daemon=True,
+        name="forecast-save",
+    ).start()
 
-    Resumes from existing partial cache: only fetches sites not already present,
-    then merges new data with what was already cached.  A full re-fetch (clearing
-    old data) is triggered by the caller when the full cache is stale.
+
+def _do_forecast_refresh() -> None:
+    """Full-sweep forecast refresh (background use only — disabled by default).
+
+    Gated by _BACKGROUND_SWEEP_ENABLED.  To trigger manually, set the flag to
+    True or call this function directly from an admin endpoint.
     """
+    if not _BACKGROUND_SWEEP_ENABLED:
+        logger.debug("_do_forecast_refresh: background sweep disabled; skipping.")
+        return
     with _forecast_state["lock"]:
         if _forecast_state["refreshing"]:
             return
         _forecast_state["refreshing"] = True
         existing_data: dict = dict(_forecast_state["data"])          # snapshot before we start
         existing_timestamps: dict = dict(_forecast_state["site_timestamps"])
+        existing_lra: dict = dict(_forecast_state["last_requested_at"])
 
     try:
         with _state["lock"]:
@@ -354,7 +380,7 @@ def _do_forecast_refresh() -> None:
                 _forecast_state["data"] = merged
                 _forecast_state["site_timestamps"] = merged_ts
                 _forecast_state["cached_at"] = now
-            _save_forecast_cache(merged, now, merged_ts)
+            _save_forecast_cache(merged, now, merged_ts, existing_lra)
             logger.info(
                 "Forecast cache checkpoint: %d/%d sites total.",
                 len(merged), len(sites),
@@ -375,7 +401,7 @@ def _do_forecast_refresh() -> None:
                 _forecast_state["data"] = merged
                 _forecast_state["site_timestamps"] = merged_ts
                 _forecast_state["cached_at"] = now
-            _save_forecast_cache(merged, now, merged_ts)
+            _save_forecast_cache(merged, now, merged_ts, existing_lra)
             logger.info(
                 "Forecast refresh complete: %d/%d sites cached.",
                 len(merged), len(sites),
@@ -393,13 +419,13 @@ _FORECAST_CHECK_INTERVAL = 300  # wake every 5 min to check if refresh is due
 
 
 def _forecast_cache_manager() -> None:
-    """Daemon thread: refresh the forecast cache once per FORECAST_REFRESH_INTERVAL_SECONDS.
+    """Daemon thread: full-sweep refresh (disabled by default via _BACKGROUND_SWEEP_ENABLED).
 
-    Scheduling logic:
-    - If the cache is incomplete (missing sites), retry every 5 min until complete.
-    - Once all sites are cached, wait FORECAST_REFRESH_INTERVAL_SECONDS before
-      clearing and triggering a full re-fetch for fresh data.
+    Kept for manual/admin use.  When the flag is False this thread exits immediately.
     """
+    if not _BACKGROUND_SWEEP_ENABLED:
+        logger.info("Forecast cache manager: background sweep disabled; thread exiting.")
+        return
     # Short startup delay so the server is fully ready and the download thread
     # has time to complete before the first refresh check.
     time.sleep(60)
@@ -527,7 +553,9 @@ threading.Thread(target=_weekly_cache_manager, daemon=True, name="weekly-cache")
 _load_forecast_cache()
 # Download fresh data from GitHub Releases in the background (non-blocking).
 threading.Thread(target=_download_forecast_cache_bg, daemon=True, name="forecast-download").start()
-threading.Thread(target=_forecast_cache_manager, daemon=True, name="forecast-cache").start()
+# Full-sweep manager only starts when the flag is enabled.
+if _BACKGROUND_SWEEP_ENABLED:
+    threading.Thread(target=_forecast_cache_manager, daemon=True, name="forecast-cache").start()
 threading.Thread(target=_keep_alive, daemon=True, name="keep-alive").start()
 
 
@@ -741,15 +769,58 @@ def api_recommend():
         d.strftime("%Y-%m-%d"): lu.lunar_illumination(d) for d in query_dates
     }
 
-    # ---- Look up pre-fetched cloud cover from background cache ----
+    # ---- On-demand cloud cover fetch for stale/missing nearby sites ----
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    fetch_end = today + timedelta(days=FORECAST_LOOKAHEAD_DAYS)
+
     with _forecast_state["lock"]:
-        hourly_data = dict(_forecast_state["data"])
+        hourly_data: dict = dict(_forecast_state["data"])
+        site_ts: dict = dict(_forecast_state["site_timestamps"])
         forecast_cached_at = _forecast_state["cached_at"]
 
-    logger.info(
-        "Forecast lookup: %d sites in cache, %d nearby, query=%s",
-        len(hourly_data), len(nearby), query_dates[0].strftime("%Y-%m-%d"),
-    )
+    stale_threshold = time.time() - weather.FORECAST_CACHE_TTL_SECONDS
+    sites_to_fetch = [
+        s for s in nearby
+        if s["slug"] not in hourly_data or site_ts.get(s["slug"], 0) < stale_threshold
+    ]
+    # Sort by distance so that the nearest sites (most likely to be top recommendations)
+    # are fetched first when we hit the per-request cap.
+    sites_to_fetch.sort(key=lambda s: rec.haversine_km(origin_lat, origin_lon, s["latitude"], s["longitude"]))
+    if len(sites_to_fetch) > INLINE_FETCH_MAX_SITES:
+        logger.info(
+            "Forecast: %d/%d nearby stale/missing — capping inline fetch at %d.",
+            len(sites_to_fetch), len(nearby), INLINE_FETCH_MAX_SITES,
+        )
+        sites_to_fetch = sites_to_fetch[:INLINE_FETCH_MAX_SITES]
+
+    if sites_to_fetch:
+        logger.info(
+            "Forecast: fetching %d site(s) on-demand (out of %d nearby, query=%s).",
+            len(sites_to_fetch), len(nearby), query_dates[0].strftime("%Y-%m-%d"),
+        )
+        new_data = weather.get_cloud_cover_forecast(sites_to_fetch, today, fetch_end)
+        if new_data:
+            now = time.time()
+            with _forecast_state["lock"]:
+                _forecast_state["data"].update(new_data)
+                for slug in new_data:
+                    _forecast_state["site_timestamps"][slug] = now
+                _forecast_state["cached_at"] = now
+            hourly_data.update(new_data)
+    else:
+        logger.info(
+            "Forecast: all %d nearby sites fresh in cache (query=%s).",
+            len(nearby), query_dates[0].strftime("%Y-%m-%d"),
+        )
+
+    # Record that every site in this search was just requested
+    now = time.time()
+    with _forecast_state["lock"]:
+        for site in nearby:
+            _forecast_state["last_requested_at"][site["slug"]] = now
+
+    # Persist updates to disk without blocking the response
+    _save_forecast_cache_async()
 
     # ---- Build per-site cloud summary ----
     cloud_data: dict[str, float] = {}
