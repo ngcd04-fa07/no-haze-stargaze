@@ -21,7 +21,7 @@ BATCH_SIZE = 12
 FORECAST_CACHE_TTL_SECONDS = 45 * 60
 INTER_BATCH_DELAY_SECONDS = 0.65
 REQUEST_TIMEOUT_SECONDS = 12
-RATE_LIMIT_COOLDOWN_SECONDS = 20 * 60
+RATE_LIMIT_COOLDOWN_SECONDS = 35 * 60  # default if no Retry-After header; 35 min is conservative for shared IPs
 
 _forecast_cache: dict[tuple[str, str, str], tuple[float, list[tuple[str, int]]]] = {}
 _rate_limit_lock = threading.Lock()
@@ -32,10 +32,10 @@ class ForecastRateLimitError(Exception):
     pass
 
 
-def _mark_rate_limited() -> None:
+def _mark_rate_limited(cooldown_seconds: float = RATE_LIMIT_COOLDOWN_SECONDS) -> None:
     global _rate_limited_until
     with _rate_limit_lock:
-        _rate_limited_until = max(_rate_limited_until, time.time() + RATE_LIMIT_COOLDOWN_SECONDS)
+        _rate_limited_until = max(_rate_limited_until, time.time() + cooldown_seconds)
 
 
 def _is_rate_limited() -> bool:
@@ -104,7 +104,15 @@ def _request_forecast(params: dict) -> dict | list | None:
                 if attempt < 1:
                     time.sleep(1.0)
                     continue
-                _mark_rate_limited()
+                # Honour Retry-After if present; use longer of header value and default
+                cooldown = RATE_LIMIT_COOLDOWN_SECONDS
+                if exc.response is not None:
+                    ra = exc.response.headers.get("Retry-After", "")
+                    try:
+                        cooldown = max(float(ra), RATE_LIMIT_COOLDOWN_SECONDS)
+                    except (ValueError, TypeError):
+                        pass
+                _mark_rate_limited(cooldown)
                 raise ForecastRateLimitError() from exc
             logger.error("Open-Meteo API error: %s", exc)
             return None
@@ -320,7 +328,7 @@ def best_window_cloud_cover(
 # ---------------------------------------------------------------------------
 
 BACKGROUND_BATCH_SIZE = 20          # sites per Open-Meteo call
-BACKGROUND_BATCH_DELAY_SECONDS = 2.0  # pause between batches (~44s for full sweep, no rate limits)
+BACKGROUND_BATCH_DELAY_SECONDS = 5.0  # pause between batches; slower rate reduces chance of 429
 BACKGROUND_CHECKPOINT_EVERY = 20    # call on_batch_complete every N successful batches
 
 

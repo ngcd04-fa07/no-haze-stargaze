@@ -49,8 +49,9 @@ FORECAST_REFRESH_INTERVAL_SECONDS = 3600   # 1 hour
 FORECAST_LOOKAHEAD_DAYS = 14
 
 _forecast_state = {
-    "data": {},          # slug -> [(time_str, cloud_pct), ...]
-    "cached_at": 0.0,    # Unix timestamp of last successful full refresh
+    "data": {},              # slug -> [(time_str, cloud_pct), ...]
+    "site_timestamps": {},   # slug -> unix timestamp when that site was last fetched
+    "cached_at": 0.0,        # Unix timestamp of last successful full refresh
     "refreshing": False,
     "lock": threading.Lock(),
 }
@@ -218,8 +219,10 @@ def _load_forecast_cache() -> None:
         cached_at = float(payload.get("cached_at", 0))
         raw = payload.get("data", {})
         data = {slug: [tuple(x) for x in records] for slug, records in raw.items()}
+        site_timestamps = {slug: float(t) for slug, t in payload.get("site_timestamps", {}).items()}
         with _forecast_state["lock"]:
             _forecast_state["data"] = data
+            _forecast_state["site_timestamps"] = site_timestamps
             _forecast_state["cached_at"] = cached_at
         age_h = (time.time() - cached_at) / 3600
         logger.info(
@@ -232,12 +235,13 @@ def _load_forecast_cache() -> None:
         logger.warning("Could not load forecast cache: %s", exc)
 
 
-def _save_forecast_cache(data: dict, cached_at: float) -> None:
+def _save_forecast_cache(data: dict, cached_at: float, site_timestamps: dict | None = None) -> None:
     """Atomically persist forecast cache to disk."""
     try:
         payload = {
             "cached_at": cached_at,
             "data": {slug: list(records) for slug, records in data.items()},
+            "site_timestamps": site_timestamps or {},
         }
         tmp = FORECAST_CACHE_FILE + ".tmp"
         with open(tmp, "w") as f:
@@ -259,7 +263,8 @@ def _do_forecast_refresh() -> None:
         if _forecast_state["refreshing"]:
             return
         _forecast_state["refreshing"] = True
-        existing_data: dict = dict(_forecast_state["data"])  # snapshot before we start
+        existing_data: dict = dict(_forecast_state["data"])          # snapshot before we start
+        existing_timestamps: dict = dict(_forecast_state["site_timestamps"])
 
     try:
         with _state["lock"]:
@@ -271,15 +276,21 @@ def _do_forecast_refresh() -> None:
         today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         end_date = today + timedelta(days=FORECAST_LOOKAHEAD_DAYS)
 
-        # Resume: only request sites not already in the cache
-        sites_to_fetch = [s for s in sites if s["slug"] not in existing_data]
+        # Resume: skip sites that are both present AND were fetched within the last hour
+        one_hour_ago = time.time() - 3600
+        sites_to_fetch = [
+            s for s in sites
+            if s["slug"] not in existing_data
+            or existing_timestamps.get(s["slug"], 0) < one_hour_ago
+        ]
         if not sites_to_fetch:
-            logger.info("Forecast cache already complete (%d sites); no fetch needed.", len(existing_data))
+            logger.info("Forecast cache already complete and fresh (%d sites); no fetch needed.", len(existing_data))
             return
 
         logger.info(
-            "Background forecast refresh: %d sites to fetch (%d already cached, %d total) — %s → %s.",
-            len(sites_to_fetch), len(existing_data), len(sites), today.date(), end_date.date(),
+            "Background forecast refresh: %d sites to fetch (%d already fresh, %d total) — %s → %s.",
+            len(sites_to_fetch), len(existing_data) - (len(existing_data) - len(sites_to_fetch)),
+            len(sites), today.date(), end_date.date(),
         )
 
         # Incremental save: merge new data with existing and persist at every checkpoint
@@ -287,12 +298,16 @@ def _do_forecast_refresh() -> None:
             if not partial_data:
                 return
             now = time.time()
+            new_ts = {slug: now for slug in partial_data}
             merged = dict(existing_data)
             merged.update(partial_data)
+            merged_ts = dict(existing_timestamps)
+            merged_ts.update(new_ts)
             with _forecast_state["lock"]:
                 _forecast_state["data"] = merged
+                _forecast_state["site_timestamps"] = merged_ts
                 _forecast_state["cached_at"] = now
-            _save_forecast_cache(merged, now)
+            _save_forecast_cache(merged, now, merged_ts)
             logger.info(
                 "Forecast cache checkpoint: %d/%d sites total.",
                 len(merged), len(sites),
@@ -303,13 +318,17 @@ def _do_forecast_refresh() -> None:
         )
 
         if new_data:
+            now = time.time()
+            new_ts = {slug: now for slug in new_data}
             merged = dict(existing_data)
             merged.update(new_data)
-            cached_at = time.time()
+            merged_ts = dict(existing_timestamps)
+            merged_ts.update(new_ts)
             with _forecast_state["lock"]:
                 _forecast_state["data"] = merged
-                _forecast_state["cached_at"] = cached_at
-            _save_forecast_cache(merged, cached_at)
+                _forecast_state["site_timestamps"] = merged_ts
+                _forecast_state["cached_at"] = now
+            _save_forecast_cache(merged, now, merged_ts)
             logger.info(
                 "Forecast refresh complete: %d/%d sites cached.",
                 len(merged), len(sites),
@@ -366,12 +385,32 @@ def _forecast_cache_manager() -> None:
                 )
                 with _forecast_state["lock"]:
                     _forecast_state["data"] = {}
+                    _forecast_state["site_timestamps"] = {}
                     _forecast_state["cached_at"] = 0.0
                 _do_forecast_refresh()
             time.sleep(_FORECAST_CHECK_INTERVAL)
         except Exception as exc:
             logger.exception("Forecast cache manager error (will retry in 60s): %s", exc)
             time.sleep(60)
+
+
+_RENDER_EXTERNAL_URL = os.environ.get("RENDER_EXTERNAL_URL", "")
+
+
+def _keep_alive() -> None:
+    """Ping own public URL every 14 min to prevent Render free-tier spin-down.
+
+    Only active when RENDER_EXTERNAL_URL is set (i.e. on Render, not locally).
+    """
+    if not _RENDER_EXTERNAL_URL:
+        return
+    while True:
+        time.sleep(14 * 60)
+        try:
+            requests.get(_RENDER_EXTERNAL_URL + "/", timeout=10)
+            logger.debug("Keep-alive ping sent to %s.", _RENDER_EXTERNAL_URL)
+        except Exception:
+            pass
 
 
 def _normalize_angle(angle: float) -> float:
@@ -439,6 +478,7 @@ threading.Thread(target=_weekly_cache_manager, daemon=True, name="weekly-cache")
 # Load any persisted forecast data, then start the background refresh loop.
 _load_forecast_cache()
 threading.Thread(target=_forecast_cache_manager, daemon=True, name="forecast-cache").start()
+threading.Thread(target=_keep_alive, daemon=True, name="keep-alive").start()
 
 
 # ---------------------------------------------------------------------------
