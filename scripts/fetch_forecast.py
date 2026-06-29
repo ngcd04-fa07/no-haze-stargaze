@@ -14,11 +14,12 @@ import os
 import sys
 import time
 from datetime import datetime, timedelta
+from pathlib import Path
 
-# Repo root must be on sys.path so we can import weather and scraper
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Repo root must be on sys.path so we can import weather
+REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO_ROOT))
 
-import scraper  # noqa: E402
 import weather  # noqa: E402
 
 logging.basicConfig(
@@ -33,12 +34,20 @@ OUTPUT_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 
 def main() -> None:
     # ------------------------------------------------------------------
-    # 1. Load sites from committed sites_cache.json
+    # 1. Load sites directly from sites_cache.json (no scraper import needed)
     # ------------------------------------------------------------------
-    logger.info("Loading sites from cache…")
-    sites, scraped_at = scraper.load_cache()
+    sites_cache = REPO_ROOT / "sites_cache.json"
+    logger.info("Loading sites from %s…", sites_cache)
+    try:
+        with open(sites_cache, encoding="utf-8") as f:
+            payload = json.load(f)
+        sites = payload.get("sites", [])
+        scraped_at = float(payload.get("scraped_at", 0))
+    except (FileNotFoundError, json.JSONDecodeError) as exc:
+        logger.error("Could not read sites_cache.json: %s", exc)
+        sys.exit(1)
     if not sites:
-        logger.error("No sites_cache.json found. Commit it to the repo first.")
+        logger.error("sites_cache.json is empty. Commit a valid cache to the repo.")
         sys.exit(1)
     age_h = (time.time() - scraped_at) / 3600 if scraped_at else 0
     logger.info("Loaded %d sites (scraped %.1fh ago).", len(sites), age_h)
