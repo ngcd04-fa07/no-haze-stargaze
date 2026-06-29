@@ -78,26 +78,17 @@ def test_postcode_falls_back_to_nominatim_when_postcodes_io_fails():
     assert "nominatim" in second_url
 
 
-def test_postcode_retries_postcodes_io_when_nominatim_also_fails():
-    with patch("requests.get", side_effect=[req.Timeout(), req.Timeout(), _pc_ok()]) as m:
-        result = geocoder.geocode("SW1A 1AA")
-    assert result is not None
-    assert m.call_count == 3
-    third_url = m.call_args_list[2][0][0]
-    assert "postcodes.io" in third_url
-
-
 def test_postcode_returns_none_when_all_paths_fail():
-    with patch("requests.get", side_effect=[req.Timeout(), req.Timeout(), req.Timeout()]):
+    with patch("requests.get", side_effect=[req.Timeout(), req.Timeout()]):
         result = geocoder.geocode("SW1A 1AA")
     assert result is None
 
 
-def test_postcodes_io_timeout_is_5s():
+def test_postcodes_io_timeout_is_10s():
     with patch("requests.get", return_value=_pc_ok()) as m:
         geocoder.geocode("SW1A 1AA")
     _, kwargs = m.call_args_list[0]
-    assert kwargs.get("timeout") == 5
+    assert kwargs.get("timeout") == 10
 
 
 # ─── nominatim path ───────────────────────────────────────────────────────────
@@ -129,8 +120,8 @@ def test_nominatim_user_agent_is_set():
     assert ua != ""
 
 
-def test_nominatim_timeout_is_5s():
+def test_nominatim_timeout_is_10s():
     with patch("requests.get", return_value=_nom_ok()) as m:
         geocoder.geocode("Oxford")
     _, kwargs = m.call_args
-    assert kwargs.get("timeout") == 5
+    assert kwargs.get("timeout") == 10

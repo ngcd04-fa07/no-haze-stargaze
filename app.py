@@ -601,6 +601,23 @@ if not _preload_cached_sites_on_startup():
 # Start the background weekly-refresh scheduler
 threading.Thread(target=_weekly_cache_manager, daemon=True, name="weekly-cache").start()
 
+# Pre-resolve DNS for external services so the first user request is fast.
+def _warmup_dns() -> None:
+    """Background thread: make lightweight requests to warm up OS DNS cache."""
+    import socket
+    for host in (
+        "api.postcodes.io",
+        "nominatim.openstreetmap.org",
+        "api.open-meteo.com",
+    ):
+        try:
+            socket.getaddrinfo(host, 443)
+            logger.info("DNS warm-up: %s resolved", host)
+        except Exception as exc:
+            logger.warning("DNS warm-up failed for %s: %s", host, exc)
+
+threading.Thread(target=_warmup_dns, daemon=True, name="dns-warmup").start()
+
 # Load any persisted forecast data, then start the background refresh loop.
 _load_forecast_cache()
 # Download fresh data from GitHub Releases in the background (non-blocking).

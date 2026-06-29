@@ -36,8 +36,8 @@ _geocode_cache: dict[str, tuple[float, float, str]] = {}
 
 # socket-level timeout covers read/write after the socket is open;
 # _GEO_DEADLINE (wall-clock) also covers DNS and TCP-SYN which requests' timeout does not bound.
-_GEO_TIMEOUT = 5.0
-_GEO_DEADLINE = _GEO_TIMEOUT + 1.0
+_GEO_TIMEOUT = 10.0
+_GEO_DEADLINE = 12.0
 
 _geo_executor = concurrent.futures.ThreadPoolExecutor(
     max_workers=4, thread_name_prefix="geo"
@@ -118,10 +118,6 @@ def geocode(location_string: str) -> Optional[tuple[float, float, str]]:
             return result
 
     result = _with_deadline(_geocode_nominatim, loc)
-
-    # Nominatim failed for a postcode-shaped input — try postcodes.io as a last resort
-    if result is None and is_postcode:
-        result = _with_deadline(_geocode_postcode, loc)
 
     if result is not None:
         _geocode_cache[cache_key] = result
