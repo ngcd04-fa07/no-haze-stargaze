@@ -249,11 +249,17 @@ def _save_forecast_cache(data: dict, cached_at: float) -> None:
 
 
 def _do_forecast_refresh() -> None:
-    """Fetch fresh cloud-cover forecasts for every known site (background use only)."""
+    """Fetch fresh cloud-cover forecasts for every known site (background use only).
+
+    Resumes from existing partial cache: only fetches sites not already present,
+    then merges new data with what was already cached.  A full re-fetch (clearing
+    old data) is triggered by the caller when the full cache is stale.
+    """
     with _forecast_state["lock"]:
         if _forecast_state["refreshing"]:
             return
         _forecast_state["refreshing"] = True
+        existing_data: dict = dict(_forecast_state["data"])  # snapshot before we start
 
     try:
         with _state["lock"]:
@@ -264,38 +270,52 @@ def _do_forecast_refresh() -> None:
 
         today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         end_date = today + timedelta(days=FORECAST_LOOKAHEAD_DAYS)
+
+        # Resume: only request sites not already in the cache
+        sites_to_fetch = [s for s in sites if s["slug"] not in existing_data]
+        if not sites_to_fetch:
+            logger.info("Forecast cache already complete (%d sites); no fetch needed.", len(existing_data))
+            return
+
         logger.info(
-            "Starting background forecast refresh for %d sites (%s → %s).",
-            len(sites), today.date(), end_date.date(),
+            "Background forecast refresh: %d sites to fetch (%d already cached, %d total) — %s → %s.",
+            len(sites_to_fetch), len(existing_data), len(sites), today.date(), end_date.date(),
         )
 
-        # Incremental save: update in-memory state + disk at every checkpoint
+        # Incremental save: merge new data with existing and persist at every checkpoint
         def _save_partial(partial_data: dict) -> None:
             if not partial_data:
                 return
             now = time.time()
+            merged = dict(existing_data)
+            merged.update(partial_data)
             with _forecast_state["lock"]:
-                _forecast_state["data"] = partial_data
+                _forecast_state["data"] = merged
                 _forecast_state["cached_at"] = now
-            _save_forecast_cache(partial_data, now)
+            _save_forecast_cache(merged, now)
             logger.info(
-                "Forecast cache checkpoint: %d/%d sites saved.",
-                len(partial_data), len(sites),
+                "Forecast cache checkpoint: %d/%d sites total.",
+                len(merged), len(sites),
             )
 
         new_data = weather.get_full_forecast_background(
-            sites, today, end_date, on_batch_complete=_save_partial
+            sites_to_fetch, today, end_date, on_batch_complete=_save_partial
         )
 
         if new_data:
+            merged = dict(existing_data)
+            merged.update(new_data)
             cached_at = time.time()
             with _forecast_state["lock"]:
-                _forecast_state["data"] = new_data
+                _forecast_state["data"] = merged
                 _forecast_state["cached_at"] = cached_at
-            _save_forecast_cache(new_data, cached_at)
-            logger.info("Forecast refresh complete: %d sites cached.", len(new_data))
+            _save_forecast_cache(merged, cached_at)
+            logger.info(
+                "Forecast refresh complete: %d/%d sites cached.",
+                len(merged), len(sites),
+            )
         else:
-            logger.warning("Forecast refresh returned no data.")
+            logger.warning("Forecast refresh returned no new data.")
     except Exception as exc:
         logger.exception("Forecast refresh failed: %s", exc)
     finally:
@@ -307,7 +327,13 @@ _FORECAST_CHECK_INTERVAL = 300  # wake every 5 min to check if refresh is due
 
 
 def _forecast_cache_manager() -> None:
-    """Daemon thread: refresh the forecast cache once per FORECAST_REFRESH_INTERVAL_SECONDS."""
+    """Daemon thread: refresh the forecast cache once per FORECAST_REFRESH_INTERVAL_SECONDS.
+
+    Scheduling logic:
+    - If the cache is incomplete (missing sites), retry every 5 min until complete.
+    - Once all sites are cached, wait FORECAST_REFRESH_INTERVAL_SECONDS before
+      clearing and triggering a full re-fetch for fresh data.
+    """
     # Short startup delay so the server is fully ready before the first network fetch.
     time.sleep(15)
     while True:
@@ -323,9 +349,24 @@ def _forecast_cache_manager() -> None:
                 time.sleep(sleep_for)
                 continue
 
+            with _state["lock"]:
+                total_sites = len(_state["sites"])
             with _forecast_state["lock"]:
                 cached_at = _forecast_state["cached_at"]
-            if time.time() - cached_at >= FORECAST_REFRESH_INTERVAL_SECONDS:
+                data_count = len(_forecast_state["data"])
+
+            if data_count < total_sites:
+                # Cache is incomplete — resume immediately (fills remaining sites)
+                _do_forecast_refresh()
+            elif time.time() - cached_at >= FORECAST_REFRESH_INTERVAL_SECONDS:
+                # All sites cached but data is stale — clear and do a full re-fetch
+                logger.info(
+                    "Forecast cache stale (%.0f min old, %d sites) — clearing for full re-fetch.",
+                    (time.time() - cached_at) / 60, data_count,
+                )
+                with _forecast_state["lock"]:
+                    _forecast_state["data"] = {}
+                    _forecast_state["cached_at"] = 0.0
                 _do_forecast_refresh()
             time.sleep(_FORECAST_CHECK_INTERVAL)
         except Exception as exc:
@@ -614,6 +655,11 @@ def api_recommend():
     with _forecast_state["lock"]:
         hourly_data = dict(_forecast_state["data"])
         forecast_cached_at = _forecast_state["cached_at"]
+
+    logger.info(
+        "Forecast lookup: %d sites in cache, %d nearby, query=%s",
+        len(hourly_data), len(nearby), query_dates[0].strftime("%Y-%m-%d"),
+    )
 
     # ---- Build per-site cloud summary ----
     cloud_data: dict[str, float] = {}
