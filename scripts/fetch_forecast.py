@@ -117,8 +117,34 @@ def main() -> None:
     )
 
     if not live_sites:
-        logger.info("No live sites — nothing to fetch. Exiting without upload.")
-        sys.exit(0)
+        if not existing_data:
+            # No existing cache and no live sites — bootstrap by fetching all sites
+            # so the GitHub Release is seeded for the first time.
+            logger.info(
+                "No live sites and no existing cache — fetching all %d sites to seed the cache.",
+                len(all_sites),
+            )
+            live_sites = all_sites
+        else:
+            # Re-publish the existing cache unchanged so the GitHub Release is preserved.
+            logger.info(
+                "No live sites found in last %.0fh — re-publishing existing cache (%d sites) unchanged.",
+                LIVE_SET_WINDOW_SECONDS / 3600, len(existing_data),
+            )
+            _ts = float(existing_payload.get("cached_at", time.time()))
+            output_payload = {
+                "cached_at": _ts,
+                "generated_at": float(existing_payload.get("generated_at", _ts)),
+                "site_count": len(existing_data),
+                "forecast_days": FORECAST_LOOKAHEAD_DAYS,
+                "source": "preserved",
+                "data": {slug: list(records) for slug, records in existing_data.items()},
+                "site_timestamps": dict(existing_site_ts),
+                "last_requested_at": last_requested_at,
+            }
+            with open(OUTPUT_FILE, "w") as f:
+                json.dump(output_payload, f)
+            sys.exit(0)
 
     # ------------------------------------------------------------------
     # 4. Fetch forecasts for the live set only
@@ -142,7 +168,23 @@ def main() -> None:
     )
 
     if not new_data:
-        logger.warning("No forecast data returned — aborting without upload.")
+        # Never destroy a good existing cache — write it back so the upload step
+        # can re-publish it rather than deleting the release and leaving nothing.
+        logger.warning("No forecast data returned — preserving existing cache.")
+        if existing_data:
+            _ts = float(existing_payload.get("cached_at", time.time()))
+            output_payload = {
+                "cached_at": _ts,
+                "generated_at": float(existing_payload.get("generated_at", _ts)),
+                "site_count": len(existing_data),
+                "forecast_days": FORECAST_LOOKAHEAD_DAYS,
+                "source": "preserved",
+                "data": {slug: list(records) for slug, records in existing_data.items()},
+                "site_timestamps": dict(existing_site_ts),
+                "last_requested_at": last_requested_at,
+            }
+            with open(OUTPUT_FILE, "w") as f:
+                json.dump(output_payload, f)
         sys.exit(1)
 
     # ------------------------------------------------------------------
@@ -156,9 +198,13 @@ def main() -> None:
 
     output_payload = {
         "cached_at": now,
+        "generated_at": now,
+        "site_count": len(merged_data),
+        "forecast_days": FORECAST_LOOKAHEAD_DAYS,
+        "source": "open-meteo",
         "data": {slug: list(records) for slug, records in merged_data.items()},
         "site_timestamps": merged_site_ts,
-        "last_requested_at": last_requested_at,  # pass through unchanged
+        "last_requested_at": last_requested_at,
     }
 
     with open(OUTPUT_FILE, "w") as f:

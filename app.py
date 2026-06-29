@@ -54,12 +54,16 @@ FORECAST_REMOTE_URL = (
     "https://github.com/ngcd04-fa07/no-haze-stargaze/releases/download/"
     "forecast-latest/forecast_cache.json"
 )
+# When True (default in production), /api/recommend never calls Open-Meteo.
+# Set CACHE_ONLY_FORECASTS=false only for local development.
+CACHE_ONLY_FORECASTS = os.getenv("CACHE_ONLY_FORECASTS", "true").lower() == "true"
 
 _forecast_state = {
     "data": {},              # slug -> [(time_str, cloud_pct), ...]
     "site_timestamps": {},   # slug -> unix timestamp when that site's forecast was last fetched
     "last_requested_at": {}, # slug -> unix timestamp of last user search that included this site
     "cached_at": 0.0,        # Unix timestamp of last disk save
+    "generated_at": 0.0,     # Unix timestamp when the prewarm job generated this data
     "refreshing": False,     # True while the (disabled) background sweep is running
     "lock": threading.Lock(),
 }
@@ -225,6 +229,7 @@ def _load_forecast_cache() -> None:
         with open(FORECAST_CACHE_FILE) as f:
             payload = json.load(f)
         cached_at = float(payload.get("cached_at", 0))
+        generated_at = float(payload.get("generated_at", cached_at))
         raw = payload.get("data", {})
         data = {slug: [tuple(x) for x in records] for slug, records in raw.items()}
         site_timestamps = {slug: float(t) for slug, t in payload.get("site_timestamps", {}).items()}
@@ -234,9 +239,10 @@ def _load_forecast_cache() -> None:
             _forecast_state["site_timestamps"] = site_timestamps
             _forecast_state["last_requested_at"] = last_requested_at
             _forecast_state["cached_at"] = cached_at
+            _forecast_state["generated_at"] = generated_at
         age_h = (time.time() - cached_at) / 3600
         logger.info(
-            "Loaded forecast cache from disk: %d sites, age %.1fh.",
+            "Loaded forecast cache: %d sites, age %.1fh.",
             len(data), age_h,
         )
     except FileNotFoundError:
@@ -245,11 +251,12 @@ def _load_forecast_cache() -> None:
         logger.warning("Could not load forecast cache: %s", exc)
 
 
-def _save_forecast_cache(data: dict, cached_at: float, site_timestamps: dict | None = None, last_requested_at: dict | None = None) -> None:
+def _save_forecast_cache(data: dict, cached_at: float, site_timestamps: dict | None = None, last_requested_at: dict | None = None, generated_at: float | None = None) -> None:
     """Atomically persist forecast cache to disk."""
     try:
         payload = {
             "cached_at": cached_at,
+            "generated_at": generated_at if generated_at is not None else cached_at,
             "data": {slug: list(records) for slug, records in data.items()},
             "site_timestamps": site_timestamps or {},
             "last_requested_at": last_requested_at or {},
@@ -340,6 +347,7 @@ def _download_forecast_cache_bg() -> None:
         payload = resp.json()
 
         cached_at = float(payload.get("cached_at", 0))
+        generated_at = float(payload.get("generated_at", cached_at))
         raw = payload.get("data", {})
         data = {slug: [tuple(x) for x in records] for slug, records in raw.items()}
         site_timestamps = {slug: float(t) for slug, t in payload.get("site_timestamps", {}).items()}
@@ -350,9 +358,10 @@ def _download_forecast_cache_bg() -> None:
             _forecast_state["site_timestamps"] = site_timestamps
             _forecast_state["last_requested_at"] = last_requested_at
             _forecast_state["cached_at"] = cached_at
-        _save_forecast_cache(data, cached_at, site_timestamps, last_requested_at)
+            _forecast_state["generated_at"] = generated_at
+        _save_forecast_cache(data, cached_at, site_timestamps, last_requested_at, generated_at)
         logger.info(
-            "Downloaded forecast cache from GitHub: %d sites, age %.1fh.",
+            "Loaded forecast cache: %d sites, age %.1fh.",
             len(data), (time.time() - cached_at) / 3600,
         )
     except Exception as exc:
@@ -366,9 +375,10 @@ def _save_forecast_cache_async() -> None:
         ts_snap = dict(_forecast_state["site_timestamps"])
         lra_snap = dict(_forecast_state["last_requested_at"])
         cached_at = _forecast_state["cached_at"]
+        generated_at = _forecast_state["generated_at"]
     threading.Thread(
         target=_save_forecast_cache,
-        args=(data_snap, cached_at, ts_snap, lra_snap),
+        args=(data_snap, cached_at, ts_snap, lra_snap, generated_at),
         daemon=True,
         name="forecast-save",
     ).start()
@@ -687,7 +697,9 @@ def api_status():
     with _forecast_state["lock"]:
         forecast_sites = len(_forecast_state["data"])
         forecast_cached_at = _forecast_state["cached_at"]
+        forecast_generated_at = _forecast_state["generated_at"]
         forecast_refreshing = _forecast_state["refreshing"]
+    forecast_cache_age = round(time.time() - forecast_cached_at, 1) if forecast_cached_at > 0 else None
     return jsonify(
         {
             "sites_loaded": sites_loaded,
@@ -696,11 +708,16 @@ def api_status():
             "scrape_started_at": scrape_started_at,
             "scraped_at": scraped_at,
             "next_refresh_at": next_refresh_at,
-            "forecast_cached_at": forecast_cached_at,
+            "cache_only_forecasts": CACHE_ONLY_FORECASTS,
+            "forecast_cache_loaded": forecast_sites > 0,
             "forecast_sites": forecast_sites,
+            "forecast_cached_at": forecast_cached_at,
+            "forecast_generated_at": forecast_generated_at,
+            "forecast_cache_age_seconds": forecast_cache_age,
             "forecast_refreshing": forecast_refreshing,
-            "rate_limit_active": rl["active"],
+            "openmeteo_rate_limit_active": rl["active"],
             "rate_limit_retry_after_seconds": rl["retry_after_seconds"],
+            "recommendation_fetches_openmeteo": not CACHE_ONLY_FORECASTS,
         }
     )
 
@@ -852,49 +869,54 @@ def api_recommend():
         d.strftime("%Y-%m-%d"): lu.lunar_illumination(d) for d in query_dates
     }
 
-    # ---- On-demand cloud cover fetch for stale/missing nearby sites ----
-    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    fetch_end = today + timedelta(days=FORECAST_LOOKAHEAD_DAYS)
-
+    # ---- Read forecast from cache ----
     with _forecast_state["lock"]:
         hourly_data: dict = dict(_forecast_state["data"])
         site_ts: dict = dict(_forecast_state["site_timestamps"])
         forecast_cached_at = _forecast_state["cached_at"]
 
-    stale_threshold = time.time() - weather.FORECAST_CACHE_TTL_SECONDS
-    sites_to_fetch = [
-        s for s in nearby
-        if s["slug"] not in hourly_data or site_ts.get(s["slug"], 0) < stale_threshold
-    ]
-    # Sort by distance so that the nearest sites (most likely to be top recommendations)
-    # are fetched first when we hit the per-request cap.
-    sites_to_fetch.sort(key=lambda s: rec.haversine_km(origin_lat, origin_lon, s["latitude"], s["longitude"]))
-    if len(sites_to_fetch) > INLINE_FETCH_MAX_SITES:
-        logger.info(
-            "Forecast: %d/%d nearby stale/missing — capping inline fetch at %d.",
-            len(sites_to_fetch), len(nearby), INLINE_FETCH_MAX_SITES,
-        )
-        sites_to_fetch = sites_to_fetch[:INLINE_FETCH_MAX_SITES]
-
-    if sites_to_fetch:
-        logger.info(
-            "Forecast: fetching %d site(s) on-demand (out of %d nearby, query=%s).",
-            len(sites_to_fetch), len(nearby), query_dates[0].strftime("%Y-%m-%d"),
-        )
-        new_data = weather.get_cloud_cover_forecast(sites_to_fetch, today, fetch_end)
-        if new_data:
-            now = time.time()
-            with _forecast_state["lock"]:
-                _forecast_state["data"].update(new_data)
-                for slug in new_data:
-                    _forecast_state["site_timestamps"][slug] = now
-                _forecast_state["cached_at"] = now
-            hourly_data.update(new_data)
+    if CACHE_ONLY_FORECASTS:
+        sites_missing_forecast = [s for s in nearby if s["slug"] not in hourly_data]
+        if sites_missing_forecast:
+            logger.info(
+                "Cache-only mode: %d/%d nearby sites missing forecast data; not fetching Open-Meteo during user request.",
+                len(sites_missing_forecast), len(nearby),
+            )
     else:
-        logger.info(
-            "Forecast: all %d nearby sites fresh in cache (query=%s).",
-            len(nearby), query_dates[0].strftime("%Y-%m-%d"),
-        )
+        # On-demand fetch — local dev only (CACHE_ONLY_FORECASTS=false)
+        today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        fetch_end = today + timedelta(days=FORECAST_LOOKAHEAD_DAYS)
+        stale_threshold = time.time() - weather.FORECAST_CACHE_TTL_SECONDS
+        sites_to_fetch = [
+            s for s in nearby
+            if s["slug"] not in hourly_data or site_ts.get(s["slug"], 0) < stale_threshold
+        ]
+        sites_to_fetch.sort(key=lambda s: rec.haversine_km(origin_lat, origin_lon, s["latitude"], s["longitude"]))
+        if len(sites_to_fetch) > INLINE_FETCH_MAX_SITES:
+            logger.info(
+                "Forecast: %d/%d nearby stale/missing — capping inline fetch at %d.",
+                len(sites_to_fetch), len(nearby), INLINE_FETCH_MAX_SITES,
+            )
+            sites_to_fetch = sites_to_fetch[:INLINE_FETCH_MAX_SITES]
+        if sites_to_fetch:
+            logger.info(
+                "Forecast: fetching %d site(s) on-demand (out of %d nearby, query=%s).",
+                len(sites_to_fetch), len(nearby), query_dates[0].strftime("%Y-%m-%d"),
+            )
+            new_data = weather.get_cloud_cover_forecast(sites_to_fetch, today, fetch_end)
+            if new_data:
+                now = time.time()
+                with _forecast_state["lock"]:
+                    _forecast_state["data"].update(new_data)
+                    for slug in new_data:
+                        _forecast_state["site_timestamps"][slug] = now
+                    _forecast_state["cached_at"] = now
+                hourly_data.update(new_data)
+        else:
+            logger.info(
+                "Forecast: all %d nearby sites fresh in cache (query=%s).",
+                len(nearby), query_dates[0].strftime("%Y-%m-%d"),
+            )
 
     # Record that every site in this search was just requested
     now = time.time()

@@ -27,11 +27,33 @@ jobs:
       - name: Fetch forecast data
         run: python scripts/fetch_forecast.py
 
+      - name: Validate forecast_cache.json
+        run: |
+          python3 - <<'EOF'
+          import json, sys
+          try:
+              with open("forecast_cache.json") as f:
+                  d = json.load(f)
+          except (FileNotFoundError, json.JSONDecodeError) as e:
+              print(f"FAIL: forecast_cache.json missing or invalid JSON: {e}")
+              sys.exit(1)
+          data = d.get("data", {})
+          site_count = d.get("site_count", len(data))
+          if not data or len(data) == 0:
+              print("FAIL: forecast_cache.json has no data entries — refusing upload.")
+              sys.exit(1)
+          if site_count == 0:
+              print("FAIL: forecast_cache.json has site_count=0 — refusing upload.")
+              sys.exit(1)
+          print(f"OK: {len(data)} sites, site_count={site_count}, source={d.get('source','unknown')}")
+          EOF
+
       - name: Upload to GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Delete old release + tag so we can recreate with the same name
+          # Delete old release + tag so we can recreate with the same name.
+          # Validation step above guarantees the file is valid before we get here.
           gh release delete forecast-latest --cleanup-tag --yes 2>/dev/null || true
           gh release create forecast-latest forecast_cache.json \
             --title "Forecast Cache $(date -u +'%Y-%m-%d')" \
