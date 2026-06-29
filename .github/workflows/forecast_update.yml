@@ -2,7 +2,7 @@ name: Update Forecast Cache
 
 on:
   schedule:
-    - cron: '0 2 * * *'   # 2 AM UTC daily
+    - cron: '0 */3 * * *'   # every 3 hours
   workflow_dispatch:        # allow manual trigger
 
 permissions:
@@ -22,7 +22,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install dependencies
-        run: pip install requests
+        run: pip install -r requirements.txt
 
       - name: Fetch forecast data
         run: python scripts/fetch_forecast.py
