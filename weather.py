@@ -6,8 +6,10 @@ Requests are batched conservatively and cached per site/date range to avoid
 hammering the API when users repeat similar searches.
 """
 
+import concurrent.futures
 import json
 import logging
+import netrc  # pre-import: prevents import-lock contention when threads first call requests.get
 import threading
 import time
 from datetime import datetime, timedelta
@@ -28,6 +30,11 @@ _RATE_LIMIT_STATE_FILE = "rate_limit_state.json"
 _forecast_cache: dict[tuple[str, str, str], tuple[float, list[tuple[str, int]]]] = {}
 _rate_limit_lock = threading.Lock()
 _rate_limited_until = 0.0
+
+# Thread pool for Open-Meteo HTTP calls; bounds DNS/pre-connect hangs that socket timeout cannot.
+_weather_http_executor = concurrent.futures.ThreadPoolExecutor(
+    max_workers=4, thread_name_prefix="weather-http"
+)
 
 
 class ForecastRateLimitError(Exception):
@@ -125,7 +132,13 @@ def _request_forecast(params: dict) -> dict | list | None:
 
     for attempt in range(2):
         try:
-            resp = requests.get(OPEN_METEO_URL, params=params, timeout=REQUEST_TIMEOUT_SECONDS)
+            try:
+                resp = _weather_http_executor.submit(
+                    requests.get, OPEN_METEO_URL, params=params, timeout=REQUEST_TIMEOUT_SECONDS
+                ).result(timeout=REQUEST_TIMEOUT_SECONDS + 2)
+            except concurrent.futures.TimeoutError:
+                logger.warning("Open-Meteo HTTP wall-clock deadline exceeded (DNS/pre-connect hang)")
+                return None
             resp.raise_for_status()
             return resp.json()
         except requests.HTTPError as exc:
