@@ -6,6 +6,7 @@ Requests are batched conservatively and cached per site/date range to avoid
 hammering the API when users repeat similar searches.
 """
 
+import json
 import logging
 import threading
 import time
@@ -22,6 +23,7 @@ FORECAST_CACHE_TTL_SECONDS = 45 * 60
 INTER_BATCH_DELAY_SECONDS = 0.65
 REQUEST_TIMEOUT_SECONDS = 12
 RATE_LIMIT_COOLDOWN_SECONDS = 35 * 60  # default if no Retry-After header; 35 min is conservative for shared IPs
+_RATE_LIMIT_STATE_FILE = "rate_limit_state.json"
 
 _forecast_cache: dict[tuple[str, str, str], tuple[float, list[tuple[str, int]]]] = {}
 _rate_limit_lock = threading.Lock()
@@ -36,6 +38,34 @@ def _mark_rate_limited(cooldown_seconds: float = RATE_LIMIT_COOLDOWN_SECONDS) ->
     global _rate_limited_until
     with _rate_limit_lock:
         _rate_limited_until = max(_rate_limited_until, time.time() + cooldown_seconds)
+        # Persist so a process restart doesn't forget an active rate limit
+        try:
+            with open(_RATE_LIMIT_STATE_FILE, "w") as _f:
+                json.dump({"rate_limited_until": _rate_limited_until}, _f)
+        except Exception:
+            pass
+
+
+def _load_rate_limit_state() -> None:
+    """Restore rate limit state saved by a previous process."""
+    global _rate_limited_until
+    try:
+        with open(_RATE_LIMIT_STATE_FILE) as _f:
+            saved = float(json.load(_f).get("rate_limited_until", 0))
+        if saved > time.time():
+            with _rate_limit_lock:
+                _rate_limited_until = max(_rate_limited_until, saved)
+            logger.info(
+                "Restored rate limit state from disk: %.0f min remaining.",
+                (saved - time.time()) / 60,
+            )
+    except FileNotFoundError:
+        pass
+    except Exception as exc:
+        logger.warning("Could not load rate limit state: %s", exc)
+
+
+_load_rate_limit_state()  # run once at module import
 
 
 def _is_rate_limited() -> bool:
@@ -328,7 +358,7 @@ def best_window_cloud_cover(
 # ---------------------------------------------------------------------------
 
 BACKGROUND_BATCH_SIZE = 20          # sites per Open-Meteo call
-BACKGROUND_BATCH_DELAY_SECONDS = 5.0  # pause between batches; slower rate reduces chance of 429
+BACKGROUND_BATCH_DELAY_SECONDS = 15.0  # pause between batches; ~33 min for full sweep at this rate
 BACKGROUND_CHECKPOINT_EVERY = 20    # call on_batch_complete every N successful batches
 
 
@@ -367,7 +397,10 @@ def get_full_forecast_background(
             except ForecastRateLimitError:
                 attempt += 1
                 rl = rate_limit_status()
-                wait_s = rl["retry_after_seconds"] + 60  # wait until cooldown expires + buffer
+                # Exponential backoff: each consecutive failure doubles the wait, capped at 4 hours.
+                # This ensures we give the IP enough time to clear rather than re-triggering the ban.
+                base_wait = rl["retry_after_seconds"] + 60
+                wait_s = min(base_wait * (2 ** (attempt - 1)), 4 * 3600)
                 logger.warning(
                     "Background forecast: rate limit at batch %d/%d (attempt %d) — waiting %.0f min then retrying.",
                     batch_idx + 1, total_batches, attempt, wait_s / 60,

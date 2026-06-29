@@ -289,7 +289,7 @@ def _do_forecast_refresh() -> None:
 
         logger.info(
             "Background forecast refresh: %d sites to fetch (%d already fresh, %d total) — %s → %s.",
-            len(sites_to_fetch), len(existing_data) - (len(existing_data) - len(sites_to_fetch)),
+            len(sites_to_fetch), len(sites) - len(sites_to_fetch),
             len(sites), today.date(), end_date.date(),
         )
 
