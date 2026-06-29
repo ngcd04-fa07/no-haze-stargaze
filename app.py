@@ -45,8 +45,12 @@ app = Flask(__name__)
 # Forecast background cache
 # ---------------------------------------------------------------------------
 FORECAST_CACHE_FILE = "forecast_cache.json"
-FORECAST_REFRESH_INTERVAL_SECONDS = 3600   # 1 hour
+FORECAST_REFRESH_INTERVAL_SECONDS = 12 * 3600  # 12 h; GitHub Actions refreshes daily
 FORECAST_LOOKAHEAD_DAYS = 14
+FORECAST_REMOTE_URL = (
+    "https://github.com/ngcd04-fa07/no-haze-stargaze/releases/download/"
+    "forecast-latest/forecast_cache.json"
+)
 
 _forecast_state = {
     "data": {},              # slug -> [(time_str, cloud_pct), ...]
@@ -252,6 +256,49 @@ def _save_forecast_cache(data: dict, cached_at: float, site_timestamps: dict | N
         logger.error("Failed to save forecast cache: %s", exc)
 
 
+def _download_forecast_cache_bg() -> None:
+    """Download forecast cache from the GitHub Release on startup.
+
+    Runs in a daemon thread so it never blocks gunicorn.  If the local cache is
+    already fresh enough (< FORECAST_REFRESH_INTERVAL_SECONDS old) the download
+    is skipped.  Any failure is logged and ignored — the background sweep will
+    fill in data eventually.
+    """
+    try:
+        with _forecast_state["lock"]:
+            cached_at = _forecast_state["cached_at"]
+            data_count = len(_forecast_state["data"])
+
+        if data_count > 0 and time.time() - cached_at < FORECAST_REFRESH_INTERVAL_SECONDS:
+            logger.info(
+                "Local forecast cache is fresh (%d sites, %.1fh old); skipping remote download.",
+                data_count, (time.time() - cached_at) / 3600,
+            )
+            return
+
+        logger.info("Downloading forecast cache from GitHub Releases…")
+        resp = requests.get(FORECAST_REMOTE_URL, timeout=120, allow_redirects=True)
+        resp.raise_for_status()
+        payload = resp.json()
+
+        cached_at = float(payload.get("cached_at", 0))
+        raw = payload.get("data", {})
+        data = {slug: [tuple(x) for x in records] for slug, records in raw.items()}
+        site_timestamps = {slug: float(t) for slug, t in payload.get("site_timestamps", {}).items()}
+
+        with _forecast_state["lock"]:
+            _forecast_state["data"] = data
+            _forecast_state["site_timestamps"] = site_timestamps
+            _forecast_state["cached_at"] = cached_at
+        _save_forecast_cache(data, cached_at, site_timestamps)
+        logger.info(
+            "Downloaded forecast cache from GitHub: %d sites, age %.1fh.",
+            len(data), (time.time() - cached_at) / 3600,
+        )
+    except Exception as exc:
+        logger.warning("Could not download forecast cache from GitHub: %s", exc)
+
+
 def _do_forecast_refresh() -> None:
     """Fetch fresh cloud-cover forecasts for every known site (background use only).
 
@@ -353,8 +400,9 @@ def _forecast_cache_manager() -> None:
     - Once all sites are cached, wait FORECAST_REFRESH_INTERVAL_SECONDS before
       clearing and triggering a full re-fetch for fresh data.
     """
-    # Short startup delay so the server is fully ready before the first network fetch.
-    time.sleep(15)
+    # Short startup delay so the server is fully ready and the download thread
+    # has time to complete before the first refresh check.
+    time.sleep(60)
     while True:
         try:
             rl = weather.rate_limit_status()
@@ -477,6 +525,8 @@ threading.Thread(target=_weekly_cache_manager, daemon=True, name="weekly-cache")
 
 # Load any persisted forecast data, then start the background refresh loop.
 _load_forecast_cache()
+# Download fresh data from GitHub Releases in the background (non-blocking).
+threading.Thread(target=_download_forecast_cache_bg, daemon=True, name="forecast-download").start()
 threading.Thread(target=_forecast_cache_manager, daemon=True, name="forecast-cache").start()
 threading.Thread(target=_keep_alive, daemon=True, name="keep-alive").start()
 

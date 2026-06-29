@@ -1,0 +1,39 @@
+name: Update Forecast Cache
+
+on:
+  schedule:
+    - cron: '0 2 * * *'   # 2 AM UTC daily
+  workflow_dispatch:        # allow manual trigger
+
+permissions:
+  contents: write           # needed to create/update GitHub Releases
+
+jobs:
+  update-forecast:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Fetch forecast data
+        run: python scripts/fetch_forecast.py
+
+      - name: Upload to GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Delete old release + tag so we can recreate with the same name
+          gh release delete forecast-latest --cleanup-tag --yes 2>/dev/null || true
+          gh release create forecast-latest forecast_cache.json \
+            --title "Forecast Cache $(date -u +'%Y-%m-%d')" \
+            --notes "Auto-updated $(date -u +'%Y-%m-%d %H:%M UTC') by GitHub Actions" \
+            --latest=false
