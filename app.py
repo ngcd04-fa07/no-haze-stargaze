@@ -14,6 +14,7 @@ Endpoints:
   POST /api/refresh       — trigger a fresh scrape (invalidates cache)
 """
 
+import concurrent.futures
 import json
 import logging
 import math
@@ -262,6 +263,25 @@ def _save_forecast_cache(data: dict, cached_at: float, site_timestamps: dict | N
         logger.error("Failed to save forecast cache: %s", exc)
 
 
+# Thread pool for app-level HTTP calls that may hang on DNS/pre-connect.
+_app_http_executor = concurrent.futures.ThreadPoolExecutor(
+    max_workers=2, thread_name_prefix="app-http"
+)
+
+_DOWNLOAD_TIMEOUT = 30  # seconds; 12 MB should arrive well within this
+
+
+def _http_get_with_deadline(url: str, timeout: float, **kwargs):
+    """requests.get in a thread; return None if wall-clock exceeds timeout+2s."""
+    try:
+        return _app_http_executor.submit(
+            requests.get, url, timeout=timeout, **kwargs
+        ).result(timeout=timeout + 2)
+    except concurrent.futures.TimeoutError:
+        logger.warning("HTTP wall-clock deadline exceeded (DNS/pre-connect hang): %s", url)
+        return None
+
+
 def _download_forecast_cache_bg() -> None:
     """Download forecast cache from the GitHub Release on startup.
 
@@ -283,7 +303,15 @@ def _download_forecast_cache_bg() -> None:
             return
 
         logger.info("Downloading forecast cache from GitHub Releases…")
-        resp = requests.get(FORECAST_REMOTE_URL, timeout=120, allow_redirects=True)
+        resp = _http_get_with_deadline(
+            FORECAST_REMOTE_URL, timeout=_DOWNLOAD_TIMEOUT, allow_redirects=True
+        )
+        if resp is None:
+            logger.warning(
+                "Forecast cache download timed out (DNS/connection hang); "
+                "will fall back to on-demand fetches."
+            )
+            return
         resp.raise_for_status()
         payload = resp.json()
 
