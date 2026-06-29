@@ -269,7 +269,23 @@ def _do_forecast_refresh() -> None:
             len(sites), today.date(), end_date.date(),
         )
 
-        new_data = weather.get_full_forecast_background(sites, today, end_date)
+        # Incremental save: update in-memory state + disk at every checkpoint
+        def _save_partial(partial_data: dict) -> None:
+            if not partial_data:
+                return
+            now = time.time()
+            with _forecast_state["lock"]:
+                _forecast_state["data"] = partial_data
+                _forecast_state["cached_at"] = now
+            _save_forecast_cache(partial_data, now)
+            logger.info(
+                "Forecast cache checkpoint: %d/%d sites saved.",
+                len(partial_data), len(sites),
+            )
+
+        new_data = weather.get_full_forecast_background(
+            sites, today, end_date, on_batch_complete=_save_partial
+        )
 
         if new_data:
             cached_at = time.time()
@@ -295,22 +311,26 @@ def _forecast_cache_manager() -> None:
     # Short startup delay so the server is fully ready before the first network fetch.
     time.sleep(15)
     while True:
-        rl = weather.rate_limit_status()
-        if rl["active"]:
-            # Don't start a new refresh while rate-limited; sleep until the window clears.
-            sleep_for = rl["retry_after_seconds"] + 60
-            logger.info(
-                "Forecast refresh deferred: rate limit clears in %.0fs.",
-                rl["retry_after_seconds"],
-            )
-            time.sleep(sleep_for)
-            continue
+        try:
+            rl = weather.rate_limit_status()
+            if rl["active"]:
+                # Don't start a new refresh while rate-limited; sleep until the window clears.
+                sleep_for = rl["retry_after_seconds"] + 60
+                logger.info(
+                    "Forecast refresh deferred: rate limit clears in %.0fs.",
+                    rl["retry_after_seconds"],
+                )
+                time.sleep(sleep_for)
+                continue
 
-        with _forecast_state["lock"]:
-            cached_at = _forecast_state["cached_at"]
-        if time.time() - cached_at >= FORECAST_REFRESH_INTERVAL_SECONDS:
-            _do_forecast_refresh()
-        time.sleep(_FORECAST_CHECK_INTERVAL)
+            with _forecast_state["lock"]:
+                cached_at = _forecast_state["cached_at"]
+            if time.time() - cached_at >= FORECAST_REFRESH_INTERVAL_SECONDS:
+                _do_forecast_refresh()
+            time.sleep(_FORECAST_CHECK_INTERVAL)
+        except Exception as exc:
+            logger.exception("Forecast cache manager error (will retry in 60s): %s", exc)
+            time.sleep(60)
 
 
 def _normalize_angle(angle: float) -> float:

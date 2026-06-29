@@ -320,44 +320,56 @@ def best_window_cloud_cover(
 # ---------------------------------------------------------------------------
 
 BACKGROUND_BATCH_SIZE = 20          # sites per Open-Meteo call
-BACKGROUND_BATCH_DELAY_SECONDS = 3.0  # pause between batches
-BACKGROUND_RATE_LIMIT_PAUSE_SECONDS = 10 * 60  # 10-min back-off on 429
+BACKGROUND_BATCH_DELAY_SECONDS = 8.0  # pause between batches (8 s → ~18 min for 132 batches)
+BACKGROUND_CHECKPOINT_EVERY = 20    # call on_batch_complete every N successful batches
 
 
 def get_full_forecast_background(
     sites: list[dict],
     start_date: datetime,
     end_date: datetime,
+    on_batch_complete: "Optional[callable]" = None,
 ) -> dict[str, list[tuple[str, int]]]:
     """
     Fetch forecasts for ALL sites using conservative rate limits.
     Designed for background use only — no Gunicorn timeout pressure.
-    On 429: waits 10 minutes then retries once before moving on.
+
+    Never aborts on 429: waits for the full cooldown window then retries the
+    same batch indefinitely until it succeeds.  This is intentional — on a
+    shared outbound IP (e.g. Render) the rate-limit window is time-bounded and
+    will eventually clear.
+
+    on_batch_complete(partial_results) is called every BACKGROUND_CHECKPOINT_EVERY
+    successful batches so callers can persist incremental progress.
     """
     all_results: dict[str, list[tuple[str, int]]] = {}
+    total_batches = -(-len(sites) // BACKGROUND_BATCH_SIZE)
+    successful_batches = 0
 
-    for i in range(0, len(sites), BACKGROUND_BATCH_SIZE):
+    for batch_idx, i in enumerate(range(0, len(sites), BACKGROUND_BATCH_SIZE)):
         batch = sites[i: i + BACKGROUND_BATCH_SIZE]
-        try:
-            batch_results = _fetch_batch(batch, start_date, end_date)
-            all_results.update(batch_results)
-        except ForecastRateLimitError:
-            # Wait until the rate-limit cooldown actually expires, plus a buffer.
-            rl = rate_limit_status()
-            wait_s = max(rl["retry_after_seconds"] + 60, BACKGROUND_RATE_LIMIT_PAUSE_SECONDS)
-            logger.warning(
-                "Background forecast: rate limit at batch %d/%d — pausing %.0f min.",
-                i // BACKGROUND_BATCH_SIZE + 1,
-                -(-len(sites) // BACKGROUND_BATCH_SIZE),
-                wait_s / 60,
-            )
-            time.sleep(wait_s)
+        attempt = 0
+
+        while True:  # retry this batch until it succeeds
             try:
                 batch_results = _fetch_batch(batch, start_date, end_date)
                 all_results.update(batch_results)
-            except ForecastRateLimitError:
-                logger.error("Background forecast: still rate limited after full cooldown; aborting.")
+                successful_batches += 1
                 break
+            except ForecastRateLimitError:
+                attempt += 1
+                rl = rate_limit_status()
+                wait_s = rl["retry_after_seconds"] + 60  # wait until cooldown expires + buffer
+                logger.warning(
+                    "Background forecast: rate limit at batch %d/%d (attempt %d) — waiting %.0f min then retrying.",
+                    batch_idx + 1, total_batches, attempt, wait_s / 60,
+                )
+                time.sleep(wait_s)
+                # loop back and retry the same batch — never abort
+
+        # Incremental checkpoint
+        if on_batch_complete is not None and successful_batches % BACKGROUND_CHECKPOINT_EVERY == 0:
+            on_batch_complete(dict(all_results))
 
         if i + BACKGROUND_BATCH_SIZE < len(sites):
             time.sleep(BACKGROUND_BATCH_DELAY_SECONDS)
