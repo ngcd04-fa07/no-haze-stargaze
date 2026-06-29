@@ -17,6 +17,8 @@ from typing import Optional
 
 import requests
 
+from config import DATA_DIR
+
 logger = logging.getLogger(__name__)
 
 OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
@@ -25,7 +27,7 @@ FORECAST_CACHE_TTL_SECONDS = 3 * 3600   # 3 h; GH Actions refreshes every 45 min
 INTER_BATCH_DELAY_SECONDS = 1.0         # short delay for on-demand inline fetches; background uses BACKGROUND_BATCH_DELAY_SECONDS
 REQUEST_TIMEOUT_SECONDS = 30
 RATE_LIMIT_COOLDOWN_SECONDS = 35 * 60  # default if no Retry-After header; 35 min is conservative for shared IPs
-_RATE_LIMIT_STATE_FILE = "rate_limit_state.json"
+_RATE_LIMIT_STATE_FILE = str(DATA_DIR / "rate_limit_state.json")
 
 _forecast_cache: dict[tuple[str, str, str], tuple[float, list[tuple[str, int]]]] = {}
 _rate_limit_lock = threading.Lock()

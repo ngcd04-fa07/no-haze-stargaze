@@ -1,4 +1,8 @@
-name: Update Forecast Cache
+# LEGACY — Render deployment only.
+# This workflow is NOT used for the Windows self-hosted deployment.
+# For Windows: use scripts/refresh_forecasts_local.py via Task Scheduler instead.
+# See deploy/windows/README.md for the current production setup.
+name: Update Forecast Cache (Render/Legacy)
 
 on:
   schedule:

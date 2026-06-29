@@ -27,6 +27,7 @@ from zoneinfo import ZoneInfo
 import requests
 from flask import Flask, jsonify, render_template, request
 
+from config import DATA_DIR
 import geocoder as geo
 import amenities as am
 import lunar as lu
@@ -45,7 +46,7 @@ app = Flask(__name__)
 # ---------------------------------------------------------------------------
 # Forecast background cache
 # ---------------------------------------------------------------------------
-FORECAST_CACHE_FILE = "forecast_cache.json"
+FORECAST_CACHE_FILE = str(DATA_DIR / "forecast_cache.json")
 FORECAST_REFRESH_INTERVAL_SECONDS = 12 * 3600  # 12 h; kept for reference only (sweep disabled)
 FORECAST_LOOKAHEAD_DAYS = 14
 INLINE_FETCH_MAX_SITES = 60          # cap on sites fetched inline per request
@@ -54,9 +55,13 @@ FORECAST_REMOTE_URL = (
     "https://github.com/ngcd04-fa07/no-haze-stargaze/releases/download/"
     "forecast-latest/forecast_cache.json"
 )
-# When True (default in production), /api/recommend never calls Open-Meteo.
-# Set CACHE_ONLY_FORECASTS=false only for local development.
+# When True (default), /api/recommend never calls Open-Meteo. Always true in production.
 CACHE_ONLY_FORECASTS = os.getenv("CACHE_ONLY_FORECASTS", "true").lower() == "true"
+# Download forecast from GitHub Releases on startup — only for Render deployment.
+# Windows self-hosted: leave as false; forecasts are managed by the local refresh script.
+FORECAST_CACHE_REMOTE_ENABLED = os.getenv("FORECAST_CACHE_REMOTE_ENABLED", "false").lower() == "true"
+# Deployment mode label surfaced in /api/status.
+DEPLOYMENT_MODE = os.getenv("DEPLOYMENT_MODE", "local")
 
 _forecast_state = {
     "data": {},              # slug -> [(time_str, cloud_pct), ...]
@@ -628,10 +633,15 @@ def _warmup_dns() -> None:
 
 threading.Thread(target=_warmup_dns, daemon=True, name="dns-warmup").start()
 
-# Load any persisted forecast data, then start the background refresh loop.
+# Load any persisted forecast data from local disk.
 _load_forecast_cache()
-# Download fresh data from GitHub Releases in the background (non-blocking).
-threading.Thread(target=_download_forecast_cache_bg, daemon=True, name="forecast-download").start()
+# Download from GitHub Releases only when explicitly enabled (Render deployment).
+# Windows self-hosted: FORECAST_CACHE_REMOTE_ENABLED=false (default); the local
+# refresh script (scripts/refresh_forecasts_local.py) manages forecast_cache.json.
+if FORECAST_CACHE_REMOTE_ENABLED:
+    threading.Thread(target=_download_forecast_cache_bg, daemon=True, name="forecast-download").start()
+else:
+    logger.info("Remote forecast download disabled — reading local forecast_cache.json only.")
 # Full-sweep manager only starts when the flag is enabled.
 if _BACKGROUND_SWEEP_ENABLED:
     threading.Thread(target=_forecast_cache_manager, daemon=True, name="forecast-cache").start()
@@ -702,6 +712,8 @@ def api_status():
     forecast_cache_age = round(time.time() - forecast_cached_at, 1) if forecast_cached_at > 0 else None
     return jsonify(
         {
+            "deployment_mode": DEPLOYMENT_MODE,
+            "data_dir": str(DATA_DIR),
             "sites_loaded": sites_loaded,
             "scraping": scraping,
             "progress": progress,
@@ -709,15 +721,15 @@ def api_status():
             "scraped_at": scraped_at,
             "next_refresh_at": next_refresh_at,
             "cache_only_forecasts": CACHE_ONLY_FORECASTS,
+            "recommendation_fetches_openmeteo": not CACHE_ONLY_FORECASTS,
             "forecast_cache_loaded": forecast_sites > 0,
             "forecast_sites": forecast_sites,
             "forecast_cached_at": forecast_cached_at,
             "forecast_generated_at": forecast_generated_at,
             "forecast_cache_age_seconds": forecast_cache_age,
             "forecast_refreshing": forecast_refreshing,
-            "openmeteo_rate_limit_active": rl["active"],
+            "rate_limit_active": rl["active"],
             "rate_limit_retry_after_seconds": rl["retry_after_seconds"],
-            "recommendation_fetches_openmeteo": not CACHE_ONLY_FORECASTS,
         }
     )
 

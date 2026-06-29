@@ -20,10 +20,12 @@ from pathlib import Path
 import requests
 from bs4 import BeautifulSoup
 
+from config import DATA_DIR
+
 logger = logging.getLogger(__name__)
 
 BASE_URL = "https://gostargazing.co.uk"
-CACHE_FILE = Path(__file__).parent / "sites_cache.json"
+CACHE_FILE = DATA_DIR / "sites_cache.json"
 CACHE_MAX_AGE_HOURS = 168  # 1 week
 CACHE_MAX_AGE_SECONDS = CACHE_MAX_AGE_HOURS * 3600
 
