@@ -264,31 +264,38 @@ def _save_forecast_cache(data: dict, cached_at: float, site_timestamps: dict | N
 
 
 # Thread pool for app-level HTTP calls that may hang on DNS/pre-connect.
+# max_workers=4 so retried download attempts don't starve on stuck threads.
 _app_http_executor = concurrent.futures.ThreadPoolExecutor(
-    max_workers=2, thread_name_prefix="app-http"
+    max_workers=4, thread_name_prefix="app-http"
 )
 
-_DOWNLOAD_TIMEOUT = 30  # seconds; 12 MB should arrive well within this
+_DOWNLOAD_TIMEOUT = 30          # socket I/O timeout (read/write after connect)
+_DOWNLOAD_WALL_DEADLINE = 120   # wall-clock limit covering DNS + connect + download
+_DOWNLOAD_MAX_RETRIES = 3
+_DOWNLOAD_RETRY_DELAY = 15      # seconds between retries
 
 
-def _http_get_with_deadline(url: str, timeout: float, **kwargs):
-    """requests.get in a thread; return None if wall-clock exceeds timeout+2s."""
+def _http_get_with_deadline(url: str, timeout: float, wall_deadline: float | None = None, **kwargs):
+    """Run requests.get in a thread; return None on wall-clock timeout or request error."""
+    deadline = wall_deadline if wall_deadline is not None else timeout + 2
     try:
         return _app_http_executor.submit(
             requests.get, url, timeout=timeout, **kwargs
-        ).result(timeout=timeout + 2)
+        ).result(timeout=deadline)
     except concurrent.futures.TimeoutError:
-        logger.warning("HTTP wall-clock deadline exceeded (DNS/pre-connect hang): %s", url)
+        logger.warning("HTTP wall-clock deadline exceeded (%.0fs DNS/pre-connect hang): %s", deadline, url)
+        return None
+    except requests.RequestException as exc:
+        logger.warning("HTTP request error for %s: %s", url, exc)
         return None
 
 
 def _download_forecast_cache_bg() -> None:
     """Download forecast cache from the GitHub Release on startup.
 
-    Runs in a daemon thread so it never blocks gunicorn.  If the local cache is
-    already fresh enough (< FORECAST_REFRESH_INTERVAL_SECONDS old) the download
-    is skipped.  Any failure is logged and ignored — the background sweep will
-    fill in data eventually.
+    Runs in a daemon thread so it never blocks gunicorn.  Retries up to
+    _DOWNLOAD_MAX_RETRIES times with _DOWNLOAD_RETRY_DELAY between attempts to
+    survive transient DNS stalls on Render's shared IPs.
     """
     try:
         with _forecast_state["lock"]:
@@ -303,15 +310,32 @@ def _download_forecast_cache_bg() -> None:
             return
 
         logger.info("Downloading forecast cache from GitHub Releases…")
-        resp = _http_get_with_deadline(
-            FORECAST_REMOTE_URL, timeout=_DOWNLOAD_TIMEOUT, allow_redirects=True
-        )
+        resp = None
+        for attempt in range(1, _DOWNLOAD_MAX_RETRIES + 1):
+            if attempt > 1:
+                logger.info(
+                    "Forecast download: retry %d/%d in %ds…",
+                    attempt, _DOWNLOAD_MAX_RETRIES, _DOWNLOAD_RETRY_DELAY,
+                )
+                time.sleep(_DOWNLOAD_RETRY_DELAY)
+            resp = _http_get_with_deadline(
+                FORECAST_REMOTE_URL, timeout=_DOWNLOAD_TIMEOUT,
+                wall_deadline=_DOWNLOAD_WALL_DEADLINE, allow_redirects=True,
+            )
+            if resp is not None:
+                break
+            logger.warning(
+                "Forecast download attempt %d/%d failed (DNS stall or connection error)",
+                attempt, _DOWNLOAD_MAX_RETRIES,
+            )
+
         if resp is None:
             logger.warning(
-                "Forecast cache download timed out (DNS/connection hang); "
-                "will fall back to on-demand fetches."
+                "All %d forecast download attempts failed; will rely on on-demand fetches.",
+                _DOWNLOAD_MAX_RETRIES,
             )
             return
+
         resp.raise_for_status()
         payload = resp.json()
 
@@ -635,19 +659,33 @@ def index():
 
 @app.route("/api/status")
 def api_status():
+    rl = weather.rate_limit_status()
     with _state["lock"]:
-        return jsonify(
-            {
-                "sites_loaded": len(_state["sites"]),
-                "scraping": _state["scraping"],
-                "progress": _state["scrape_progress"],
-                "scrape_started_at": _state["scrape_started_at"],
-                "scraped_at": _state["scraped_at"],
-                "next_refresh_at": _state["next_refresh_at"],
-                "forecast_cached_at": _forecast_state["cached_at"],
-                "forecast_refreshing": _forecast_state["refreshing"],
-            }
-        )
+        sites_loaded = len(_state["sites"])
+        scraping = _state["scraping"]
+        progress = _state["scrape_progress"]
+        scrape_started_at = _state["scrape_started_at"]
+        scraped_at = _state["scraped_at"]
+        next_refresh_at = _state["next_refresh_at"]
+    with _forecast_state["lock"]:
+        forecast_sites = len(_forecast_state["data"])
+        forecast_cached_at = _forecast_state["cached_at"]
+        forecast_refreshing = _forecast_state["refreshing"]
+    return jsonify(
+        {
+            "sites_loaded": sites_loaded,
+            "scraping": scraping,
+            "progress": progress,
+            "scrape_started_at": scrape_started_at,
+            "scraped_at": scraped_at,
+            "next_refresh_at": next_refresh_at,
+            "forecast_cached_at": forecast_cached_at,
+            "forecast_sites": forecast_sites,
+            "forecast_refreshing": forecast_refreshing,
+            "rate_limit_active": rl["active"],
+            "rate_limit_retry_after_seconds": rl["retry_after_seconds"],
+        }
+    )
 
 
 @app.route("/api/sunrise_sunset", methods=["POST"])
