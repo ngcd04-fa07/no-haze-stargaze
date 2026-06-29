@@ -21,7 +21,7 @@ OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 BATCH_SIZE = 12
 FORECAST_CACHE_TTL_SECONDS = 45 * 60
 INTER_BATCH_DELAY_SECONDS = 300.65
-REQUEST_TIMEOUT_SECONDS = 12
+REQUEST_TIMEOUT_SECONDS = 30
 RATE_LIMIT_COOLDOWN_SECONDS = 35 * 60  # default if no Retry-After header; 35 min is conservative for shared IPs
 _RATE_LIMIT_STATE_FILE = "rate_limit_state.json"
 
