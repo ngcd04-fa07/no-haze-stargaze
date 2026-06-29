@@ -4,6 +4,10 @@ geocoder.py — Convert a user-supplied location string to lat/lng.
 Strategy:
   1. If it looks like a UK postcode → postcodes.io (fast, precise).
   2. Otherwise → Nominatim (OpenStreetMap), biased to Great Britain.
+  3. If Nominatim fails/times out AND input is a postcode → retry postcodes.io.
+
+Results are cached in-memory for the lifetime of the process (postcodes and
+place names don't change, so no TTL is needed).
 """
 
 import logging
@@ -22,12 +26,15 @@ NOMINATIM_HEADERS = {
     "User-Agent": "StargazingRecommender/1.0 (educational project)"
 }
 
+# In-memory cache: lowercased location string → (lat, lon, display_name)
+_geocode_cache: dict[str, tuple[float, float, str]] = {}
+
 
 def _geocode_postcode(postcode: str) -> Optional[tuple[float, float, str]]:
     clean = postcode.replace(" ", "").upper()
     try:
         resp = requests.get(
-            f"https://api.postcodes.io/postcodes/{clean}", timeout=10
+            f"https://api.postcodes.io/postcodes/{clean}", timeout=5
         )
         resp.raise_for_status()
         data = resp.json()
@@ -53,7 +60,7 @@ def _geocode_nominatim(place: str) -> Optional[tuple[float, float, str]]:
             "https://nominatim.openstreetmap.org/search",
             params=params,
             headers=NOMINATIM_HEADERS,
-            timeout=10,
+            timeout=5,
         )
         resp.raise_for_status()
         results = resp.json()
@@ -75,10 +82,24 @@ def geocode(location_string: str) -> Optional[tuple[float, float, str]]:
     if not loc:
         return None
 
-    if _POSTCODE_RE.match(loc):
+    cache_key = loc.lower()
+    if cache_key in _geocode_cache:
+        return _geocode_cache[cache_key]
+
+    is_postcode = bool(_POSTCODE_RE.match(loc))
+
+    if is_postcode:
         result = _geocode_postcode(loc)
         if result:
+            _geocode_cache[cache_key] = result
             return result
 
-    # Fall back to Nominatim (also used for postcodes that failed above)
-    return _geocode_nominatim(loc)
+    result = _geocode_nominatim(loc)
+
+    # Nominatim failed for a postcode-shaped input — try postcodes.io as a last resort
+    if result is None and is_postcode:
+        result = _geocode_postcode(loc)
+
+    if result is not None:
+        _geocode_cache[cache_key] = result
+    return result
