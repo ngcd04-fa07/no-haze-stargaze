@@ -8,8 +8,13 @@ Strategy:
 
 Results are cached in-memory for the lifetime of the process (postcodes and
 place names don't change, so no TTL is needed).
+
+Each HTTP call runs in a thread with a hard wall-clock deadline so that DNS
+stalls or pre-connect hangs cannot block the gunicorn worker, regardless of
+whether the OS honours the socket-level timeout kwarg.
 """
 
+import concurrent.futures
 import logging
 import re
 from typing import Optional
@@ -29,12 +34,30 @@ NOMINATIM_HEADERS = {
 # In-memory cache: lowercased location string → (lat, lon, display_name)
 _geocode_cache: dict[str, tuple[float, float, str]] = {}
 
+# socket-level timeout covers read/write after the socket is open;
+# _GEO_DEADLINE (wall-clock) also covers DNS and TCP-SYN which requests' timeout does not bound.
+_GEO_TIMEOUT = 5.0
+_GEO_DEADLINE = _GEO_TIMEOUT + 1.0
+
+_geo_executor = concurrent.futures.ThreadPoolExecutor(
+    max_workers=4, thread_name_prefix="geo"
+)
+
+
+def _with_deadline(fn, *args) -> Optional[tuple[float, float, str]]:
+    """Run fn(*args) in a background thread; return None if wall-clock exceeds _GEO_DEADLINE."""
+    try:
+        return _geo_executor.submit(fn, *args).result(timeout=_GEO_DEADLINE)
+    except concurrent.futures.TimeoutError:
+        logger.warning("Geocode wall-clock deadline exceeded (%s)", fn.__name__)
+        return None
+
 
 def _geocode_postcode(postcode: str) -> Optional[tuple[float, float, str]]:
     clean = postcode.replace(" ", "").upper()
     try:
         resp = requests.get(
-            f"https://api.postcodes.io/postcodes/{clean}", timeout=5
+            f"https://api.postcodes.io/postcodes/{clean}", timeout=_GEO_TIMEOUT
         )
         resp.raise_for_status()
         data = resp.json()
@@ -60,7 +83,7 @@ def _geocode_nominatim(place: str) -> Optional[tuple[float, float, str]]:
             "https://nominatim.openstreetmap.org/search",
             params=params,
             headers=NOMINATIM_HEADERS,
-            timeout=5,
+            timeout=_GEO_TIMEOUT,
         )
         resp.raise_for_status()
         results = resp.json()
@@ -89,16 +112,16 @@ def geocode(location_string: str) -> Optional[tuple[float, float, str]]:
     is_postcode = bool(_POSTCODE_RE.match(loc))
 
     if is_postcode:
-        result = _geocode_postcode(loc)
+        result = _with_deadline(_geocode_postcode, loc)
         if result:
             _geocode_cache[cache_key] = result
             return result
 
-    result = _geocode_nominatim(loc)
+    result = _with_deadline(_geocode_nominatim, loc)
 
     # Nominatim failed for a postcode-shaped input — try postcodes.io as a last resort
     if result is None and is_postcode:
-        result = _geocode_postcode(loc)
+        result = _with_deadline(_geocode_postcode, loc)
 
     if result is not None:
         _geocode_cache[cache_key] = result
