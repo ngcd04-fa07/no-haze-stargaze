@@ -12,13 +12,13 @@
 $FallbackLog = "$env:TEMP\nohaze_refresh_error.log"
 
 # ---------------------------------------------------------------------------
-# Resolve repo root and paths — wrapped so failures go to fallback log
+# Resolve repo root from script location
 # ---------------------------------------------------------------------------
 try {
     $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Definition }
     $RepoRoot  = (Resolve-Path (Join-Path $ScriptDir "..\..")).Path
 } catch {
-    $msg = "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') FATAL: Could not resolve repo root from '$ScriptDir': $_"
+    $msg = "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') FATAL: Could not resolve repo root: $_"
     Add-Content -Path $FallbackLog -Value $msg -Encoding UTF8
     Write-Host $msg
     exit 1
@@ -34,7 +34,7 @@ $ValidateScript = Join-Path $RepoRoot "scripts\validate_forecast_cache.py"
 $ForecastCache  = Join-Path $RepoRoot "forecast_cache.json"
 
 # ---------------------------------------------------------------------------
-# Logging helper
+# Logging helpers
 # ---------------------------------------------------------------------------
 function Write-Log {
     param([string]$Message, [string]$Level = "INFO")
@@ -50,7 +50,7 @@ function Write-LogBlank {
 }
 
 # ---------------------------------------------------------------------------
-# Start — create log dir now so all subsequent errors go to the log file
+# Create log dir before setting strict error mode
 # ---------------------------------------------------------------------------
 try {
     if (-not (Test-Path $LogDir)) {
@@ -67,7 +67,7 @@ try {
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
-# Ensure git is findable — Task Scheduler uses a stripped PATH
+# Ensure git is findable - Task Scheduler uses a stripped PATH
 $gitCmdDir = "C:\Program Files\Git\cmd"
 $gitBinDir = "C:\Program Files\Git\bin"
 if ((Test-Path $gitCmdDir) -and ($env:PATH -notlike "*$gitCmdDir*")) {
@@ -177,18 +177,17 @@ Write-LogBlank
 # ---------------------------------------------------------------------------
 Write-Log "[4/5] Checking for changes in forecast_cache.json..."
 
-$diffOutput = git diff --name-only 2>&1
-$gitStatus  = git status --porcelain "forecast_cache.json" 2>&1
+$gitStatus = git status --porcelain "forecast_cache.json" 2>&1
 
 $cacheChanged = ($gitStatus -match "forecast_cache.json")
 
 if (-not $cacheChanged) {
-    Write-Log "No changes detected in forecast_cache.json — nothing to commit."
+    Write-Log "No changes detected in forecast_cache.json - nothing to commit."
     Write-Log "=== RESULT: SUCCESS (no-op, cache unchanged) ==="
     exit 0
 }
 
-Write-Log "forecast_cache.json has changed — preparing commit."
+Write-Log "forecast_cache.json has changed - preparing commit."
 Write-LogBlank
 
 # ---------------------------------------------------------------------------
@@ -241,6 +240,6 @@ if ($pushCode -ne 0) {
 }
 
 Write-LogBlank
-Write-Log "=== RESULT: SUCCESS — forecast_cache.json committed and pushed to main ==="
+Write-Log "=== RESULT: SUCCESS - forecast_cache.json committed and pushed to main ==="
 Write-Log "Render will auto-deploy from the new cache within a few minutes."
 exit 0
