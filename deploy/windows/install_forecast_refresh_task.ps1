@@ -53,11 +53,11 @@ $trigger = New-ScheduledTaskTrigger `
     -RepetitionInterval (New-TimeSpan -Hours $IntervalHours)
 
 $settings = New-ScheduledTaskSettingsSet `
-    -ExecutionTimeLimit   (New-TimeSpan -Hours ($IntervalHours - 1)) `
+    -ExecutionTimeLimit       (New-TimeSpan -Hours ($IntervalHours - 1)) `
     -StartWhenAvailable `
-    -MultipleInstances    IgnoreNew `
-    -DisallowStartIfOnBatteries $false `
-    -StopIfGoingOnBatteries     $false `
+    -MultipleInstances        IgnoreNew `
+    -AllowStartIfOnBatteries `
+    -DontStopIfGoingOnBatteries `
     -RunOnlyIfNetworkAvailable
 
 # ---------------------------------------------------------------------------
