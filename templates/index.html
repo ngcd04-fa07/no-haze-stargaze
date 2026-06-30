@@ -650,7 +650,7 @@
 
 <header>
   <h1>No-Haze Stargaze</h1>
-  <span class="subtitle">Dark Sky Sites: <a href="https://www.gostargazing.co.uk" target="_blank" rel="noopener" style="color:inherit">gostargazing.co.uk</a> · Amenities: <a href="https://www.openstreetmap.org" target="_blank" rel="noopener" style="color:inherit">OpenStreetMap</a> · Weather: <a href="https://open-meteo.com" target="_blank" rel="noopener" style="color:inherit">Open-Meteo</a></span>
+  <span class="subtitle">Dark Sky Sites: <a href="https://www.gostargazing.co.uk" target="_blank" rel="noopener" style="color:inherit">gostargazing.co.uk</a> · Amenities: <a href="https://www.openstreetmap.org" target="_blank" rel="noopener" style="color:inherit">OpenStreetMap</a> · Weather: <a href="https://open-meteo.com" target="_blank" rel="noopener" style="color:inherit">Open-Meteo</a> · <a href="mailto:nohazestargaze@gmail.com" style="color:inherit">Contact Us</a></span>
 </header>
 
 <div class="layout">
@@ -1178,15 +1178,7 @@ async function pollStatus() {
     } else {
       dot.classList.remove('spinning');
       if (d.sites_loaded > 0) {
-        const age = d.scraped_at > 0
-          ? Math.round((Date.now() / 1000 - d.scraped_at) / 3600)
-          : '?';
-        let nextStr = '';
-        if (d.next_refresh_at > 0) {
-          const hoursUntil = Math.round((d.next_refresh_at - Date.now() / 1000) / 3600);
-          nextStr = hoursUntil > 0 ? ` · next refresh in ${hoursUntil}h` : ' · refresh due';
-        }
-        txt.textContent = `${d.sites_loaded} sites loaded (${age}h ago${nextStr})`;
+        txt.textContent = `${d.sites_loaded} dark sky sites loaded`;
         document.getElementById('search-btn').disabled = false;
       } else {
         txt.textContent = 'No site data — the server is warming up';
@@ -1293,10 +1285,9 @@ function renderResults(data) {
   if (data.forecast_refreshing) {
     header.textContent += ' · forecast updating…';
   } else if (data.forecast_cached_at) {
-    const ageMin = Math.round((Date.now() / 1000 - data.forecast_cached_at) / 60);
-    const nextInMin = Math.max(0, 60 - ageMin);
-    const nextStr = nextInMin < 1 ? 'under 1 min' : `${nextInMin} min`;
-    header.textContent += ` · next forecast in ${nextStr}`;
+    const nextRefresh = new Date((data.forecast_cached_at + 3 * 3600) * 1000);
+    const hhmm = nextRefresh.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    header.textContent += ` · next cloud forecast refresh at ${hhmm}`;
   } else {
     header.textContent += ' · next forecast loading…';
   }
