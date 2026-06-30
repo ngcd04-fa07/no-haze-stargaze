@@ -66,13 +66,18 @@ $settings = New-ScheduledTaskSettingsSet `
 Write-Host "Removing existing task (if any)..." -ForegroundColor Yellow
 Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue
 
-Write-Host "Registering task..." -ForegroundColor Yellow
+$principal = New-ScheduledTaskPrincipal `
+    -UserId    "$env:USERDOMAIN\$env:USERNAME" `
+    -LogonType Interactive `
+    -RunLevel  Highest
+
+Write-Host "Registering task for user: $env:USERDOMAIN\$env:USERNAME..." -ForegroundColor Yellow
 Register-ScheduledTask `
     -TaskName  $TaskName `
     -Action    $action `
     -Trigger   $trigger `
     -Settings  $settings `
-    -RunLevel  Highest `
+    -Principal $principal `
     -Force | Out-Null
 
 $registered = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
