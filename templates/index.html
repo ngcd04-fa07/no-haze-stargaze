@@ -1011,7 +1011,11 @@ function addAmenityMarkers(rec) {
 
 function distMiStr(metres) {
   const mi = metres / 1609.34;
-  return mi < 0.1 ? Math.round(metres) + 'm' : mi.toFixed(1) + ' mi';
+  return mi < 0.1 ? Math.round(metres / 0.9144) + ' yd' : mi.toFixed(1) + ' mi';
+}
+
+function kmToMiStr(km) {
+  return (km * 0.621371).toFixed(1) + ' mi';
 }
 
 function feeStr(fee) {
@@ -1514,8 +1518,8 @@ function buildCard(rec, idx) {
   const moonChip = moonIllumVal !== null
     ? `<span class="chip chip-moon-${lunarQuality(moonIllumVal)}">🌙 ${moonIllumVal}%</span>`
     : '';
-  const confidenceChip = window._forecastConfidenceLabel
-    ? `<span class="chip chip-confidence">${window._forecastConfidenceLabel}</span>`
+  const confSuffix = (rec.avg_cloud_cover !== null && window._forecastConfidenceLabel)
+    ? ` (${window._forecastConfidenceLabel.toLowerCase()})`
     : '';
 
   // OSM amenity distances
@@ -1530,7 +1534,7 @@ function buildCard(rec, idx) {
 
   const rankText = window._allUk
     ? `#${idx + 1}`
-    : `#${idx + 1} · ${rec.distance_km} km away`;
+    : `#${idx + 1} · ${kmToMiStr(rec.distance_km)} away`;
   const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${site.latitude},${site.longitude}`;
   const cardLinks = `<div class="card-links-mobile">
       <a href="${mapsUrl}" target="_blank" rel="noopener" class="card-link-btn" onclick="event.stopPropagation()">Directions &#x2197;</a>
@@ -1546,8 +1550,7 @@ function buildCard(rec, idx) {
         ${typeChip}
         ${parkingChip}
         ${toiletsChip}
-        ${confidenceChip}
-        <span class="chip chip-cloud" style="color:${cloudColor}">${cloudTxt}</span>
+        <span class="chip chip-cloud" style="color:${cloudColor}">${cloudTxt}${confSuffix}</span>
         ${moonChip}
       </div>
       <div class="score-bar-wrap" onmouseenter="showScoreTip(event,currentRecs[${idx}])" onmouseleave="hideScoreTip()" onmousemove="positionScoreTip(event)">
@@ -1587,7 +1590,7 @@ function buildPopup(rec, rank) {
     ? `${rec.avg_cloud_cover}% avg cloud` : 'No forecast';
   const locationLine = window._allUk
     ? `📍 ${rec.light_pollution_label}`
-    : `📍 ${rec.distance_km} km · ${rec.light_pollution_label}`;
+    : `📍 ${kmToMiStr(rec.distance_km)} · ${rec.light_pollution_label}`;
   const amenities = [
     site.has_parking === true ? '🅿 Parking' : null,
     site.has_toilets === true ? '🚻 Toilets' : null,
