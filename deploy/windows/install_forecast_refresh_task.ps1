@@ -49,7 +49,7 @@ $trigger = New-ScheduledTaskTrigger `
     -Once `
     -At                 (Get-Date) `
     -RepetitionInterval (New-TimeSpan -Hours $IntervalHours) `
-    -RepetitionDuration ([TimeSpan]::MaxValue)
+    -RepetitionDuration (New-TimeSpan -Days 3650)
 
 # ExecutionTimeLimit: allow up to (IntervalHours - 1) hours so a slow sweep
 # never blocks the next scheduled run.
