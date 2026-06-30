@@ -638,11 +638,141 @@
     /* scrollbar for results */
     .results-list { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
 
-    /* responsive */
+    /* ── App Info dropdown (mobile header, hidden on desktop) ── */
+    .app-info-wrap { display: none; }
+    .app-info-btn {
+      background: rgba(78,154,241,0.1);
+      border: 1px solid rgba(78,154,241,0.25);
+      color: var(--text);
+      padding: 0.28rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      white-space: nowrap;
+      line-height: 1.4;
+    }
+    .app-info-btn:active { background: rgba(78,154,241,0.2); }
+    .app-info-dropdown {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: calc(100% + 0.4rem);
+      background: #0d1422;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      min-width: 230px;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.6);
+      z-index: 9999;
+      overflow: hidden;
+    }
+    .app-info-dropdown.open { display: block; }
+    .app-info-dropdown a {
+      display: block;
+      padding: 0.7rem 1rem;
+      color: var(--text);
+      text-decoration: none;
+      font-size: 0.82rem;
+      border-bottom: 1px solid var(--border);
+      line-height: 1.4;
+    }
+    .app-info-dropdown a:last-child { border-bottom: none; }
+    .app-info-dropdown a:active { background: rgba(78,154,241,0.1); }
+
+    /* ── Mobile card links (hidden on desktop) ── */
+    .card-links-mobile { display: none; }
+
+    /* ── Mobile loading overlay (position:fixed so it works when main is hidden) ── */
+    #mobile-loading-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(11,14,23,0.88);
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    #mobile-loading-overlay.visible { display: flex; }
+    #mobile-loading-overlay p { font-size: 0.8rem; color: var(--muted); }
+
+    /* ── Mobile responsive ── */
     @media (max-width: 640px) {
-      .layout { flex-direction: column; height: 100%; }
-      aside { width: 100%; height: auto; min-width: unset; }
-      main { height: 50vh; }
+      /* Header: center title, hide subtitle, show App Info button on right */
+      header {
+        padding: 0.65rem 1rem;
+        justify-content: center;
+        position: relative;
+      }
+      header h1 { font-size: 1rem; }
+      header .subtitle { display: none; }
+      .app-info-wrap {
+        display: block;
+        position: absolute;
+        right: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+
+      /* Layout: hide map, aside fills full height */
+      .layout { flex-direction: column; }
+      main { display: none; }
+      aside {
+        width: 100%;
+        min-width: 0;
+        flex: 1;
+        border-right: none;
+        min-height: 0;
+      }
+
+      /* Compact form on small screens; allow it to shrink so results list
+         always gets some space when form is expanded */
+      .form-section {
+        padding: 0.65rem 0.85rem;
+        flex-shrink: 1;
+        overflow-y: auto;
+        min-height: 0;
+      }
+      label { margin-top: 0.4rem; font-size: 0.76rem; }
+      input, select { padding: 0.35rem 0.5rem; font-size: 0.82rem; }
+      .time-field input, .time-field select { padding: 0.3rem 0.4rem; font-size: 0.82rem; }
+      .btn { padding: 0.5rem; margin-top: 0.55rem; font-size: 0.82rem; }
+      .sun-info { font-size: 0.68rem; padding: 0.35rem 0.45rem; }
+      /* Ensure results list always has some visible height */
+      .results-list { min-height: 80px; }
+
+      /* Date picker fix: overlay invisible native input over the button so
+         mobile browsers open their native date picker on tap */
+      .date-picker-wrap { position: relative; }
+      #date-input-native {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        pointer-events: auto;
+        cursor: pointer;
+        z-index: 1;
+      }
+
+      /* Card links (shown on mobile only) */
+      .card-links-mobile {
+        display: flex;
+        gap: 0.45rem;
+        margin-top: 0.4rem;
+        flex-wrap: wrap;
+      }
+      .card-link-btn {
+        color: var(--accent);
+        font-size: 0.76rem;
+        text-decoration: none;
+        border: 1px solid rgba(78,154,241,0.28);
+        padding: 0.22rem 0.55rem;
+        border-radius: 4px;
+        background: rgba(78,154,241,0.06);
+        white-space: nowrap;
+      }
+      .card-link-btn:active { background: rgba(78,154,241,0.15); }
     }
   </style>
 </head>
@@ -651,6 +781,15 @@
 <header>
   <h1>No-Haze Stargaze</h1>
   <span class="subtitle">Dark Sky Sites: <a href="https://www.gostargazing.co.uk" target="_blank" rel="noopener" style="color:inherit">gostargazing.co.uk</a> · Amenities: <a href="https://www.openstreetmap.org" target="_blank" rel="noopener" style="color:inherit">OpenStreetMap</a> · Weather: <a href="https://open-meteo.com" target="_blank" rel="noopener" style="color:inherit">Open-Meteo</a> · <a href="mailto:nohazestargaze@gmail.com" style="color:inherit">Contact Us</a></span>
+  <div class="app-info-wrap" id="app-info-wrap">
+    <button class="app-info-btn" id="app-info-btn" onclick="toggleAppInfo()" aria-expanded="false" aria-label="App Info">App Info &#x25BE;</button>
+    <div class="app-info-dropdown" id="app-info-dropdown" role="menu">
+      <a href="https://www.gostargazing.co.uk" target="_blank" rel="noopener">Dark Sky Sites: gostargazing.co.uk</a>
+      <a href="https://www.openstreetmap.org" target="_blank" rel="noopener">Amenities: OpenStreetMap</a>
+      <a href="https://open-meteo.com" target="_blank" rel="noopener">Weather: Open-Meteo</a>
+      <a href="mailto:nohazestargaze@gmail.com">Contact Us</a>
+    </div>
+  </div>
 </header>
 
 <div class="layout">
@@ -665,8 +804,10 @@
       <label for="date-input">Date (night of)</label>
       <div class="date-wrap">
         <input id="date-input" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" autocomplete="off" />
-        <button class="date-picker-btn" id="date-picker-btn" type="button" aria-label="Open calendar">📅</button>
-        <input id="date-input-native" type="date" />
+        <div class="date-picker-wrap">
+          <button class="date-picker-btn" id="date-picker-btn" type="button" aria-label="Open calendar">📅</button>
+          <input id="date-input-native" type="date" />
+        </div>
       </div>
       <div class="sun-info" id="sun-info" style="display:none"></div>
 
@@ -760,6 +901,12 @@
       <p id="loading-msg">Searching…</p>
     </div>
   </main>
+</div>
+
+<!-- Mobile loading overlay: position fixed so it renders even when <main> is display:none -->
+<div id="mobile-loading-overlay">
+  <div class="spinner"></div>
+  <p id="mobile-loading-msg">Searching…</p>
 </div>
 
 <!-- floating score breakdown tooltip -->
@@ -1392,6 +1539,11 @@ function buildCard(rec, idx) {
   const rankText = window._allUk
     ? `#${idx + 1}`
     : `#${idx + 1} · ${rec.distance_km} km away`;
+  const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${site.latitude},${site.longitude}`;
+  const cardLinks = `<div class="card-links-mobile">
+      <a href="${mapsUrl}" target="_blank" rel="noopener" class="card-link-btn" onclick="event.stopPropagation()">Directions &#x2197;</a>
+      ${site.url ? `<a href="${site.url}" target="_blank" rel="noopener" class="card-link-btn" onclick="event.stopPropagation()">Site Info &#x2197;</a>` : ''}
+    </div>`;
   return `
     <div class="site-card" id="card-${idx}">
       <div class="rank">${rankText}</div>
@@ -1413,6 +1565,7 @@ function buildCard(rec, idx) {
         <span class="score-val">${rec.total_score} <span style="font-size:0.6rem;color:var(--muted)">/ 100 ⓘ</span></span>
       </div>
       ${amenityRow}
+      ${cardLinks}
       ${buildMiniHourlyChart(rec)}
     </div>`;
 }
@@ -1624,10 +1777,35 @@ function esc(str) {
 function showLoading(msg) {
   document.getElementById('loading-msg').textContent = msg;
   document.getElementById('loading-overlay').classList.add('visible');
+  const mob = document.getElementById('mobile-loading-overlay');
+  if (mob) {
+    const mobMsg = document.getElementById('mobile-loading-msg');
+    if (mobMsg) mobMsg.textContent = msg;
+    mob.classList.add('visible');
+  }
 }
 
 function hideLoading() {
   document.getElementById('loading-overlay').classList.remove('visible');
+  const mob = document.getElementById('mobile-loading-overlay');
+  if (mob) mob.classList.remove('visible');
+}
+
+// ── App Info dropdown (mobile header) ─────────────────────────────────────
+function toggleAppInfo() {
+  const dd  = document.getElementById('app-info-dropdown');
+  const btn = document.getElementById('app-info-btn');
+  if (!dd || !btn) return;
+  const isOpen = dd.classList.toggle('open');
+  btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  btn.innerHTML = isOpen ? 'App Info &#x25B4;' : 'App Info &#x25BE;';
+}
+
+function closeAppInfo() {
+  const dd  = document.getElementById('app-info-dropdown');
+  const btn = document.getElementById('app-info-btn');
+  if (dd)  dd.classList.remove('open');
+  if (btn) { btn.setAttribute('aria-expanded', 'false'); btn.innerHTML = 'App Info &#x25BE;'; }
 }
 
 // Allow pressing Enter in location input to search
@@ -1639,6 +1817,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('loc-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') search();
+  });
+
+  // Close App Info dropdown when clicking outside it
+  document.addEventListener('click', function(e) {
+    const wrap = document.getElementById('app-info-wrap');
+    if (wrap && !wrap.contains(e.target)) closeAppInfo();
   });
 });
 </script>
