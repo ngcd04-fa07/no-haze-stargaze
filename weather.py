@@ -6,6 +6,10 @@ Requests are batched conservatively and cached per site/date range to avoid
 hammering the API when users repeat similar searches.
 """
 
+try:
+    from tqdm import tqdm
+except ImportError:
+    tqdm = None
 import concurrent.futures
 import json
 import logging
@@ -388,7 +392,7 @@ def get_full_forecast_background(
     Designed for background use only — no Gunicorn timeout pressure.
 
     Never aborts on 429: waits for the full cooldown window then retries the
-    same batch indefinitely until it succeeds.  This is intentional — on a
+    same batch indefinitely until it succeeds. This is intentional — on a
     shared outbound IP (e.g. Render) the rate-limit window is time-bounded and
     will eventually clear.
 
@@ -399,7 +403,20 @@ def get_full_forecast_background(
     total_batches = -(-len(sites) // BACKGROUND_BATCH_SIZE)
     successful_batches = 0
 
-    for batch_idx, i in enumerate(range(0, len(sites), BACKGROUND_BATCH_SIZE)):
+    batch_positions = list(range(0, len(sites), BACKGROUND_BATCH_SIZE))
+
+    if tqdm is not None:
+        progress_iter = tqdm(
+            enumerate(batch_positions),
+            total=total_batches,
+            desc="Fetching forecast batches",
+            unit="batch",
+            dynamic_ncols=True,
+        )
+    else:
+        progress_iter = enumerate(batch_positions)
+
+    for batch_idx, i in progress_iter:
         batch = sites[i: i + BACKGROUND_BATCH_SIZE]
         attempt = 0
 
@@ -408,18 +425,42 @@ def get_full_forecast_background(
                 batch_results = _fetch_batch(batch, start_date, end_date)
                 all_results.update(batch_results)
                 successful_batches += 1
+
+                if tqdm is None:
+                    print(
+                        f"Fetching forecast batches: "
+                        f"{successful_batches}/{total_batches} complete "
+                        f"({len(all_results)} sites cached)"
+                    )
+                else:
+                    progress_iter.set_postfix({
+                        "sites_cached": len(all_results),
+                        "batch": f"{batch_idx + 1}/{total_batches}",
+                    })
+
                 break
+
             except ForecastRateLimitError:
                 attempt += 1
                 rl = rate_limit_status()
+
                 # Exponential backoff: each consecutive failure doubles the wait, capped at 4 hours.
                 # This ensures we give the IP enough time to clear rather than re-triggering the ban.
                 base_wait = rl["retry_after_seconds"] + 60
                 wait_s = min(base_wait * (2 ** (attempt - 1)), 4 * 3600)
+
                 logger.warning(
                     "Background forecast: rate limit at batch %d/%d (attempt %d) — waiting %.0f min then retrying.",
                     batch_idx + 1, total_batches, attempt, wait_s / 60,
                 )
+
+                if tqdm is not None:
+                    progress_iter.set_postfix({
+                        "rate_limited": "yes",
+                        "wait_min": round(wait_s / 60, 1),
+                        "batch": f"{batch_idx + 1}/{total_batches}",
+                    })
+
                 time.sleep(wait_s)
                 # loop back and retry the same batch — never abort
 
