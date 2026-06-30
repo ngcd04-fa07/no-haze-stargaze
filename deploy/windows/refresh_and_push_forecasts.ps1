@@ -118,14 +118,8 @@ Write-Log "[2/5] Running forecast refresh script..."
 Write-Log "      This takes approx 35 min for a full site sweep."
 Write-LogBlank
 
-$refreshOutput = & $Python $RefreshScript 2>&1
-$refreshCode   = $LASTEXITCODE
-foreach ($line in $refreshOutput) {
-    $ts    = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $entry = "[$ts] [py]  $line"
-    Write-Host $entry
-    Add-Content -Path $LogFile -Value $entry -Encoding UTF8
-}
+& $Python $RefreshScript
+$refreshCode = $LASTEXITCODE
 
 Write-LogBlank
 
