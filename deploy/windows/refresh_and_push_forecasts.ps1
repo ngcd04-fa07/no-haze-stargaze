@@ -64,9 +64,6 @@ try {
     exit 1
 }
 
-$ErrorActionPreference = "Stop"
-Set-StrictMode -Version Latest
-
 # Ensure git is findable - Task Scheduler uses a stripped PATH
 $gitCmdDir = "C:\Program Files\Git\cmd"
 $gitBinDir = "C:\Program Files\Git\bin"
