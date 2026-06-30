@@ -725,21 +725,13 @@
         min-height: 0;
       }
 
-      /* Compact form on small screens; allow it to shrink so results list
-         always gets some space when form is expanded */
-      .form-section {
-        padding: 0.65rem 0.85rem;
-        flex-shrink: 1;
-        overflow-y: auto;
-        min-height: 0;
-      }
+      /* Compact form — static (not scrollable), fits in viewport */
+      .form-section { padding: 0.65rem 0.85rem; }
       label { margin-top: 0.4rem; font-size: 0.76rem; }
       input, select { padding: 0.35rem 0.5rem; font-size: 0.82rem; }
       .time-field input, .time-field select { padding: 0.3rem 0.4rem; font-size: 0.82rem; }
       .btn { padding: 0.5rem; margin-top: 0.55rem; font-size: 0.82rem; }
       .sun-info { font-size: 0.68rem; padding: 0.35rem 0.45rem; }
-      /* Ensure results list always has some visible height */
-      .results-list { min-height: 80px; }
 
       /* Date picker fix: overlay invisible native input over the button so
          mobile browsers open their native date picker on tap */
