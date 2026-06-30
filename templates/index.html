@@ -727,6 +727,10 @@
       <div class="status-dot" id="status-dot"></div>
       <span id="status-text">Checking status…</span>
     </div>
+    <!-- Forecast freshness -->
+    <div class="status-bar" id="forecast-bar" style="border-top:none;padding-top:0.15rem">
+      <span id="forecast-bar-text" style="color:var(--muted);font-size:0.7rem">Checking forecast…</span>
+    </div>
 
     <!-- Results header -->
     <div class="results-header" id="results-header">Enter your location and click search.</div>
@@ -1106,10 +1110,31 @@ function initForm() {
 }
 
 // ── Status polling ─────────────────────────────────────────────────────────
+function updateForecastBar(d) {
+  const fbarText = document.getElementById('forecast-bar-text');
+  if (!fbarText) return;
+  try {
+    const sites = (typeof d.forecast_sites === 'number') ? d.forecast_sites : 0;
+    const cachedAtIso = d.forecast_cached_at_iso || null;
+    const cachedAt = d.forecast_cached_at || 0;
+    if (sites > 0 && (cachedAtIso || cachedAt > 0)) {
+      const ts = cachedAtIso ? new Date(cachedAtIso) : new Date(cachedAt * 1000);
+      const opts = { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' };
+      fbarText.textContent = `Forecast last refreshed: ${ts.toLocaleString('en-GB', opts)}`;
+    } else {
+      fbarText.textContent = 'Forecast cache not loaded';
+    }
+  } catch (_) {
+    fbarText.textContent = 'Forecast cache not loaded';
+  }
+}
+
 async function pollStatus() {
   if (!hasConfiguredBackend()) {
     document.getElementById('status-text').textContent = API_SETUP_HINT;
     document.getElementById('search-btn').disabled = true;
+    const fbarText = document.getElementById('forecast-bar-text');
+    if (fbarText) fbarText.textContent = 'Forecast cache not loaded';
     return;
   }
   try {
@@ -1168,8 +1193,11 @@ async function pollStatus() {
         document.getElementById('search-btn').disabled = true;
       }
     }
+    updateForecastBar(d);
   } catch (_) {
     document.getElementById('status-text').textContent = 'Cannot reach server';
+    const fbarText = document.getElementById('forecast-bar-text');
+    if (fbarText) fbarText.textContent = 'Forecast cache not loaded';
   }
 }
 

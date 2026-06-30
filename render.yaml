@@ -8,3 +8,7 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.3
+      - key: CACHE_ONLY_FORECASTS
+        value: "true"
+      - key: DEPLOYMENT_MODE
+        value: render

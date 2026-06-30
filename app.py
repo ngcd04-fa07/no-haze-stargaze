@@ -69,6 +69,7 @@ _forecast_state = {
     "last_requested_at": {}, # slug -> unix timestamp of last user search that included this site
     "cached_at": 0.0,        # Unix timestamp of last disk save
     "generated_at": 0.0,     # Unix timestamp when the prewarm job generated this data
+    "generated_at_iso": "",  # ISO-8601 string of generated_at for display
     "refreshing": False,     # True while the (disabled) background sweep is running
     "lock": threading.Lock(),
 }
@@ -236,6 +237,15 @@ def _load_forecast_cache() -> None:
         cached_at = float(payload.get("cached_at", 0))
         generated_at = float(payload.get("generated_at", cached_at))
         raw = payload.get("data", {})
+        if not raw:
+            logger.warning(
+                "Could not load forecast cache: file has 0 sites — skipping load to protect existing valid data."
+            )
+            return
+        generated_at_iso = payload.get("generated_at_iso") or (
+            datetime.fromtimestamp(generated_at, tz=timezone.utc).isoformat()
+            if generated_at > 0 else ""
+        )
         data = {slug: [tuple(x) for x in records] for slug, records in raw.items()}
         site_timestamps = {slug: float(t) for slug, t in payload.get("site_timestamps", {}).items()}
         last_requested_at = {slug: float(t) for slug, t in payload.get("last_requested_at", {}).items()}
@@ -245,10 +255,11 @@ def _load_forecast_cache() -> None:
             _forecast_state["last_requested_at"] = last_requested_at
             _forecast_state["cached_at"] = cached_at
             _forecast_state["generated_at"] = generated_at
+            _forecast_state["generated_at_iso"] = generated_at_iso
         age_h = (time.time() - cached_at) / 3600
         logger.info(
-            "Loaded forecast cache: %d sites, age %.1fh.",
-            len(data), age_h,
+            "Loaded forecast cache: %d sites, age %.1fh, generated_at=%s.",
+            len(data), age_h, generated_at_iso or "unknown",
         )
     except FileNotFoundError:
         logger.info("No forecast cache on disk — will build on first refresh.")
@@ -256,12 +267,28 @@ def _load_forecast_cache() -> None:
         logger.warning("Could not load forecast cache: %s", exc)
 
 
-def _save_forecast_cache(data: dict, cached_at: float, site_timestamps: dict | None = None, last_requested_at: dict | None = None, generated_at: float | None = None) -> None:
-    """Atomically persist forecast cache to disk."""
+def _save_forecast_cache(
+    data: dict,
+    cached_at: float,
+    site_timestamps: dict | None = None,
+    last_requested_at: dict | None = None,
+    generated_at: float | None = None,
+    generated_at_iso: str | None = None,
+) -> None:
+    """Atomically persist forecast cache to disk. Refuses to save an empty cache."""
+    if not data:
+        logger.warning("Forecast cache save skipped: 0 sites — refusing to overwrite valid cache.")
+        return
     try:
+        _gen_at = generated_at if generated_at is not None else cached_at
+        _gen_at_iso = generated_at_iso or (
+            datetime.fromtimestamp(_gen_at, tz=timezone.utc).isoformat()
+            if _gen_at > 0 else ""
+        )
         payload = {
             "cached_at": cached_at,
-            "generated_at": generated_at if generated_at is not None else cached_at,
+            "generated_at": _gen_at,
+            "generated_at_iso": _gen_at_iso,
             "data": {slug: list(records) for slug, records in data.items()},
             "site_timestamps": site_timestamps or {},
             "last_requested_at": last_requested_at or {},
@@ -353,6 +380,10 @@ def _download_forecast_cache_bg() -> None:
 
         cached_at = float(payload.get("cached_at", 0))
         generated_at = float(payload.get("generated_at", cached_at))
+        generated_at_iso = payload.get("generated_at_iso") or (
+            datetime.fromtimestamp(generated_at, tz=timezone.utc).isoformat()
+            if generated_at > 0 else ""
+        )
         raw = payload.get("data", {})
         data = {slug: [tuple(x) for x in records] for slug, records in raw.items()}
         site_timestamps = {slug: float(t) for slug, t in payload.get("site_timestamps", {}).items()}
@@ -364,7 +395,8 @@ def _download_forecast_cache_bg() -> None:
             _forecast_state["last_requested_at"] = last_requested_at
             _forecast_state["cached_at"] = cached_at
             _forecast_state["generated_at"] = generated_at
-        _save_forecast_cache(data, cached_at, site_timestamps, last_requested_at, generated_at)
+            _forecast_state["generated_at_iso"] = generated_at_iso
+        _save_forecast_cache(data, cached_at, site_timestamps, last_requested_at, generated_at, generated_at_iso)
         logger.info(
             "Loaded forecast cache: %d sites, age %.1fh.",
             len(data), (time.time() - cached_at) / 3600,
@@ -381,9 +413,10 @@ def _save_forecast_cache_async() -> None:
         lra_snap = dict(_forecast_state["last_requested_at"])
         cached_at = _forecast_state["cached_at"]
         generated_at = _forecast_state["generated_at"]
+        generated_at_iso = _forecast_state.get("generated_at_iso", "")
     threading.Thread(
         target=_save_forecast_cache,
-        args=(data_snap, cached_at, ts_snap, lra_snap, generated_at),
+        args=(data_snap, cached_at, ts_snap, lra_snap, generated_at, generated_at_iso),
         daemon=True,
         name="forecast-save",
     ).start()
@@ -438,6 +471,7 @@ def _do_forecast_refresh() -> None:
             if not partial_data:
                 return
             now = time.time()
+            gen_at_iso = datetime.fromtimestamp(now, tz=timezone.utc).isoformat()
             new_ts = {slug: now for slug in partial_data}
             merged = dict(existing_data)
             merged.update(partial_data)
@@ -447,7 +481,8 @@ def _do_forecast_refresh() -> None:
                 _forecast_state["data"] = merged
                 _forecast_state["site_timestamps"] = merged_ts
                 _forecast_state["cached_at"] = now
-            _save_forecast_cache(merged, now, merged_ts, existing_lra)
+                _forecast_state["generated_at_iso"] = gen_at_iso
+            _save_forecast_cache(merged, now, merged_ts, existing_lra, now, gen_at_iso)
             logger.info(
                 "Forecast cache checkpoint: %d/%d sites total.",
                 len(merged), len(sites),
@@ -459,6 +494,7 @@ def _do_forecast_refresh() -> None:
 
         if new_data:
             now = time.time()
+            gen_at_iso = datetime.fromtimestamp(now, tz=timezone.utc).isoformat()
             new_ts = {slug: now for slug in new_data}
             merged = dict(existing_data)
             merged.update(new_data)
@@ -468,7 +504,8 @@ def _do_forecast_refresh() -> None:
                 _forecast_state["data"] = merged
                 _forecast_state["site_timestamps"] = merged_ts
                 _forecast_state["cached_at"] = now
-            _save_forecast_cache(merged, now, merged_ts, existing_lra)
+                _forecast_state["generated_at_iso"] = gen_at_iso
+            _save_forecast_cache(merged, now, merged_ts, existing_lra, now, gen_at_iso)
             logger.info(
                 "Forecast refresh complete: %d/%d sites cached.",
                 len(merged), len(sites),
@@ -708,8 +745,16 @@ def api_status():
         forecast_sites = len(_forecast_state["data"])
         forecast_cached_at = _forecast_state["cached_at"]
         forecast_generated_at = _forecast_state["generated_at"]
+        forecast_generated_at_iso = _forecast_state.get("generated_at_iso", "")
         forecast_refreshing = _forecast_state["refreshing"]
     forecast_cache_age = round(time.time() - forecast_cached_at, 1) if forecast_cached_at > 0 else None
+    forecast_cached_at_iso = (
+        datetime.fromtimestamp(forecast_cached_at, tz=timezone.utc).isoformat()
+        if forecast_cached_at > 0 else None
+    )
+    forecast_cache_age_hours = (
+        round((time.time() - forecast_cached_at) / 3600, 2) if forecast_cached_at > 0 else None
+    )
     return jsonify(
         {
             "deployment_mode": DEPLOYMENT_MODE,
@@ -725,8 +770,11 @@ def api_status():
             "forecast_cache_loaded": forecast_sites > 0,
             "forecast_sites": forecast_sites,
             "forecast_cached_at": forecast_cached_at,
+            "forecast_cached_at_iso": forecast_cached_at_iso,
             "forecast_generated_at": forecast_generated_at,
+            "forecast_generated_at_iso": forecast_generated_at_iso,
             "forecast_cache_age_seconds": forecast_cache_age,
+            "forecast_cache_age_hours": forecast_cache_age_hours,
             "forecast_refreshing": forecast_refreshing,
             "rate_limit_active": rl["active"],
             "rate_limit_retry_after_seconds": rl["retry_after_seconds"],
