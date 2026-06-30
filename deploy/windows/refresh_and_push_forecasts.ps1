@@ -8,20 +8,27 @@
 #
 # Logs to: <repo>\deploy\windows\logs\forecast_refresh_YYYY-MM-DD_HH-mm-ss.log
 
-Set-StrictMode -Version Latest
-$ErrorActionPreference = "Stop"
+# Fallback log written to TEMP so Task Scheduler failures are always visible
+$FallbackLog = "$env:TEMP\nohaze_refresh_error.log"
 
 # ---------------------------------------------------------------------------
-# Resolve repo root and paths
+# Resolve repo root and paths — wrapped so failures go to fallback log
 # ---------------------------------------------------------------------------
-$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
-$RepoRoot  = (Resolve-Path (Join-Path $ScriptDir "..\..")).Path
+try {
+    $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Definition }
+    $RepoRoot  = (Resolve-Path (Join-Path $ScriptDir "..\..")).Path
+} catch {
+    $msg = "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') FATAL: Could not resolve repo root from '$ScriptDir': $_"
+    Add-Content -Path $FallbackLog -Value $msg -Encoding UTF8
+    Write-Host $msg
+    exit 1
+}
 
 $LogDir    = Join-Path $RepoRoot "deploy\windows\logs"
 $TimeStamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
 $LogFile   = Join-Path $LogDir "forecast_refresh_$TimeStamp.log"
 
-$Python    = Join-Path $RepoRoot ".venv\Scripts\python.exe"
+$Python         = Join-Path $RepoRoot ".venv\Scripts\python.exe"
 $RefreshScript  = Join-Path $RepoRoot "scripts\refresh_forecast_cache.py"
 $ValidateScript = Join-Path $RepoRoot "scripts\validate_forecast_cache.py"
 $ForecastCache  = Join-Path $RepoRoot "forecast_cache.json"
@@ -42,28 +49,31 @@ function Write-LogBlank {
     Add-Content -Path $LogFile -Value "" -Encoding UTF8
 }
 
-function Run-Command {
-    param([string]$Label, [scriptblock]$Cmd)
-    Write-Log "Running: $Label"
-    $output = & $Cmd 2>&1
-    $code   = $LASTEXITCODE
-    foreach ($line in $output) {
-        $ts   = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-        $entry = "[$ts] [OUT] $line"
-        Write-Host $entry
-        Add-Content -Path $LogFile -Value $entry -Encoding UTF8
+# ---------------------------------------------------------------------------
+# Start — create log dir now so all subsequent errors go to the log file
+# ---------------------------------------------------------------------------
+try {
+    if (-not (Test-Path $LogDir)) {
+        New-Item -ItemType Directory -Path $LogDir -Force | Out-Null
     }
-    return $code
+    Add-Content -Path $LogFile -Value "" -Encoding UTF8
+} catch {
+    $msg = "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') FATAL: Could not create log dir '$LogDir': $_"
+    Add-Content -Path $FallbackLog -Value $msg -Encoding UTF8
+    Write-Host $msg
+    exit 1
 }
 
-# ---------------------------------------------------------------------------
-# Start
-# ---------------------------------------------------------------------------
-if (-not (Test-Path $LogDir)) {
-    New-Item -ItemType Directory -Path $LogDir -Force | Out-Null
+$ErrorActionPreference = "Stop"
+Set-StrictMode -Version Latest
+
+# Ensure git is findable — Task Scheduler uses a stripped PATH
+$gitCmdDir = "C:\Program Files\Git\cmd"
+$gitBinDir = "C:\Program Files\Git\bin"
+if ((Test-Path $gitCmdDir) -and ($env:PATH -notlike "*$gitCmdDir*")) {
+    $env:PATH = "$gitCmdDir;$gitBinDir;$env:PATH"
 }
 
-Add-Content -Path $LogFile -Value "" -Encoding UTF8
 Write-Log "=== Forecast refresh + push started ==="
 Write-Log "Repo root : $RepoRoot"
 Write-Log "Log file  : $LogFile"
