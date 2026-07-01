@@ -25,7 +25,7 @@ from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 import requests
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, send_from_directory
 
 from config import DATA_DIR
 import geocoder as geo
@@ -729,6 +729,11 @@ def _fetch_amenities_bg(sites: list[dict]) -> None:
 @app.route("/")
 def index():
     return render_template("index.html")
+
+
+@app.route("/og-image.png")
+def og_image():
+    return send_from_directory("static", "og-image.png")
 
 
 @app.route("/api/status")
