@@ -799,8 +799,19 @@ def api_sunrise_sunset():
 
     if all_uk or not location or location.lower() == "united kingdom":
         origin_lat, origin_lon, origin_name = 54.0, -2.0, "United Kingdom"
+    elif payload.get("lat") is not None and payload.get("lon") is not None:
+        try:
+            origin_lat = float(payload["lat"])
+            origin_lon = float(payload["lon"])
+            origin_name = location or "Site"
+        except (TypeError, ValueError):
+            return jsonify({"error": "Invalid lat/lon"}), 400
     else:
         origin = geo.geocode(location)
+        if not origin:
+            address = (payload.get("address") or "").strip()
+            if address:
+                origin = geo.geocode(address)
         if not origin:
             return jsonify({"error": f"Could not geocode location: {location!r}"}), 400
         origin_lat, origin_lon, origin_name = origin

@@ -1391,6 +1391,15 @@ function initForm() {
   const siteDateEl = document.getElementById('site-date-input');
   siteDateEl.value = todayStr;
   siteDateEl.addEventListener('change', refreshSiteSunInfo);
+  const siteStartSel = document.getElementById('site-start-hour');
+  const siteEndSel   = document.getElementById('site-end-hour');
+  const fmtSite = h => `${String(h).padStart(2,'0')}:00`;
+  const refreshSiteWindowHelp = () => {
+    const help = document.getElementById('site-time-help');
+    if (help) help.textContent = `Night window available from ${fmtSite(parseInt(siteStartSel.value))} to ${fmtSite(parseInt(siteEndSel.value))}.`;
+  };
+  siteStartSel.addEventListener('change', refreshSiteWindowHelp);
+  siteEndSel.addEventListener('change', refreshSiteWindowHelp);
 }
 
 // ── Status polling ─────────────────────────────────────────────────────────
@@ -1558,9 +1567,30 @@ function selectSite(slug, name) {
   refreshSiteSunInfo();
 }
 
+function setSiteDefaultWindow(startHour, endHour) {
+  const fmtH = h => `${String(h).padStart(2,'0')}:00`;
+  const clamp = v => Math.max(0, Math.min(23, parseInt(v||0,10)||0));
+  const s = clamp(startHour), e = clamp(endHour);
+  const startOpts = [];
+  let cur = s;
+  while (startOpts.length < 24) {
+    const w = cur % 24;
+    startOpts.push(w);
+    if (w === (((e - 1) % 24 + 24) % 24)) break;
+    cur++;
+  }
+  const startSel = document.getElementById('site-start-hour');
+  const endSel   = document.getElementById('site-end-hour');
+  startSel.innerHTML = startOpts.map(h => `<option value="${h}">${fmtH(h)}</option>`).join('');
+  endSel.innerHTML   = Array.from({length: e + 1}, (_, i) => i).map(h => `<option value="${h}">${fmtH(h)}</option>`).join('');
+  startSel.value = String(s);
+  endSel.value   = String(e);
+  const help = document.getElementById('site-time-help');
+  if (help) help.textContent = `Night window available from ${fmtH(s)} to ${fmtH(e)}.`;
+}
+
 async function refreshSiteSunInfo() {
   const siteInfo = document.getElementById('site-sun-info');
-  const siteTimeHelp = document.getElementById('site-time-help');
   if (!siteInfo) return;
   const dateVal = document.getElementById('site-date-input').value;
   if (!dateVal) { siteInfo.style.display = 'none'; return; }
@@ -1569,14 +1599,20 @@ async function refreshSiteSunInfo() {
     siteInfo.style.display = 'flex';
     return;
   }
-  const locationStr = _selectedSiteSlug
-    ? (_allSites.find(s => s.slug === _selectedSiteSlug)?.name || 'United Kingdom')
-    : 'United Kingdom';
+  let reqBody;
+  if (_selectedSiteSlug) {
+    const site = _allSites.find(s => s.slug === _selectedSiteSlug);
+    reqBody = site
+      ? { lat: site.lat, lon: site.lon, location: site.name, date: dateVal }
+      : { location: 'United Kingdom', date: dateVal, all_uk: true };
+  } else {
+    reqBody = { location: 'United Kingdom', date: dateVal, all_uk: true };
+  }
   try {
     const data = await requestJson('/api/sunrise_sunset', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ location: locationStr, date: dateVal, all_uk: !_selectedSiteSlug }),
+      body: JSON.stringify(reqBody),
     });
     const sunrise = data.sunrise || '00:00';
     const sunset  = data.sunset  || '00:00';
@@ -1587,10 +1623,7 @@ async function refreshSiteSunInfo() {
     const sunsetHour  = parseInt(sunset.slice(0,2), 10);
     const sunriseHour = parseInt(sunrise.slice(0,2), 10);
     const sunriseMin  = parseInt(sunrise.slice(3,5), 10);
-    const endHour = Math.max(0, Math.min(23, sunriseHour + (sunriseMin > 0 ? 1 : 0)));
-    document.getElementById('site-start-hour').value = String(sunsetHour);
-    document.getElementById('site-end-hour').value   = String(endHour);
-    if (siteTimeHelp) siteTimeHelp.textContent = `Night window: ${sunset} – ${sunrise}`;
+    setSiteDefaultWindow(sunsetHour, Math.max(0, Math.min(23, sunriseHour + (sunriseMin > 0 ? 1 : 0))));
   } catch (_) {
     siteInfo.innerHTML = '<div class="sun-item">🌙 <b>—</b></div>';
     siteInfo.style.display = 'flex';
