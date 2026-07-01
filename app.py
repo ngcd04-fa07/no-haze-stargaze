@@ -820,6 +820,125 @@ def api_refresh():
     return jsonify({"message": "Refresh started."})
 
 
+@app.route("/api/sites")
+def api_sites():
+    with _state["lock"]:
+        all_sites = list(_state["sites"])
+    if not all_sites:
+        return jsonify({"sites": [], "count": 0})
+    sites = [
+        {
+            "slug": s["slug"],
+            "name": s["name"],
+            "address": s.get("address", ""),
+            "light_pollution": s.get("light_pollution", "unknown"),
+            "site_type": s.get("site_type", "Unknown"),
+            "lat": s["latitude"],
+            "lon": s["longitude"],
+        }
+        for s in all_sites
+    ]
+    return jsonify({"sites": sites, "count": len(sites)})
+
+
+@app.route("/api/site-forecast", methods=["POST"])
+def api_site_forecast():
+    data = request.get_json(silent=True) or {}
+    slug = (data.get("slug") or "").strip()
+    if not slug:
+        return jsonify({"error": "slug is required"}), 400
+
+    with _state["lock"]:
+        all_sites = list(_state["sites"])
+    site = next((s for s in all_sites if s["slug"] == slug), None)
+    if not site:
+        return jsonify({"error": f"Site not found: {slug!r}"}), 404
+
+    date_str = (data.get("date") or "").strip()
+    if date_str:
+        try:
+            base_date = datetime.strptime(date_str, "%Y-%m-%d")
+        except ValueError:
+            return jsonify({"error": "Invalid date format — use YYYY-MM-DD"}), 400
+    else:
+        base_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+
+    try:
+        night_start_hour = int(data.get("night_start_hour", 22))
+        night_start_hour = max(0, min(night_start_hour, 23))
+    except (TypeError, ValueError):
+        night_start_hour = 22
+    try:
+        night_end_hour = int(data.get("night_end_hour", 4))
+        night_end_hour = max(0, min(night_end_hour, 23))
+    except (TypeError, ValueError):
+        night_end_hour = 4
+
+    query_dates = [base_date]
+    lunar_by_date = {base_date.strftime("%Y-%m-%d"): lu.lunar_illumination(base_date)}
+
+    with _forecast_state["lock"]:
+        hourly_data = dict(_forecast_state["data"])
+        forecast_cached_at = _forecast_state["cached_at"]
+
+    if slug not in hourly_data and not CACHE_ONLY_FORECASTS:
+        today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        fetch_end = today + timedelta(days=FORECAST_LOOKAHEAD_DAYS)
+        new_data = weather.get_cloud_cover_forecast([site], today, fetch_end)
+        if new_data:
+            now_ts = time.time()
+            with _forecast_state["lock"]:
+                _forecast_state["data"].update(new_data)
+                _forecast_state["site_timestamps"][slug] = now_ts
+                _forecast_state["cached_at"] = now_ts
+            hourly_data.update(new_data)
+
+    w_info = weather.best_window_cloud_cover(
+        slug, hourly_data, night_start_hour, night_end_hour, query_dates,
+        lunar_by_date=lunar_by_date,
+    )
+    cloud_data = {slug: w_info["avg_cover"]} if w_info["avg_cover"] is not None else {}
+
+    recommendations = rec.recommend(
+        origin_lat=site["latitude"],
+        origin_lon=site["longitude"],
+        sites=[site],
+        cloud_data=cloud_data,
+        weather_details={slug: w_info},
+        max_distance_km=1,
+        min_pollution_level=None,
+        require_parking=False,
+        require_toilets=False,
+        lunar_by_date=lunar_by_date,
+        ignore_distance=True,
+        top_n=1,
+    )
+
+    primary_lunar = lu.lunar_info(base_date)
+
+    return jsonify({
+        "recommendations": recommendations,
+        "origin": {"lat": site["latitude"], "lon": site["longitude"], "name": site["name"]},
+        "lunar": primary_lunar,
+        "lunar_by_date": lunar_by_date,
+        "sites_checked": 1,
+        "forecast_cached_at": forecast_cached_at,
+        "forecast_refreshing": _forecast_state["refreshing"],
+        "all_uk": False,
+        "query": {
+            "date": base_date.strftime("%Y-%m-%d"),
+            "num_nights": 1,
+            "night_start_hour": night_start_hour,
+            "night_end_hour": night_end_hour,
+            "max_distance_km": 1,
+            "min_pollution_level": None,
+            "require_parking": False,
+            "require_toilets": False,
+            "all_uk": False,
+        },
+    })
+
+
 @app.route("/api/recommend", methods=["POST"])
 def api_recommend():
     data = request.get_json(silent=True) or {}

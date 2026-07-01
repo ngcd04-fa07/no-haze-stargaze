@@ -302,6 +302,82 @@
     }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
+    /* ── tab switcher ── */
+    .form-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.85rem;
+    }
+    .tab-switcher {
+      position: relative;
+      display: flex;
+      background: rgba(255,255,255,0.04);
+      border-radius: 8px;
+      padding: 3px;
+    }
+    .tab-btn {
+      position: relative;
+      z-index: 1;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      padding: 0.28rem 0.7rem;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: color 0.2s;
+      white-space: nowrap;
+    }
+    .tab-btn.active { color: var(--text); }
+    .tab-pill {
+      position: absolute;
+      top: 3px;
+      bottom: 3px;
+      left: 0;
+      width: 80px;
+      background: rgba(78,154,241,0.18);
+      border: 1px solid rgba(78,154,241,0.28);
+      border-radius: 6px;
+      transition: transform 0.25s cubic-bezier(0.4,0,0.2,1), width 0.25s cubic-bezier(0.4,0,0.2,1);
+      pointer-events: none;
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    @keyframes panelFadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .tab-panel.panel-entering { animation: panelFadeIn 0.18s ease forwards; }
+    .site-search-wrap { position: relative; }
+    .site-autocomplete {
+      position: absolute;
+      top: calc(100% + 2px);
+      left: 0; right: 0;
+      background: #0d1422;
+      border: 1px solid rgba(78,154,241,0.3);
+      border-radius: var(--radius);
+      max-height: 210px;
+      overflow-y: auto;
+      z-index: 200;
+      display: none;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.55);
+    }
+    .site-autocomplete.open { display: block; }
+    .site-ac-item {
+      padding: 0.5rem 0.65rem;
+      cursor: pointer;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      transition: background 0.1s;
+    }
+    .site-ac-item:last-child { border-bottom: none; }
+    .site-ac-item:hover { background: rgba(78,154,241,0.15); }
+    .site-ac-name { font-size: 0.82rem; color: var(--text); font-weight: 500; }
+    .site-ac-addr { font-size: 0.72rem; color: var(--muted); margin-top: 0.1rem; }
+
     /* ── status bar ── */
     .status-bar {
       padding: 0.45rem 1rem;
@@ -666,68 +742,109 @@
   <!-- ── Sidebar ── -->
   <aside>
     <div class="form-section">
-      <h2>Search settings <button class="form-toggle-btn" id="form-toggle" onclick="toggleForm()">▲ hide</button></h2>
-      <div id="form-body">
-      <label for="loc-input">Postcode or town name</label>
-      <input id="loc-input" type="text" placeholder="e.g. M1 1AE or Manchester" />
-
-      <label for="date-input">Date (night of)</label>
-      <div class="date-wrap">
-        <input id="date-input" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" autocomplete="off" />
-        <button class="date-picker-btn" id="date-picker-btn" type="button" aria-label="Open calendar">📅</button>
-        <input id="date-input-native" type="date" />
-      </div>
-      <div class="sun-info" id="sun-info" style="display:none"></div>
-
-      <label>Night window</label>
-      <div class="time-window-block">
-        <div class="time-row">
-          <div class="time-field">
-            <label for="start-hour">Start</label>
-            <select id="start-hour"></select>
-          </div>
-          <div class="time-field">
-            <label for="end-hour">End</label>
-            <select id="end-hour"></select>
-          </div>
+      <div class="form-section-header">
+        <div class="tab-switcher" id="tab-switcher">
+          <button class="tab-btn active" id="tab-btn-location" onclick="switchTab('location')">By location</button>
+          <button class="tab-btn" id="tab-btn-site" onclick="switchTab('site')">By site name</button>
+          <div class="tab-pill" id="tab-pill"></div>
         </div>
-        <div class="time-help" id="time-help">Choose the window for the selected night.</div>
+        <button class="form-toggle-btn" id="form-toggle" onclick="toggleForm()">▲ hide</button>
       </div>
+      <div id="form-body">
 
-      <label>Max distance</label>
-      <div class="range-row">
-        <input id="dist-range" type="range" min="10" max="200" step="5" value="60" />
-        <span class="range-val" id="dist-label">60 mi</span>
-      </div>
-      <div class="checkbox-row" style="margin-top:0.35rem">
-        <label class="checkbox-label">
-          <input type="checkbox" id="all-uk" />
-          🇬🇧 Include all of UK
-        </label>
-      </div>
+        <!-- ── Location tab ── -->
+        <div class="tab-panel active" id="panel-location">
+          <label for="loc-input">Postcode or town name</label>
+          <input id="loc-input" type="text" placeholder="e.g. M1 1AE or Manchester" />
 
-      <label for="pollution-filter">Min light-pollution quality</label>
-      <select id="pollution-filter">
-        <option value="">Any (include urban)</option>
-        <option value="suburban">Suburban or better</option>
-        <option value="semi-rural">Semi-rural or better</option>
-        <option value="rural">Rural or better</option>
-        <option value="dark site">Dark site only</option>
-      </select>
+          <label for="date-input">Date (night of)</label>
+          <div class="date-wrap">
+            <input id="date-input" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" autocomplete="off" />
+            <button class="date-picker-btn" id="date-picker-btn" type="button" aria-label="Open calendar">📅</button>
+            <input id="date-input-native" type="date" />
+          </div>
+          <div class="sun-info" id="sun-info" style="display:none"></div>
 
-      <label>Amenities</label>
-      <div class="checkbox-row">
-        <label class="checkbox-label">
-          <input type="checkbox" id="filter-parking" />
-          🅿 Parking available
-        </label>
-        <label class="checkbox-label">
-          <input type="checkbox" id="filter-toilets" />
-          🚻 Toilets / washrooms
-        </label>
-      </div>
+          <label>Night window</label>
+          <div class="time-window-block">
+            <div class="time-row">
+              <div class="time-field">
+                <label for="start-hour">Start</label>
+                <select id="start-hour"></select>
+              </div>
+              <div class="time-field">
+                <label for="end-hour">End</label>
+                <select id="end-hour"></select>
+              </div>
+            </div>
+            <div class="time-help" id="time-help">Choose the window for the selected night.</div>
+          </div>
 
-      <button class="btn" id="search-btn" onclick="search()">Find Best Sites</button>
+          <label>Max distance</label>
+          <div class="range-row">
+            <input id="dist-range" type="range" min="10" max="200" step="5" value="60" />
+            <span class="range-val" id="dist-label">60 mi</span>
+          </div>
+          <div class="checkbox-row" style="margin-top:0.35rem">
+            <label class="checkbox-label">
+              <input type="checkbox" id="all-uk" />
+              🇬🇧 Include all of UK
+            </label>
+          </div>
+
+          <label for="pollution-filter">Min light-pollution quality</label>
+          <select id="pollution-filter">
+            <option value="">Any (include urban)</option>
+            <option value="suburban">Suburban or better</option>
+            <option value="semi-rural">Semi-rural or better</option>
+            <option value="rural">Rural or better</option>
+            <option value="dark site">Dark site only</option>
+          </select>
+
+          <label>Amenities</label>
+          <div class="checkbox-row">
+            <label class="checkbox-label">
+              <input type="checkbox" id="filter-parking" />
+              🅿 Parking available
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="filter-toilets" />
+              🚻 Toilets / washrooms
+            </label>
+          </div>
+
+          <button class="btn" id="search-btn" onclick="search()">Find Best Sites</button>
+        </div>
+
+        <!-- ── Site name tab ── -->
+        <div class="tab-panel" id="panel-site">
+          <label for="site-search-input">Site name</label>
+          <div class="site-search-wrap">
+            <input id="site-search-input" type="text" placeholder="e.g. Kielder, Exmoor, Brecon Beacons"
+                   autocomplete="off" oninput="onSiteSearchInput(this.value)" />
+            <div class="site-autocomplete" id="site-autocomplete"></div>
+          </div>
+
+          <label for="site-date-input">Date (night of)</label>
+          <input id="site-date-input" type="date" />
+
+          <label>Night window</label>
+          <div class="time-window-block">
+            <div class="time-row">
+              <div class="time-field">
+                <label for="site-start-hour">Start</label>
+                <select id="site-start-hour"></select>
+              </div>
+              <div class="time-field">
+                <label for="site-end-hour">End</label>
+                <select id="site-end-hour"></select>
+              </div>
+            </div>
+          </div>
+
+          <button class="btn" id="site-search-btn" onclick="searchBySite()">Find Site Forecast</button>
+        </div>
+
       </div>
     </div>
 
@@ -1112,6 +1229,15 @@ function initForm() {
 
   setDefaultWindow(20, 6);
   refreshSunInfo();
+
+  // Init site panel selects
+  const siteStartHour = document.getElementById('site-start-hour');
+  const siteEndHour   = document.getElementById('site-end-hour');
+  const fmtH = h => `${String(h).padStart(2,'0')}:00`;
+  const allHours = Array.from({length: 24}, (_, i) => i);
+  siteStartHour.innerHTML = allHours.map(h => `<option value="${h}"${h===22?' selected':''}>${fmtH(h)}</option>`).join('');
+  siteEndHour.innerHTML   = allHours.map(h => `<option value="${h}"${h===4 ?' selected':''}>${fmtH(h)}</option>`).join('');
+  document.getElementById('site-date-input').value = todayStr;
 }
 
 // ── Status polling ─────────────────────────────────────────────────────────
@@ -1119,6 +1245,7 @@ async function pollStatus() {
   if (!hasConfiguredBackend()) {
     document.getElementById('status-text').textContent = API_SETUP_HINT;
     document.getElementById('search-btn').disabled = true;
+    document.getElementById('site-search-btn').disabled = true;
     return;
   }
   try {
@@ -1159,6 +1286,7 @@ async function pollStatus() {
         ? `Scraping sites… ${p.done}/${p.total} checked, ${p.found} found${etaText}`
         : `Starting scrape…${etaText || ' · calculating remaining time…'}`;
       document.getElementById('search-btn').disabled = d.sites_loaded === 0;
+      document.getElementById('site-search-btn').disabled = d.sites_loaded === 0;
     } else {
       dot.classList.remove('spinning');
       if (d.sites_loaded > 0) {
@@ -1172,9 +1300,11 @@ async function pollStatus() {
         }
         txt.textContent = `${d.sites_loaded} sites loaded (${age}h ago${nextStr})`;
         document.getElementById('search-btn').disabled = false;
+        document.getElementById('site-search-btn').disabled = false;
       } else {
         txt.textContent = 'No site data — the server is warming up';
         document.getElementById('search-btn').disabled = true;
+        document.getElementById('site-search-btn').disabled = true;
       }
     }
   } catch (_) {
@@ -1188,6 +1318,104 @@ function toggleForm() {
   const btn  = document.getElementById('form-toggle');
   const nowCollapsed = body.classList.toggle('collapsed');
   btn.textContent = nowCollapsed ? '▼ show' : '▲ hide';
+}
+
+// ── Tab switching ─────────────────────────────────────────────────────────
+let _activeTab = 'location';
+let _allSites = [];
+let _selectedSiteSlug = null;
+
+function switchTab(tab) {
+  if (tab === _activeTab) return;
+  const oldPanel = document.getElementById('panel-' + _activeTab);
+  const newPanel = document.getElementById('panel-' + tab);
+  document.getElementById('tab-btn-' + _activeTab).classList.remove('active');
+  document.getElementById('tab-btn-' + tab).classList.add('active');
+  _updateTabPill(tab);
+  oldPanel.style.cssText = 'opacity:0;transform:translateY(-4px);transition:opacity 0.14s ease,transform 0.14s ease';
+  setTimeout(() => {
+    oldPanel.classList.remove('active');
+    oldPanel.style.cssText = '';
+    newPanel.classList.add('active', 'panel-entering');
+    setTimeout(() => newPanel.classList.remove('panel-entering'), 220);
+    _activeTab = tab;
+  }, 140);
+}
+
+function _updateTabPill(tab) {
+  const pill = document.getElementById('tab-pill');
+  const btn  = document.getElementById('tab-btn-' + tab);
+  if (!pill || !btn) return;
+  pill.style.width     = btn.offsetWidth + 'px';
+  pill.style.transform = `translateX(${btn.offsetLeft}px)`;
+}
+
+// ── Site search ───────────────────────────────────────────────────────────
+async function loadAllSites() {
+  if (!hasConfiguredBackend()) return;
+  try {
+    const d = await requestJson('/api/sites');
+    _allSites = d.sites || [];
+  } catch (_) {}
+}
+
+function onSiteSearchInput(val) {
+  _selectedSiteSlug = null;
+  const ac = document.getElementById('site-autocomplete');
+  if (!val || val.length < 2) { ac.classList.remove('open'); return; }
+  const q = val.toLowerCase();
+  const matches = _allSites
+    .filter(s => s.name.toLowerCase().includes(q) || (s.address || '').toLowerCase().includes(q))
+    .slice(0, 10);
+  if (!matches.length) { ac.classList.remove('open'); return; }
+  ac.innerHTML = matches.map(s =>
+    `<div class="site-ac-item" onclick="selectSite('${s.slug.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}','${s.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">
+      <div class="site-ac-name">${s.name}</div>
+      ${s.address ? `<div class="site-ac-addr">${s.address}</div>` : ''}
+    </div>`
+  ).join('');
+  ac.classList.add('open');
+}
+
+function selectSite(slug, name) {
+  _selectedSiteSlug = slug;
+  document.getElementById('site-search-input').value = name;
+  document.getElementById('site-autocomplete').classList.remove('open');
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#site-search-input') && !e.target.closest('#site-autocomplete')) {
+    const ac = document.getElementById('site-autocomplete');
+    if (ac) ac.classList.remove('open');
+  }
+});
+
+async function searchBySite() {
+  if (!hasConfiguredBackend()) { alert(API_SETUP_HINT); return; }
+  if (!_selectedSiteSlug) { alert('Please select a site from the dropdown first.'); return; }
+  const payload = {
+    slug: _selectedSiteSlug,
+    date: document.getElementById('site-date-input').value,
+    night_start_hour: parseInt(document.getElementById('site-start-hour').value),
+    night_end_hour:   parseInt(document.getElementById('site-end-hour').value),
+  };
+  showLoading('Fetching forecast…');
+  try {
+    const d = await requestJson('/api/site-forecast', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload),
+    });
+    hideLoading();
+    window._forecastConfidenceLabel = forecastConfidenceLabel(d.query?.date);
+    renderResults(d);
+    window._lunarByDate = d.lunar_by_date || {};
+    const formBody = document.getElementById('form-body');
+    if (!formBody.classList.contains('collapsed')) toggleForm();
+  } catch (e) {
+    hideLoading();
+    alert('Request failed: ' + e.message);
+  }
 }
 
 // ── Search ─────────────────────────────────────────────────────────────────
@@ -1619,15 +1847,27 @@ function hideLoading() {
   document.getElementById('loading-overlay').classList.remove('visible');
 }
 
-// Allow pressing Enter in location input to search
 document.addEventListener('DOMContentLoaded', () => {
   initMap();
   initForm();
   pollStatus();
   setInterval(pollStatus, 4000);
+  loadAllSites();
+
+  requestAnimationFrame(() => {
+    const pill = document.getElementById('tab-pill');
+    if (pill) {
+      pill.style.transition = 'none';
+      _updateTabPill('location');
+      requestAnimationFrame(() => { pill.style.transition = ''; });
+    }
+  });
 
   document.getElementById('loc-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') search();
+  });
+  document.getElementById('site-search-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') searchBySite();
   });
 });
 </script>
