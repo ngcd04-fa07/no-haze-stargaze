@@ -16,7 +16,7 @@ import logging
 import netrc  # pre-import: prevents import-lock contention when threads first call requests.get
 import threading
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import requests
@@ -275,101 +275,105 @@ def get_cloud_cover_forecast(
 
 def average_cloud_cover_in_window(
     slug: str,
-    hourly_data: dict[str, list[tuple[str, int]]],
+    hourly_data: dict,
     window_start: datetime,
     window_end: datetime,
 ) -> Optional[float]:
+    """Return the average cloud cover % for a site within a time window.
+
+    hourly_data values are compact (t0_unix, bytes) tuples produced by
+    app._compact_forecast(). window_start/window_end are naive datetimes
+    (treated as UTC for arithmetic consistency with t0).
     """
-    Return the average cloud cover % for a site within a time window.
-
-    window_start / window_end are timezone-naive datetimes in local time
-    (Europe/London), matching the Open-Meteo response times.
-    """
-    records = hourly_data.get(slug)
-    if not records:
+    record = hourly_data.get(slug)
+    if not record:
         return None
-
-    values = []
-    for time_str, cover in records:
-        try:
-            t = datetime.fromisoformat(time_str)
-        except ValueError:
-            continue
-        if window_start <= t < window_end:
-            if cover is not None:
-                values.append(cover)
-
-    if not values:
+    t0, values = record
+    ws = int(window_start.replace(tzinfo=timezone.utc).timestamp())
+    we = int(window_end.replace(tzinfo=timezone.utc).timestamp())
+    si = max(0, (ws - t0) // 3600)
+    ei = min(len(values), (we - t0) // 3600)
+    if si >= ei:
         return None
-    return round(sum(values) / len(values), 1)
+    window_vals = [v for v in values[si:ei] if v != 255]
+    if not window_vals:
+        return None
+    return round(sum(window_vals) / len(window_vals), 1)
 
 
 def best_window_cloud_cover(
     slug: str,
-    hourly_data: dict[str, list[tuple[str, int]]],
+    hourly_data: dict,
     night_start_hour: int,
     night_end_hour: int,
     query_dates: list[datetime],
     lunar_by_date: dict[str, float] | None = None,
 ) -> dict:
-    """
-    Find the best night window across given dates, using a combined score of
-    cloud cover (70 %) and lunar illumination (30 %) when lunar data is provided.
+    """Find the best night window across given dates.
 
-    Returns a dict with keys: avg_cover, best_date, hourly (list of dicts).
+    Uses combined score: cloud cover (70%) + lunar illumination (30%).
+    hourly_data values are compact (t0_unix, bytes) tuples.
+    Returns a dict with keys: avg_cover, best_date, window_start, window_end, hourly.
     """
+    _empty = {"avg_cover": None, "best_date": None, "window_start": None,
+              "window_end": None, "hourly": []}
+
+    record = hourly_data.get(slug)
+    if not record:
+        return _empty
+    t0, values = record
+
     best: Optional[dict] = None
     best_combined: float = float("inf")
+    best_si = best_ei = 0
 
     for date in query_dates:
-        window_start = date.replace(
-            hour=night_start_hour, minute=0, second=0, microsecond=0
-        )
-        # Night window wraps midnight
+        window_start = date.replace(hour=night_start_hour, minute=0, second=0, microsecond=0)
         if night_end_hour <= night_start_hour:
             window_end = (date + timedelta(days=1)).replace(
                 hour=night_end_hour, minute=0, second=0, microsecond=0
             )
         else:
-            window_end = date.replace(
-                hour=night_end_hour, minute=0, second=0, microsecond=0
-            )
+            window_end = date.replace(hour=night_end_hour, minute=0, second=0, microsecond=0)
 
-        avg = average_cloud_cover_in_window(slug, hourly_data, window_start, window_end)
-        if avg is None:
+        ws = int(window_start.replace(tzinfo=timezone.utc).timestamp())
+        we = int(window_end.replace(tzinfo=timezone.utc).timestamp())
+        si = max(0, (ws - t0) // 3600)
+        ei = min(len(values), (we - t0) // 3600)
+        if si >= ei:
             continue
 
-        # Combined score: lower is better
+        window_vals = [v for v in values[si:ei] if v != 255]
+        if not window_vals:
+            continue
+        avg = round(sum(window_vals) / len(window_vals), 1)
+
         date_str = date.strftime("%Y-%m-%d")
         lunar_pct = (lunar_by_date or {}).get(date_str, 0.0)
         combined = avg * 0.7 + lunar_pct * 0.3
 
         if combined < best_combined:
             best_combined = combined
-            # Collect hourly breakdown for this window
-            records = hourly_data.get(slug, [])
-            hourly_breakdown = []
-            for time_str, cover in records:
-                try:
-                    t = datetime.fromisoformat(time_str)
-                except ValueError:
-                    continue
-                if window_start <= t < window_end:
-                    hourly_breakdown.append({
-                        "time": t.strftime("%H:%M"),
-                        "cloud_cover": cover,
-                    })
-
+            best_si, best_ei = si, ei
             best = {
                 "avg_cover": avg,
                 "best_date": date_str,
                 "window_start": window_start.strftime("%H:%M"),
                 "window_end": window_end.strftime("%H:%M"),
-                "hourly": hourly_breakdown,
+                "hourly": [],
             }
 
-    return best or {"avg_cover": None, "best_date": None, "window_start": None,
-                    "window_end": None, "hourly": []}
+    if best is None:
+        return _empty
+
+    best["hourly"] = [
+        {
+            "time": datetime.fromtimestamp(t0 + i * 3600, tz=timezone.utc).strftime("%H:%M"),
+            "cloud_cover": int(values[i]) if values[i] != 255 else None,
+        }
+        for i in range(best_si, best_ei)
+    ]
+    return best
 
 
 # ---------------------------------------------------------------------------

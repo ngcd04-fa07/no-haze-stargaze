@@ -24,6 +24,19 @@ import time
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
+try:
+    import orjson as _orjson
+except ImportError:
+    _orjson = None
+
+
+def _json_loads(data):
+    return _orjson.loads(data) if _orjson else json.loads(data)
+
+
+def _json_dumps_bytes(obj) -> bytes:
+    return _orjson.dumps(obj) if _orjson else json.dumps(obj).encode()
+
 import requests
 from flask import Flask, jsonify, render_template, request, send_from_directory
 
@@ -229,11 +242,41 @@ def _weekly_cache_manager() -> None:
 # Forecast cache helpers
 # ---------------------------------------------------------------------------
 
+def _compact_forecast(records) -> tuple | None:
+    """Convert [(time_str, cloud_pct), ...] → (t0_unix_int, bytes) for memory efficiency.
+
+    Drops per-entry time strings (redundant: hourly, evenly spaced from t0).
+    Encodes cloud cover as uint8 bytes; 255 is the sentinel for missing data.
+    """
+    if not records:
+        return None
+    try:
+        t0 = int(datetime.fromisoformat(records[0][0]).replace(tzinfo=timezone.utc).timestamp())
+    except (ValueError, IndexError, TypeError):
+        return None
+    vals = bytearray(len(records))
+    for i, (_, v) in enumerate(records):
+        if v is None:
+            vals[i] = 255
+        else:
+            vals[i] = min(254, max(0, int(round(float(v)))))
+    return (t0, bytes(vals))
+
+
+def _compact_to_json_records(t0: int, values: bytes) -> list:
+    """Convert compact (t0_unix, bytes) back to [[time_str, cloud_pct], ...] for JSON."""
+    return [
+        [datetime.fromtimestamp(t0 + i * 3600, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M"),
+         None if v == 255 else int(v)]
+        for i, v in enumerate(values)
+    ]
+
+
 def _load_forecast_cache() -> None:
     """Load persisted forecast cache from disk into _forecast_state."""
     try:
-        with open(FORECAST_CACHE_FILE) as f:
-            payload = json.load(f)
+        with open(FORECAST_CACHE_FILE, "rb") as f:
+            payload = _json_loads(f.read())
         cached_at = float(payload.get("cached_at", 0))
         generated_at = float(payload.get("generated_at", cached_at))
         raw = payload.get("data", {})
@@ -246,7 +289,7 @@ def _load_forecast_cache() -> None:
             datetime.fromtimestamp(generated_at, tz=timezone.utc).isoformat()
             if generated_at > 0 else ""
         )
-        data = {slug: [tuple(x) for x in records] for slug, records in raw.items()}
+        data = {slug: c for slug, records in raw.items() if (c := _compact_forecast(records)) is not None}
         site_timestamps = {slug: float(t) for slug, t in payload.get("site_timestamps", {}).items()}
         last_requested_at = {slug: float(t) for slug, t in payload.get("last_requested_at", {}).items()}
         with _forecast_state["lock"]:
@@ -285,17 +328,23 @@ def _save_forecast_cache(
             datetime.fromtimestamp(_gen_at, tz=timezone.utc).isoformat()
             if _gen_at > 0 else ""
         )
+        json_data = {}
+        for slug, val in data.items():
+            if isinstance(val, tuple) and len(val) == 2 and isinstance(val[1], (bytes, bytearray)):
+                json_data[slug] = _compact_to_json_records(val[0], val[1])
+            else:
+                json_data[slug] = [list(r) for r in val]
         payload = {
             "cached_at": cached_at,
             "generated_at": _gen_at,
             "generated_at_iso": _gen_at_iso,
-            "data": {slug: list(records) for slug, records in data.items()},
+            "data": json_data,
             "site_timestamps": site_timestamps or {},
             "last_requested_at": last_requested_at or {},
         }
         tmp = FORECAST_CACHE_FILE + ".tmp"
-        with open(tmp, "w") as f:
-            json.dump(payload, f)
+        with open(tmp, "wb") as f:
+            f.write(_json_dumps_bytes(payload))
         os.replace(tmp, FORECAST_CACHE_FILE)
         logger.info("Forecast cache saved to disk (%d sites).", len(data))
     except Exception as exc:
@@ -376,7 +425,7 @@ def _download_forecast_cache_bg() -> None:
             return
 
         resp.raise_for_status()
-        payload = resp.json()
+        payload = _json_loads(resp.content)
 
         cached_at = float(payload.get("cached_at", 0))
         generated_at = float(payload.get("generated_at", cached_at))
@@ -385,7 +434,7 @@ def _download_forecast_cache_bg() -> None:
             if generated_at > 0 else ""
         )
         raw = payload.get("data", {})
-        data = {slug: [tuple(x) for x in records] for slug, records in raw.items()}
+        data = {slug: c for slug, records in raw.items() if (c := _compact_forecast(records)) is not None}
         site_timestamps = {slug: float(t) for slug, t in payload.get("site_timestamps", {}).items()}
         last_requested_at = {slug: float(t) for slug, t in payload.get("last_requested_at", {}).items()}
 
@@ -902,12 +951,13 @@ def api_site_forecast():
         fetch_end = today + timedelta(days=FORECAST_LOOKAHEAD_DAYS)
         new_data = weather.get_cloud_cover_forecast([site], today, fetch_end)
         if new_data:
+            new_compact = {s: c for s, recs in new_data.items() if (c := _compact_forecast(recs)) is not None}
             now_ts = time.time()
             with _forecast_state["lock"]:
-                _forecast_state["data"].update(new_data)
+                _forecast_state["data"].update(new_compact)
                 _forecast_state["site_timestamps"][slug] = now_ts
                 _forecast_state["cached_at"] = now_ts
-            hourly_data.update(new_data)
+            hourly_data.update(new_compact)
 
     w_info = weather.best_window_cloud_cover(
         slug, hourly_data, night_start_hour, night_end_hour, query_dates,
@@ -1100,13 +1150,14 @@ def api_recommend():
             )
             new_data = weather.get_cloud_cover_forecast(sites_to_fetch, today, fetch_end)
             if new_data:
+                new_compact = {s: c for s, recs in new_data.items() if (c := _compact_forecast(recs)) is not None}
                 now = time.time()
                 with _forecast_state["lock"]:
-                    _forecast_state["data"].update(new_data)
-                    for slug in new_data:
-                        _forecast_state["site_timestamps"][slug] = now
+                    _forecast_state["data"].update(new_compact)
+                    for s in new_compact:
+                        _forecast_state["site_timestamps"][s] = now
                     _forecast_state["cached_at"] = now
-                hourly_data.update(new_data)
+                hourly_data.update(new_compact)
         else:
             logger.info(
                 "Forecast: all %d nearby sites fresh in cache (query=%s).",

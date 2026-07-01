@@ -12,3 +12,5 @@ services:
         value: "true"
       - key: DEPLOYMENT_MODE
         value: render
+      - key: FORECAST_CACHE_REMOTE_ENABLED
+        value: "true"

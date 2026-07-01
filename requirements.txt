@@ -6,3 +6,4 @@ gunicorn>=22.0.0
 waitress>=3.0.0
 tzdata
 tqdm
+orjson>=3.9.0
