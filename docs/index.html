@@ -827,6 +827,7 @@
 
           <label for="site-date-input">Date (night of)</label>
           <input id="site-date-input" type="date" />
+          <div class="sun-info" id="site-sun-info" style="display:none"></div>
 
           <label>Night window</label>
           <div class="time-window-block">
@@ -840,6 +841,7 @@
                 <select id="site-end-hour"></select>
               </div>
             </div>
+            <div class="time-help" id="site-time-help"></div>
           </div>
 
           <button class="btn" id="site-search-btn" onclick="searchBySite()">Find Site Forecast</button>
@@ -1237,7 +1239,9 @@ function initForm() {
   const allHours = Array.from({length: 24}, (_, i) => i);
   siteStartHour.innerHTML = allHours.map(h => `<option value="${h}"${h===22?' selected':''}>${fmtH(h)}</option>`).join('');
   siteEndHour.innerHTML   = allHours.map(h => `<option value="${h}"${h===4 ?' selected':''}>${fmtH(h)}</option>`).join('');
-  document.getElementById('site-date-input').value = todayStr;
+  const siteDateEl = document.getElementById('site-date-input');
+  siteDateEl.value = todayStr;
+  siteDateEl.addEventListener('change', refreshSiteSunInfo);
 }
 
 // ── Status polling ─────────────────────────────────────────────────────────
@@ -1326,6 +1330,11 @@ let _allSites = [];
 let _selectedSiteSlug = null;
 
 function switchTab(tab) {
+  const formBody = document.getElementById('form-body');
+  if (formBody.classList.contains('collapsed')) {
+    formBody.classList.remove('collapsed');
+    document.getElementById('form-toggle').textContent = '▲ hide';
+  }
   if (tab === _activeTab) return;
   const oldPanel = document.getElementById('panel-' + _activeTab);
   const newPanel = document.getElementById('panel-' + tab);
@@ -1381,6 +1390,46 @@ function selectSite(slug, name) {
   _selectedSiteSlug = slug;
   document.getElementById('site-search-input').value = name;
   document.getElementById('site-autocomplete').classList.remove('open');
+  refreshSiteSunInfo();
+}
+
+async function refreshSiteSunInfo() {
+  const siteInfo = document.getElementById('site-sun-info');
+  const siteTimeHelp = document.getElementById('site-time-help');
+  if (!siteInfo) return;
+  const dateVal = document.getElementById('site-date-input').value;
+  if (!dateVal) { siteInfo.style.display = 'none'; return; }
+  if (!hasConfiguredBackend()) {
+    siteInfo.innerHTML = '<div class="sun-item">🌙 <b>—</b></div>';
+    siteInfo.style.display = 'flex';
+    return;
+  }
+  const locationStr = _selectedSiteSlug
+    ? (_allSites.find(s => s.slug === _selectedSiteSlug)?.name || 'United Kingdom')
+    : 'United Kingdom';
+  try {
+    const data = await requestJson('/api/sunrise_sunset', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ location: locationStr, date: dateVal, all_uk: !_selectedSiteSlug }),
+    });
+    const sunrise = data.sunrise || '00:00';
+    const sunset  = data.sunset  || '00:00';
+    siteInfo.innerHTML = `
+      <div class="sun-item">🔆⬇️ <span>Sunset</span> <b>${sunset}</b></div>
+      <div class="sun-item">🔆⬆️ <span>Sunrise</span> <b>${sunrise}</b></div>`;
+    siteInfo.style.display = 'flex';
+    const sunsetHour  = parseInt(sunset.slice(0,2), 10);
+    const sunriseHour = parseInt(sunrise.slice(0,2), 10);
+    const sunriseMin  = parseInt(sunrise.slice(3,5), 10);
+    const endHour = Math.max(0, Math.min(23, sunriseHour + (sunriseMin > 0 ? 1 : 0)));
+    document.getElementById('site-start-hour').value = String(sunsetHour);
+    document.getElementById('site-end-hour').value   = String(endHour);
+    if (siteTimeHelp) siteTimeHelp.textContent = `Night window: ${sunset} – ${sunrise}`;
+  } catch (_) {
+    siteInfo.innerHTML = '<div class="sun-item">🌙 <b>—</b></div>';
+    siteInfo.style.display = 'flex';
+  }
 }
 
 document.addEventListener('click', e => {
@@ -1853,6 +1902,7 @@ document.addEventListener('DOMContentLoaded', () => {
   pollStatus();
   setInterval(pollStatus, 4000);
   loadAllSites();
+  refreshSiteSunInfo();
 
   requestAnimationFrame(() => {
     const pill = document.getElementById('tab-pill');
