@@ -606,8 +606,74 @@
     .stip-sep  { border-top: 1px solid var(--border); margin: 0.3rem 0; }
     .stip-total { display: flex; justify-content: space-between; font-weight: 700; }
     .stip-total-val { color: var(--accent); }
+    .stip-sort-note {
+      font-size: 0.66rem; color: var(--accent);
+      margin-bottom: 0.35rem; padding-bottom: 0.3rem;
+      border-bottom: 1px solid var(--border); text-align: center;
+    }
     .score-bar-wrap { cursor: help; }
     .popup-score    { cursor: help; }
+
+    /* chip info icon */
+    .chip-i {
+      cursor: help; font-size: 0.6rem;
+      color: rgba(255,255,255,0.35); margin-left: 0.18rem;
+      line-height: 1; vertical-align: middle;
+      transition: color 0.15s;
+    }
+    .chip-i:hover { color: var(--accent); }
+
+    /* floating info tooltip (pointer-events:auto so links are clickable) */
+    #info-tip {
+      position: fixed; z-index: 10000; display: none;
+      background: #0d1422;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.55rem 0.75rem;
+      font-size: 0.72rem; color: var(--text);
+      pointer-events: auto;
+      min-width: 220px; max-width: 280px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.55);
+      line-height: 1.55;
+    }
+    .itip-title {
+      font-size: 0.65rem; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.05em;
+      margin-bottom: 0.3rem;
+    }
+    .tip-link { color: var(--accent); }
+
+    /* sort toggle bar */
+    .sort-bar {
+      display: flex; align-items: center; gap: 0.55rem;
+      padding: 0.32rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.01);
+    }
+    .sort-label {
+      font-size: 0.64rem; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.07em; flex-shrink: 0;
+    }
+    .sort-toggle {
+      position: relative; display: inline-flex;
+      background: rgba(255,255,255,0.04); border-radius: 6px; padding: 2px;
+    }
+    .sort-btn {
+      position: relative; z-index: 1; background: none; border: none;
+      color: var(--muted); font-size: 0.67rem;
+      padding: 0.18rem 0.55rem; cursor: pointer; border-radius: 4px;
+      transition: color 0.2s; white-space: nowrap;
+    }
+    .sort-btn.active { color: var(--text); }
+    .sort-pill {
+      position: absolute; top: 2px; bottom: 2px; left: 2px;
+      background: rgba(78,154,241,0.18);
+      border: 1px solid rgba(78,154,241,0.28);
+      border-radius: 4px;
+      transition: left 0.2s cubic-bezier(0.4,0,0.2,1),
+                  width 0.2s cubic-bezier(0.4,0,0.2,1);
+      pointer-events: none;
+    }
 
     /* confidence chip */
     .chip-confidence {
@@ -1043,6 +1109,16 @@
       <button class="search-clear" id="search-clear" onclick="clearResultsSearch()" style="display:none">&times;</button>
     </div>
 
+    <!-- Sort toggle (shown after results load) -->
+    <div class="sort-bar" id="sort-bar" style="display:none">
+      <span class="sort-label">Sort:</span>
+      <div class="sort-toggle" id="sort-toggle">
+        <button class="sort-btn active" id="sort-btn-conditions" onclick="setSortMode('conditions')">Best conditions</button>
+        <button class="sort-btn" id="sort-btn-closest" onclick="setSortMode('closest')">Closest first</button>
+        <div class="sort-pill" id="sort-pill"></div>
+      </div>
+    </div>
+
     <!-- Results list -->
     <div class="results-list" id="results-list">
       <div class="empty-state">
@@ -1070,6 +1146,8 @@
 
 <!-- floating score breakdown tooltip -->
 <div id="score-tip"></div>
+<!-- floating chip info tooltip (pointer-events:auto for clickable links) -->
+<div id="info-tip" onmouseenter="keepInfoTip()" onmouseleave="hideInfoTipDelayed()"></div>
 
 <script>
 // ── State ──────────────────────────────────────────────────────────────────
@@ -1077,6 +1155,9 @@ let map, originMarker, siteMarkers = [], activeSiteIdx = -1;
 let _activeMarkerIdx = -1;
 let amenityMarkers = [];
 let currentRecs = [];
+let _displayRecs = [];
+let _sortMode = 'conditions';
+let _infoTipTimer = null;
 
 if (!window.STARGAZE_API_BASE && /github\.io$/i.test(window.location.hostname || '')) {
   window.STARGAZE_API_BASE = 'https://no-haze-stargaze.onrender.com';
@@ -1807,15 +1888,16 @@ function renderResults(data) {
     lunarBanner.style.display = 'none';
   }
 
-  // Site markers
+  // Site markers — index matches original API order (used for siteMarkers[origIdx])
   const bounds = origin ? [[origin.lat, origin.lon]] : [];
   recs.forEach((rec, idx) => {
+    rec._origIdx = idx;  // tag for card/marker sync after re-sort
     const site = rec.site;
     const color = scoreColor(rec.total_score);
     const marker = L.circleMarker([site.latitude, site.longitude], {
       radius: 8, color: color, fillColor: color, fillOpacity: 0.85, weight: 1.5,
     }).addTo(map);
-    marker._origColor = color;  // store for highlight restore
+    marker._origColor = color;
 
     marker.bindPopup(buildPopup(rec, idx + 1));
     marker.on('click', (event) => {
@@ -1829,8 +1911,16 @@ function renderResults(data) {
 
   map.fitBounds(bounds, { padding: [40, 40] });
 
-  currentRecs = recs;  // store for amenity marker access
+  currentRecs = recs;  // always original API order — used for marker/score lookups
   _lastSitesChecked = data.sites_checked || recs.length;
+
+  // Reset sort mode
+  _sortMode = 'conditions';
+  _displayRecs = [...recs];
+  document.getElementById('sort-btn-conditions').classList.add('active');
+  document.getElementById('sort-btn-closest').classList.remove('active');
+  const sortBar = document.getElementById('sort-bar');
+  sortBar.style.display = window._allUk ? 'none' : 'flex';
 
   // Reset + show search bar
   const searchWrap = document.getElementById('search-wrap');
@@ -1840,24 +1930,31 @@ function renderResults(data) {
   searchWrap.style.display = 'flex';
 
   // Cards
-  list.innerHTML = recs.map((rec, idx) => buildCard(rec, idx)).join('');
-  list.querySelectorAll('.site-card').forEach((card, idx) => {
+  list.innerHTML = _displayRecs.map((rec, di) => buildCard(rec, di)).join('');
+  attachDisplayCardListeners();
+  initSortPill();
+}
+
+function attachDisplayCardListeners() {
+  document.querySelectorAll('#results-list .site-card').forEach(card => {
+    const origIdx = parseInt(card.dataset.origIdx);
     card.addEventListener('click', () => {
-      highlightCard(idx);
-      highlightMarker(idx);
-      siteMarkers[idx].openPopup();
-      map.panTo([recs[idx].site.latitude, recs[idx].site.longitude]);
+      highlightCard(origIdx);
+      highlightMarker(origIdx);
+      siteMarkers[origIdx].openPopup();
+      map.panTo([currentRecs[origIdx].site.latitude, currentRecs[origIdx].site.longitude]);
     });
   });
 }
 
 function buildCard(rec, idx) {
+  const origIdx = rec._origIdx !== undefined ? rec._origIdx : idx;
   const site = rec.site;
   const cloudTxt = rec.avg_cloud_cover !== null
     ? `☁ ${rec.avg_cloud_cover}% cloud`
     : '☁ No forecast';
   const cloudColor = cloudColorHex(rec.avg_cloud_cover);
-  const pollChip = pollutionChip(rec.site.light_pollution);
+  const pollChip = pollutionChip(rec.site.light_pollution, rec.site.url);
   const typeChip = rec.site.site_type === 'Dark Sky Discovery Site'
     ? `<span class="chip chip-type">${rec.site.site_type}</span>` : '';
   const parkingChip = site.has_parking === true
@@ -1874,7 +1971,7 @@ function buildCard(rec, idx) {
   const moonIllumVal = rec.weather && rec.weather.best_date && window._lunarByDate
     ? (window._lunarByDate[rec.weather.best_date] ?? null) : null;
   const moonChip = moonIllumVal !== null
-    ? `<span class="chip chip-moon-${lunarQuality(moonIllumVal)}">🌙 ${moonIllumVal}%</span>`
+    ? `<span class="chip chip-moon-${lunarQuality(moonIllumVal)}">🌙 ${moonIllumVal}%&thinsp;<span class="chip-i" data-tip-type="lunar" data-tip-quality="${lunarQuality(moonIllumVal)}" data-tip-pct="${moonIllumVal}" onmouseenter="showChipTip(event,this)" onmouseleave="hideInfoTipDelayed()">ⓘ</span></span>`
     : '';
   const confSuffix = (rec.avg_cloud_cover !== null && window._forecastConfidenceLabel)
     ? ` (${window._forecastConfidenceLabel.toLowerCase()})`
@@ -1899,7 +1996,7 @@ function buildCard(rec, idx) {
       ${site.url ? `<a href="${site.url}" target="_blank" rel="noopener" class="card-link-btn" onclick="event.stopPropagation()">Site Info &#x2197;</a>` : ''}
     </div>`;
   return `
-    <div class="site-card" id="card-${idx}">
+    <div class="site-card" id="card-${origIdx}" data-orig-idx="${origIdx}">
       <div class="rank">${rankText}</div>
       <div class="name">${esc(site.name)}</div>
       <div class="address">${esc(site.address || 'No address')}</div>
@@ -1911,7 +2008,7 @@ function buildCard(rec, idx) {
         <span class="chip chip-cloud" style="color:${cloudColor}">${cloudTxt}${confSuffix}</span>
         ${moonChip}
       </div>
-      <div class="score-bar-wrap" onmouseenter="showScoreTip(event,currentRecs[${idx}])" onmouseleave="hideScoreTip()" onmousemove="positionScoreTip(event)">
+      <div class="score-bar-wrap" onmouseenter="showScoreTip(event,currentRecs[${origIdx}])" onmouseleave="hideScoreTip()" onmousemove="positionScoreTip(event)">
         <div class="score-bar">
           <div class="score-bar-fill" style="width:${rec.total_score}%"></div>
         </div>
@@ -2034,8 +2131,9 @@ function filterCards(query) {
     return;
   }
   let shown = 0;
-  cards.forEach((card, idx) => {
-    const rec = currentRecs[idx];
+  cards.forEach(card => {
+    const origIdx = parseInt(card.dataset.origIdx);
+    const rec = currentRecs[origIdx];
     if (!rec) { card.style.display = 'none'; return; }
     const haystack = [rec.site.name, rec.site.address, rec.site.site_type, rec.light_pollution_label]
       .filter(Boolean).join(' ').toLowerCase();
@@ -2068,8 +2166,10 @@ function scoreBreakdownHtml(rec) {
       <span class="stip-cont">= ${contrib}</span>
     </div>`;
   }).join('');
+  const sortNote = (!window._allUk && _sortMode === 'closest')
+    ? `<div class="stip-sort-note">📍 Sorted by distance · scores for reference</div>` : '';
   return `
-    <div class="stip-title">Score breakdown</div>
+    ${sortNote}<div class="stip-title">Score breakdown</div>
     <div class="stip-rows">${rows}</div>
     <div class="stip-sep"></div>
     <div class="stip-total"><span>Total</span><span class="stip-total-val">${rec.total_score} / 100</span></div>`;
@@ -2093,6 +2193,91 @@ function hideScoreTip() {
   document.getElementById('score-tip').style.display = 'none';
 }
 
+// ── Chip info tooltips ──────────────────────────────────────────────────────
+const POLLUTION_TIPS = {
+  'dark site':  'Minimal artificial light — the best conditions for deep-sky objects. Nebulae, galaxies, and the Milky Way in full detail.',
+  'rural':      'Very little light pollution. Excellent for most objects including the Milky Way, with only slight horizon glow.',
+  'semi-rural': 'Low-to-moderate light pollution with some horizon glow. Good for most targets; faint nebulae may be slightly washed out.',
+  'suburban':   'Moderate light pollution. Best for bright objects — planets, Moon, bright clusters. The Milky Way may be difficult.',
+  'urban':      'Heavy light pollution. Only the brightest targets are easily visible: Moon, planets, and bright double stars.',
+};
+const LUNAR_TIPS = {
+  'excellent': 'Near new moon — almost no moonlight. The darkest nights of the month, ideal for all deep-sky objects.',
+  'good':      'Thin crescent — the Moon sets early or rises late, leaving most of the night dark and skies good.',
+  'fair':      'Quarter moon — noticeably bright for part of the night. Faint nebulae and galaxies will be affected.',
+  'poor':      'Near full moon — bright and up for much of the night. Best for bright targets like planets and clusters.',
+  'very-poor': 'Full or near-full moon — too bright for most deep-sky objects. Best for lunar observation.',
+};
+
+function showInfoTip(e, html) {
+  clearTimeout(_infoTipTimer);
+  const tip = document.getElementById('info-tip');
+  tip.innerHTML = html;
+  tip.style.display = 'block';
+  positionInfoTip(e);
+}
+function positionInfoTip(e) {
+  const tip = document.getElementById('info-tip');
+  if (tip.style.display === 'none') return;
+  const x = e.clientX + 14;
+  const y = e.clientY - tip.offsetHeight - 10;
+  tip.style.left = Math.min(x, window.innerWidth  - tip.offsetWidth  - 6) + 'px';
+  tip.style.top  = Math.max(6, y) + 'px';
+}
+function hideInfoTipDelayed() {
+  _infoTipTimer = setTimeout(() => {
+    document.getElementById('info-tip').style.display = 'none';
+  }, 200);
+}
+function keepInfoTip() { clearTimeout(_infoTipTimer); }
+
+function showChipTip(e, el) {
+  const type = el.dataset.tipType;
+  let html = '';
+  if (type === 'pollution') {
+    const level = el.dataset.tipLevel;
+    const siteUrl = el.dataset.siteUrl;
+    const desc = POLLUTION_TIPS[level] || 'Light pollution level for this site.';
+    const link = siteUrl && siteUrl !== 'undefined' && siteUrl !== ''
+      ? `<br><br>For a visual representation, visit <a href="${siteUrl}" target="_blank" rel="noopener" class="tip-link">Go Stargazing ↗</a>.`
+      : '';
+    html = `<div class="itip-title">Light pollution</div><div>${desc}${link}</div>`;
+  } else if (type === 'lunar') {
+    const quality = el.dataset.tipQuality;
+    const pct = el.dataset.tipPct;
+    const desc = LUNAR_TIPS[quality] || '';
+    const note = pct ? `<br><span style="color:var(--muted);font-size:0.67rem">${pct}% illuminated</span>` : '';
+    html = `<div class="itip-title">Lunar conditions</div><div>${desc}${note}</div>`;
+  }
+  showInfoTip(e, html);
+}
+
+// ── Sort toggle ─────────────────────────────────────────────────────────────
+function initSortPill() {
+  const pill = document.getElementById('sort-pill');
+  const btn  = document.getElementById('sort-btn-' + _sortMode);
+  if (pill && btn) {
+    pill.style.left  = btn.offsetLeft + 'px';
+    pill.style.width = btn.offsetWidth + 'px';
+  }
+}
+function setSortMode(mode) {
+  if (mode === _sortMode) return;
+  _sortMode = mode;
+  document.getElementById('sort-btn-conditions').classList.toggle('active', mode === 'conditions');
+  document.getElementById('sort-btn-closest').classList.toggle('active', mode === 'closest');
+  initSortPill();
+  const sorted = mode === 'closest'
+    ? [...currentRecs].sort((a, b) => (a.distance_km ?? Infinity) - (b.distance_km ?? Infinity))
+    : [...currentRecs];
+  _displayRecs = sorted;
+  const list = document.getElementById('results-list');
+  list.innerHTML = _displayRecs.map((rec, di) => buildCard(rec, di)).join('');
+  attachDisplayCardListeners();
+  const fv = document.getElementById('results-search').value.trim();
+  if (fv.length > 2) filterCards(fv);
+}
+
 function scoreColor(score) {
   if (score >= 75) return '#34d399';
   if (score >= 55) return '#6ee7b7';
@@ -2109,7 +2294,7 @@ function cloudColorHex(pct) {
   return '#f87171';
 }
 
-function pollutionChip(level) {
+function pollutionChip(level, siteUrl) {
   const map = {
     'dark site':  ['chip-dark',     '🌑 Dark site'],
     'rural':      ['chip-rural',    '🌿 Rural'],
@@ -2118,7 +2303,8 @@ function pollutionChip(level) {
     'urban':      ['chip-urban',    '🏙 Urban'],
   };
   const [cls, label] = map[level] || ['chip-unknown', '❓ Unknown'];
-  return `<span class="chip ${cls}">${label}</span>`;
+  const u = siteUrl || '';
+  return `<span class="chip ${cls}">${label}&thinsp;<span class="chip-i" data-tip-type="pollution" data-tip-level="${level}" data-site-url="${u}" onmouseenter="showChipTip(event,this)" onmouseleave="hideInfoTipDelayed()">ⓘ</span></span>`;
 }
 
 function esc(str) {
@@ -2178,6 +2364,7 @@ document.addEventListener('DOMContentLoaded', () => {
       _updateTabPill('location');
       requestAnimationFrame(() => { pill.style.transition = ''; });
     }
+    initSortPill();
   });
 
   document.getElementById('loc-input').addEventListener('keydown', e => {
