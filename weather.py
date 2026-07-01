@@ -390,15 +390,19 @@ def get_full_forecast_background(
     start_date: datetime,
     end_date: datetime,
     on_batch_complete: "Optional[callable]" = None,
+    abort_on_rate_limit: bool = False,
 ) -> dict[str, list[tuple[str, int]]]:
     """
     Fetch forecasts for ALL sites using conservative rate limits.
     Designed for background use only — no Gunicorn timeout pressure.
 
-    Never aborts on 429: waits for the full cooldown window then retries the
-    same batch indefinitely until it succeeds. This is intentional — on a
-    shared outbound IP (e.g. Render) the rate-limit window is time-bounded and
-    will eventually clear.
+    abort_on_rate_limit=True: stop immediately on the first 429 and return
+    partial results so far. The caller should merge with the existing cache.
+    Use this from the Task Scheduler script to avoid multi-hour backoff waits
+    that exceed the scheduler's ExecutionTimeLimit.
+
+    abort_on_rate_limit=False (default): wait for the full cooldown then retry
+    the same batch indefinitely (original behaviour; safe for manual runs).
 
     on_batch_complete(partial_results) is called every BACKGROUND_CHECKPOINT_EVERY
     successful batches so callers can persist incremental progress.
@@ -447,6 +451,14 @@ def get_full_forecast_background(
             except ForecastRateLimitError:
                 attempt += 1
                 rl = rate_limit_status()
+
+                if abort_on_rate_limit:
+                    logger.warning(
+                        "Background forecast: rate limit at batch %d/%d — aborting sweep with %d sites collected. "
+                        "Retry-after: %.0f min. Existing cache will be merged.",
+                        batch_idx + 1, total_batches, len(all_results), rl["retry_after_seconds"] / 60,
+                    )
+                    return all_results
 
                 # Exponential backoff: each consecutive failure doubles the wait, capped at 4 hours.
                 # This ensures we give the IP enough time to clear rather than re-triggering the ban.

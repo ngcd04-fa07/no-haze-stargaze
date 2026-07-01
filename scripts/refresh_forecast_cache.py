@@ -195,7 +195,9 @@ def main() -> None:
         sys.exit(0)
 
     try:
-        new_data = weather.get_full_forecast_background(all_sites, today, end_date)
+        new_data = weather.get_full_forecast_background(
+            all_sites, today, end_date, abort_on_rate_limit=True
+        )
     except Exception as exc:
         logger.error("Forecast fetch failed unexpectedly: %s", exc)
         logger.info("Keeping existing cache unchanged.")
@@ -204,10 +206,12 @@ def main() -> None:
     logger.info("Fetched %d / %d sites.", len(new_data), len(all_sites))
 
     if not new_data:
-        logger.error(
-            "No forecast data returned — aborting to protect existing cache."
+        # Rate limit hit on the very first batch — nothing new to merge.
+        logger.warning(
+            "No new forecast data collected (rate-limited immediately). "
+            "Keeping existing cache unchanged."
         )
-        sys.exit(1)
+        sys.exit(0)
 
     # Merge new data on top of existing (preserves sites not re-fetched)
     now = time.time()
