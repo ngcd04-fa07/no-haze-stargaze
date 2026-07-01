@@ -1509,7 +1509,7 @@ function buildCard(rec, idx) {
     : '☁ No forecast';
   const cloudColor = cloudColorHex(rec.avg_cloud_cover);
   const pollChip = pollutionChip(rec.site.light_pollution);
-  const typeChip = rec.site.site_type !== 'Unknown'
+  const typeChip = rec.site.site_type === 'Dark Sky Discovery Site'
     ? `<span class="chip chip-type">${rec.site.site_type}</span>` : '';
   const parkingChip = site.has_parking === true
     ? '<span class="chip chip-amenity">🅿 Parking</span>' : '';
