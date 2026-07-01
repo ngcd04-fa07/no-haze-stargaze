@@ -986,7 +986,17 @@
       "light_pollution": "rural",
       "site_type": "Dark Sky Discovery Site",
       "has_parking": true,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 25,
+        "lat": 52.2627945,
+        "lng": 1.5776779,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1782922863.81694
     },
     {
       "name": "Suffolk Coast Nature Reserve",
@@ -9502,7 +9512,10 @@
       "light_pollution": "rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1782921600.6573582
     },
     {
       "name": "Dunston Fen Stepping Out Car Park",
@@ -17664,7 +17677,17 @@
       "light_pollution": "rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 1269,
+        "lat": 50.9638548,
+        "lng": 0.3785486,
+        "fee": "no",
+        "access": "yes"
+      },
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1782923431.672259
     },
     {
       "name": "Springhead Park",
@@ -17688,7 +17711,17 @@
       "light_pollution": "rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 31,
+        "lat": 50.9060472,
+        "lng": 0.3461572,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1782921597.121247
     },
     {
       "name": "Springham Farm",
@@ -17712,7 +17745,17 @@
       "light_pollution": "rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 699,
+        "lat": 50.9500297,
+        "lng": 0.3683992,
+        "fee": "no",
+        "access": "yes"
+      },
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1782921606.324654
     },
     {
       "name": "Warbleton Parish Church",
@@ -17880,7 +17923,10 @@
       "light_pollution": "rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1782921614.712115
     },
     {
       "name": "Horse Shoe Point",
@@ -20902,7 +20948,24 @@
       "light_pollution": "rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": {
+        "name": "National Trust",
+        "distance_m": 351,
+        "lat": 51.9617177,
+        "lng": 1.0195398,
+        "fee": "yes",
+        "access": "yes"
+      },
+      "nearest_toilets": {
+        "name": "Public toilet",
+        "distance_m": 203,
+        "lat": 51.9603667,
+        "lng": 1.0199758,
+        "fee": "no",
+        "access": "yes"
+      },
+      "amenities_fetched_at": 1782922867.9359622
     },
     {
       "name": "Centenary Square - Birmingham",
@@ -21730,7 +21793,10 @@
       "light_pollution": "rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1782922858.688986
     },
     {
       "name": "RAF Kenley Tribute Memorial",
@@ -22420,7 +22486,10 @@
       "light_pollution": "rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1782923455.7785769
     },
     {
       "name": "All Saint's Methodist Church Hall - Abingdon",
@@ -22600,7 +22669,17 @@
       "light_pollution": "rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 493,
+        "lat": 50.9500297,
+        "lng": 0.3683992,
+        "fee": "no",
+        "access": "yes"
+      },
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1782923435.294091
     },
     {
       "name": "Sheepstreet Lane",
@@ -23451,7 +23530,10 @@
       "light_pollution": "rural",
       "site_type": "Go Stargazing Site",
       "has_parking": true,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1782921637.7773252
     },
     {
       "name": "Four Seasons Stargazing",
@@ -28951,7 +29033,10 @@
       "light_pollution": "rural",
       "site_type": "Go Stargazing Site",
       "has_parking": true,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1782923446.3566751
     },
     {
       "name": "RSPB Pulborough Brooks",
@@ -29496,7 +29581,10 @@
       "light_pollution": "rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": true
+      "has_toilets": true,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1782921622.5413141
     },
     {
       "name": "NightSky Glamping",
@@ -33260,7 +33348,10 @@
       "light_pollution": "rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1782921646.6664052
     },
     {
       "name": "Piazzi Smyth Observatory",

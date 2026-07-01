@@ -51,6 +51,7 @@
   </script>
 
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔭</text></svg>" />
+  <script>/* dark mode is always the default on load */</script>
 
   <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -311,12 +312,27 @@
       font-size: 0.72rem;
       border-bottom: 1px solid var(--border);
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 0.5rem;
       color: var(--muted);
     }
     .lunar-banner .moon-emoji { font-size: 1rem; }
     .lunar-banner strong { color: var(--text); }
+    .moon-text { display: flex; flex-direction: column; gap: 0.1rem; }
+    .moon-name { font-size: 0.72rem; }
+    .moon-details {
+      display: inline-flex; align-items: center; gap: 0.22rem;
+      font-size: 0.7rem;
+      padding: 0; border: none; background: none;
+    }
+    .moon-qual-excellent { color: #a78bfa; }
+    .moon-qual-good      { color: #6ee7b7; }
+    .moon-qual-fair      { color: #fbbf24; }
+    .moon-qual-poor      { color: #f87171; }
+    .moon-qual-very-poor { color: #f87171; }
+    .chip-restricted {
+      color: #fb923c; border-color: #9a3412; background: rgba(251,146,60,0.1);
+    }
 
     .btn {
       display: block;
@@ -617,11 +633,11 @@
     /* chip info icon */
     .chip-i {
       cursor: help; font-size: 0.6rem;
-      color: rgba(255,255,255,0.35); margin-left: 0.18rem;
+      color: currentColor; opacity: 0.55; margin-left: 0.18rem;
       line-height: 1; vertical-align: middle;
-      transition: color 0.15s;
+      transition: opacity 0.15s, color 0.15s;
     }
-    .chip-i:hover { color: var(--accent); }
+    .chip-i:hover { opacity: 1; color: var(--accent); }
 
     /* floating info tooltip (pointer-events:auto so links are clickable) */
     #info-tip {
@@ -827,8 +843,8 @@
     /* scrollbar for results */
     .results-list { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
 
-    /* ── App Info dropdown (mobile header, hidden on desktop) ── */
-    .app-info-wrap { display: none; }
+    /* ── App Info dropdown (desktop + mobile header) ── */
+    .app-info-wrap { display: block; position: relative; }
     .app-info-btn {
       background: rgba(78,154,241,0.1);
       border: 1px solid rgba(78,154,241,0.25);
@@ -841,6 +857,23 @@
       line-height: 1.4;
     }
     .app-info-btn:active { background: rgba(78,154,241,0.2); }
+
+    /* ── Theme toggle button ── */
+    .theme-toggle-btn {
+      margin-left: auto;
+      background: rgba(78,154,241,0.1);
+      border: 1px solid rgba(78,154,241,0.25);
+      color: var(--text);
+      padding: 0.28rem 0.55rem;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      white-space: nowrap;
+      line-height: 1.4;
+      flex-shrink: 0;
+    }
+    .theme-toggle-btn:active { background: rgba(78,154,241,0.2); }
+
     .app-info-dropdown {
       display: none;
       position: absolute;
@@ -896,9 +929,15 @@
       header h1 { font-size: 1rem; }
       header .subtitle { display: none; }
       .app-info-wrap {
-        display: block;
         position: absolute;
         right: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+      .theme-toggle-btn {
+        margin-left: 0;
+        position: absolute;
+        left: 0.75rem;
         top: 50%;
         transform: translateY(-50%);
       }
@@ -955,13 +994,129 @@
       }
       .card-link-btn:active { background: rgba(78,154,241,0.15); }
     }
+    /* ── Light mode (warm parchment) ── */
+    .light-mode {
+      --bg:      #F1E2D1;
+      --surface: #FDF8F2;
+      --border:  #C9B8A6;
+      --text:    #1c1108;
+      --muted:   #5a4838;
+      --accent:  #2575d4;
+      --accent2: #6d4fcb;
+      --good:    #16a068;
+      --warn:    #b45309;
+      --bad:     #dc2626;
+    }
+    .light-mode body {
+      background: linear-gradient(180deg, #EDD8C4 0%, #F1E2D1 50%, #EAD8C6 100%);
+      color: var(--text);
+    }
+    .light-mode body::before { opacity: 0; }
+    .light-mode header {
+      background: linear-gradient(110deg, #FDF8F2, #F6EEE3);
+      border-bottom-color: rgba(160,110,60,0.18);
+      box-shadow: 0 12px 36px rgba(0,0,0,0.07);
+    }
+    .light-mode header h1 { color: #1c1108; text-shadow: none; }
+    .light-mode aside { background: #F7EFE4; border-right-color: var(--border); }
+    .light-mode .form-section { background: rgba(253,248,242,0.98); backdrop-filter: none; }
+    .light-mode .status-bar { background: rgba(0,0,0,0.015); }
+    .light-mode .sun-info {
+      background: linear-gradient(180deg, #FAF4EC, #F3EAE0);
+      border-color: rgba(160,110,60,0.18);
+    }
+    .light-mode input, .light-mode select {
+      background: #FDF8F2;
+      border-color: rgba(160,110,60,0.25);
+      color: var(--text);
+    }
+    .light-mode input:focus, .light-mode select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(37,117,212,0.14);
+    }
+    .light-mode input[type="date"]::-webkit-calendar-picker-indicator { filter: none; opacity: 0.55; }
+    .light-mode .date-picker-btn { background: #FDF8F2; border-color: var(--border); color: var(--text); }
+    .light-mode .tab-switcher { background: rgba(0,0,0,0.06); }
+    .light-mode .sort-toggle { background: rgba(0,0,0,0.06); }
+    .light-mode .sort-bar { background: rgba(0,0,0,0.02); }
+    .light-mode .site-card {
+      background: linear-gradient(180deg, #FFFFFF, #FBF5EE);
+      border-color: rgba(160,110,60,0.14);
+    }
+    .light-mode .site-card:hover, .light-mode .site-card.active {
+      background: radial-gradient(circle at 10% 15%, rgba(37,117,212,0.06), transparent 24%),
+                  linear-gradient(180deg, #F8F4EF, #EDE5DA);
+      border-left-color: var(--accent);
+      box-shadow: 0 22px 44px rgba(0,0,0,0.09);
+    }
+    .light-mode .site-card .name { color: #1c1108; }
+    .light-mode .site-card .address { color: rgba(50,32,14,0.72); }
+    .light-mode .site-card .rank { color: rgba(50,32,14,0.55); }
+    .light-mode .site-card .dist-val { color: rgba(50,32,14,0.55); }
+    .light-mode .search-wrap input, .light-mode .search-clear {
+      background: #FDF8F2; color: var(--text); border-color: var(--border);
+    }
+    .light-mode #score-tip, .light-mode #info-tip {
+      background: #FDF8F2; border-color: var(--border); color: var(--text);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.13);
+    }
+    .light-mode .site-autocomplete, .light-mode .app-info-dropdown {
+      background: #FDF8F2; border-color: var(--border);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+    }
+    .light-mode .app-info-dropdown a { color: var(--text); border-bottom-color: var(--border); }
+    .light-mode .app-info-dropdown a:hover,
+    .light-mode .app-info-dropdown a:active { background: rgba(160,110,60,0.08); }
+    .light-mode .site-ac-item:hover { background: rgba(160,110,60,0.07); }
+    .light-mode .site-ac-name { color: var(--text); }
+    .light-mode .site-ac-addr { color: var(--muted); }
+    .light-mode .app-info-btn, .light-mode .theme-toggle-btn {
+      background: rgba(37,117,212,0.1); border-color: rgba(37,117,212,0.3);
+    }
+    .light-mode .leaflet-popup-content-wrapper {
+      background: #FDF8F2; color: var(--text); border-color: var(--border);
+    }
+    .light-mode .leaflet-popup-tip { background: #FDF8F2; }
+    .light-mode #loading-overlay, .light-mode #mobile-loading-overlay {
+      background: rgba(235,220,200,0.88);
+    }
+    .light-mode .chip            { background: rgba(240,228,210,0.9); border-color: rgba(0,0,0,0.12); }
+    .light-mode .chip-dark       { color: #4c1d95; background: rgba(124,92,252,0.1); }
+    .light-mode .chip-rural      { color: #14532d; background: rgba(34,197,94,0.1); }
+    .light-mode .chip-semirural  { color: #134e4a; background: rgba(20,184,166,0.1); }
+    .light-mode .chip-suburban   { color: #78350f; background: rgba(234,179,8,0.1); }
+    .light-mode .chip-urban      { color: #7f1d1d; background: rgba(239,68,68,0.1); }
+    .light-mode .chip-unknown    { color: #374151; background: rgba(0,0,0,0.06); }
+    .light-mode .chip-type       { color: #1e3a8a; background: rgba(59,130,246,0.1); }
+    .light-mode .chip-cloud      { background: rgba(59,130,246,0.08); }
+    .light-mode .chip-amenity    { color: #14532d; background: rgba(34,197,94,0.1); }
+    .light-mode .chip-moon-excellent { color: #4c1d95; background: rgba(167,139,250,0.1); }
+    .light-mode .chip-moon-good      { color: #064e3b; background: rgba(110,231,183,0.1); }
+    .light-mode .chip-moon-fair      { color: #78350f; background: rgba(251,191,36,0.1); }
+    .light-mode .chip-moon-poor,
+    .light-mode .chip-moon-very-poor { color: #7f1d1d; background: rgba(248,113,113,0.1); }
+    .light-mode .chip-confidence { color: #78350f; background: rgba(251,191,36,0.1); }
+    .light-mode .chip-restricted { color: #9a3412; background: rgba(251,146,60,0.1); }
+    .light-mode .amenity-free { color: #15803d; }
+    .light-mode .amenity-paid { color: #92400e; }
+    .light-mode .score-bar { background: #C9B8A6; }
+    .light-mode .score-val { color: #1d4ed8; }
+    .light-mode .stip-title, .light-mode .sort-label { color: var(--muted); }
+    .light-mode .stip-val { color: #1d4ed8; }
+    .light-mode .stip-cont { color: #5b21b6; }
+    .light-mode .lunar-banner { color: var(--muted); }
+    .light-mode .moon-qual-excellent { color: #4c1d95; }
+    .light-mode .moon-qual-good      { color: #064e3b; }
+    .light-mode .moon-qual-fair      { color: #78350f; }
+    .light-mode .moon-qual-poor      { color: #7f1d1d; }
+    .light-mode .moon-qual-very-poor { color: #7f1d1d; }
   </style>
 </head>
 <body>
 
 <header>
   <h1>No-Haze Stargaze</h1>
-  <span class="subtitle">Dark Sky Sites: <a href="https://www.gostargazing.co.uk" target="_blank" rel="noopener" style="color:inherit">gostargazing.co.uk</a> · Amenities: <a href="https://www.openstreetmap.org" target="_blank" rel="noopener" style="color:inherit">OpenStreetMap</a> · Weather: <a href="https://open-meteo.com" target="_blank" rel="noopener" style="color:inherit">Open-Meteo</a> · <a href="https://form.typeform.com/to/q3xO7PnE" target="_blank" rel="noopener" style="color:inherit">Help Us Improve!</a> · <a href="mailto:nohazestargaze@gmail.com" style="color:inherit">Contact Us</a></span>
+  <button class="theme-toggle-btn" id="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle light/dark mode">☀</button>
   <div class="app-info-wrap" id="app-info-wrap">
     <button class="app-info-btn" id="app-info-btn" onclick="toggleAppInfo()" aria-expanded="false" aria-label="App Info">App Info &#x25BE;</button>
     <div class="app-info-dropdown" id="app-info-dropdown" role="menu">
@@ -1150,6 +1305,42 @@
 <div id="info-tip" onmouseenter="keepInfoTip()" onmouseleave="hideInfoTipDelayed()"></div>
 
 <script>
+// ── Restricted access sites ────────────────────────────────────────────────
+const RESTRICTED_SLUGS = new Set([
+  // private_or_prior_arrangement_only (65 sites — slugs from gostargazing.co.uk URLs)
+  "little-easton-manor","burghley-house","hardwick-park-visitors-centre",
+  "parkgate-shopping-centre","cotswold-discovery-centre","emberton-country-park",
+  "castell-aberlleiniog","hinstock-memorial-hall","falstone-village-hall",
+  "the-national-stone-centre","how-stean-gorge","worthy-farm",
+  "old-college-aberystwyth-university","rspb-dungeness","tanat-valley-light-railway",
+  "orford-ness-national-nature-reserve","cody-observatory","rhondda-heritage-park",
+  "dyrham-park-national-trust","brockholes-nature-reserve","tabor-centre",
+  "the-space-at-field-lane","hadleigh-country-park","tredegar-house-national-trust",
+  "findon-place","exeter-university-physics-building","york-knavesmire",
+  "flag-fen-archaeology-park","tyntesfield-house","severndroog-castle",
+  "birdsall-house","fountains-abbey","keld-resource-centre","harehope-quarry-project",
+  "hexham-racecourse","wells-mendip-museum","herschel-astronomical-society-observatory",
+  "rhyd-ddu-outdoor-centre","samuel-worth-chapel","ballamoar-campsite-isle-man",
+  "broughton-sanctuary","chelmer-valley-high-school","rspb-minsmere",
+  "half-moon-inn-cade-street","diss-golf-club","deal-castle","earth-camp-chailey",
+  "messems-west","bodiam-castle-national-trust","nottingham-contemporary",
+  "friars-square-shopping-centre","dolwyddelan-castle","lanhydrock-national-trust",
+  "maumbury-rings","low-mill-outdoor-centre","st-andrews-school-of-physics-and-astronomy",
+  "kestle-barton","westminster-reference-library","bradfield-centre-cambridge-science-park",
+  "sackville-observatory","bayfordbury-observatory","toothill-observatory",
+  "alston-observatory","athenaeum-observatory","edinburgh-playfair-observatory",
+  // private_venue (29 sites)
+  "abbey-gardens-bury","aberdare-coliseum-theatre","aberdeen-science-centre",
+  "abingdon-road-car-park-tubney","aden-country-park","ainsdale-discovery-centre",
+  "alice-holt-forest-forestry-england","all-saints-church-hall-sidley",
+  "allendale-village-hall","alnmouth-golf-club","alston-moor-golf-club","alston-town-hall",
+  "amberley-museum-heritage-centre","ambersham-polo-grounds","american-museum-and-gardens",
+  "amersham-school","an-lanntair","an-lochan-inverness-college-campus",
+  "ansty-pick-farm-shop","arlington-court-national-trust","artrix-arts-centre",
+  "ascott-estate-national-trust","ash-rescue-centre","ashlack-hall","ashmore-village-hall",
+  "aston-hall","astronomy-ireland-head-office","attenborough-nature-reserve","attingham-park",
+]);
+
 // ── State ──────────────────────────────────────────────────────────────────
 let map, originMarker, siteMarkers = [], activeSiteIdx = -1;
 let _activeMarkerIdx = -1;
@@ -1878,11 +2069,17 @@ function renderResults(data) {
   const lunar = data.lunar;
   const lunarBanner = document.getElementById('lunar-banner');
   if (lunar) {
-    const qualityClass = `chip-moon-${lunar.quality}`;
+    const quality = lunar.quality.replace(/ /g, '-');   // 'very poor' → 'very-poor' for CSS/lookup
+    const qualityLabel = lunar.quality;                  // keep spaces for display
     lunarBanner.innerHTML =
       `<span class="moon-emoji">${lunar.emoji}</span>` +
-      `<span>Moon: <strong>${lunar.phase_name}</strong> &mdash; ` +
-      `<span class="chip ${qualityClass}" style="display:inline-flex">${lunar.illumination_pct}% illuminated &middot; ${lunar.quality}</span></span>`;
+      `<span class="moon-text">` +
+        `<span class="moon-name">Moon: <strong>${lunar.phase_name}</strong></span>` +
+        `<span class="moon-details moon-qual-${quality}">` +
+          `${lunar.illumination_pct}% illuminated &middot; ${qualityLabel}&thinsp;` +
+          `<span class="chip-i" data-tip-type="lunar" data-tip-quality="${quality}" data-tip-pct="${lunar.illumination_pct}" onmouseenter="showChipTip(event,this)" onmouseleave="hideInfoTipDelayed()">ⓘ</span>` +
+        `</span>` +
+      `</span>`;
     lunarBanner.style.display = 'flex';
   } else {
     lunarBanner.style.display = 'none';
@@ -1955,24 +2152,14 @@ function buildCard(rec, idx) {
     : '☁ No forecast';
   const cloudColor = cloudColorHex(rec.avg_cloud_cover);
   const pollChip = pollutionChip(rec.site.light_pollution, rec.site.url);
+  const restrictedChip = RESTRICTED_SLUGS.has(site.slug)
+    ? `<span class="chip chip-restricted">🔒 Restricted access</span>` : '';
   const typeChip = rec.site.site_type === 'Dark Sky Discovery Site'
     ? `<span class="chip chip-type">${rec.site.site_type}</span>` : '';
   const parkingChip = site.has_parking === true
     ? '<span class="chip chip-amenity">🅿 Parking</span>' : '';
   const toiletsChip = site.has_toilets === true
     ? '<span class="chip chip-amenity">🚻 Toilets</span>' : '';
-  // Moon chip — uses best_date's lunar illumination if available
-  const moonIllum = rec.lunar_illumination_pct !== undefined
-    ? rec.lunar_illumination_pct
-    : (rec._lunarIllum || null);
-  const moonQuality = rec.weather && rec.weather.best_date && window._lunarByDate
-    ? lunarQuality(window._lunarByDate[rec.weather.best_date] || 0)
-    : null;
-  const moonIllumVal = rec.weather && rec.weather.best_date && window._lunarByDate
-    ? (window._lunarByDate[rec.weather.best_date] ?? null) : null;
-  const moonChip = moonIllumVal !== null
-    ? `<span class="chip chip-moon-${lunarQuality(moonIllumVal)}">🌙 ${moonIllumVal}%&thinsp;<span class="chip-i" data-tip-type="lunar" data-tip-quality="${lunarQuality(moonIllumVal)}" data-tip-pct="${moonIllumVal}" onmouseenter="showChipTip(event,this)" onmouseleave="hideInfoTipDelayed()">ⓘ</span></span>`
-    : '';
   const confSuffix = (rec.avg_cloud_cover !== null && window._forecastConfidenceLabel)
     ? ` (${window._forecastConfidenceLabel.toLowerCase()})`
     : '';
@@ -2002,11 +2189,11 @@ function buildCard(rec, idx) {
       <div class="address">${esc(site.address || 'No address')}</div>
       <div class="chips">
         ${pollChip}
+        ${restrictedChip}
         ${typeChip}
         ${parkingChip}
         ${toiletsChip}
         <span class="chip chip-cloud" style="color:${cloudColor}">${cloudTxt}${confSuffix}</span>
-        ${moonChip}
       </div>
       <div class="score-bar-wrap" onmouseenter="showScoreTip(event,currentRecs[${origIdx}])" onmouseleave="hideScoreTip()" onmousemove="positionScoreTip(event)">
         <div class="score-bar">
@@ -2286,12 +2473,13 @@ function scoreColor(score) {
 }
 
 function cloudColorHex(pct) {
-  if (pct === null || pct === undefined) return '#6b80a8';
-  if (pct <= 20) return '#34d399';
-  if (pct <= 40) return '#6ee7b7';
-  if (pct <= 60) return '#fbbf24';
-  if (pct <= 80) return '#f59e0b';
-  return '#f87171';
+  const light = document.documentElement.classList.contains('light-mode');
+  if (pct === null || pct === undefined) return light ? '#5a4838' : '#6b80a8';
+  if (pct <= 20) return light ? '#15803d' : '#34d399';
+  if (pct <= 40) return light ? '#166534' : '#6ee7b7';
+  if (pct <= 60) return light ? '#92400e' : '#fbbf24';
+  if (pct <= 80) return light ? '#b45309' : '#f59e0b';
+  return light ? '#991b1b' : '#f87171';
 }
 
 function pollutionChip(level, siteUrl) {
@@ -2330,6 +2518,13 @@ function hideLoading() {
   if (mob) mob.classList.remove('visible');
 }
 
+// ── Theme toggle ───────────────────────────────────────────────────────────
+function toggleTheme() {
+  const isLight = document.documentElement.classList.toggle('light-mode');
+  const btn = document.getElementById('theme-toggle-btn');
+  if (btn) btn.textContent = isLight ? '🌙' : '☀';
+}
+
 // ── App Info dropdown (mobile header) ─────────────────────────────────────
 function toggleAppInfo() {
   const dd  = document.getElementById('app-info-dropdown');
@@ -2349,6 +2544,7 @@ function closeAppInfo() {
 
 // Allow pressing Enter in location input to search
 document.addEventListener('DOMContentLoaded', () => {
+
   initMap();
   initForm();
   pollStatus();
