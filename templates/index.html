@@ -899,6 +899,14 @@
     }
     .app-info-dropdown a:last-child { border-bottom: none; }
     .app-info-dropdown a:active { background: rgba(78,154,241,0.1); }
+    .app-info-stat {
+      display: flex; align-items: center; gap: 0.4rem;
+      padding: 0.55rem 1rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      line-height: 1.4;
+    }
 
     /* ── Mobile card links (hidden on desktop) ── */
     .card-links-mobile { display: none; }
@@ -1120,6 +1128,8 @@
   <div class="app-info-wrap" id="app-info-wrap">
     <button class="app-info-btn" id="app-info-btn" onclick="toggleAppInfo()" aria-expanded="false" aria-label="App Info">App Info &#x25BE;</button>
     <div class="app-info-dropdown" id="app-info-dropdown" role="menu">
+      <div class="app-info-stat"><div class="status-dot" id="status-dot"></div><span id="status-text">Loading…</span></div>
+      <div class="app-info-stat"><span id="forecast-bar-text">Checking forecast…</span></div>
       <a href="https://www.gostargazing.co.uk" target="_blank" rel="noopener">Dark Sky Sites: gostargazing.co.uk</a>
       <a href="https://www.openstreetmap.org" target="_blank" rel="noopener">Amenities: OpenStreetMap</a>
       <a href="https://open-meteo.com" target="_blank" rel="noopener">Weather: Open-Meteo</a>
@@ -1241,16 +1251,6 @@
         </div>
 
       </div>
-    </div>
-
-    <!-- Status bar -->
-    <div class="status-bar">
-      <div class="status-dot" id="status-dot"></div>
-      <span id="status-text">Checking status…</span>
-    </div>
-    <!-- Forecast freshness -->
-    <div class="status-bar" id="forecast-bar" style="border-top:none;padding-top:0.15rem">
-      <span id="forecast-bar-text" style="color:var(--muted);font-size:0.7rem">Checking forecast…</span>
     </div>
 
     <!-- Results header -->
@@ -2057,13 +2057,13 @@ function renderResults(data) {
   header.textContent = `${recs.length} sites found (checking ${data.sites_checked} within range)`;
   if (data.forecast_refreshing) {
     header.textContent += ' · forecast updating…';
-  } else if (data.forecast_cached_at) {
-    const nextRefresh = new Date((data.forecast_cached_at + 3 * 3600) * 1000);
-    const hhmm = nextRefresh.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-    header.textContent += ` · next cloud forecast refresh at ${hhmm}`;
-  } else {
-    header.textContent += ' · next forecast loading…';
-  }
+  // } else if (data.forecast_cached_at) {
+  //   const nextRefresh = new Date((data.forecast_cached_at + 3 * 3600) * 1000);
+  //   const hhmm = nextRefresh.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  //   header.textContent += ` · next cloud forecast refresh at ${hhmm}`;
+  // } else {
+  //   header.textContent += ' · next forecast loading…';
+  // }
 
   // Lunar banner
   const lunar = data.lunar;
