@@ -2398,8 +2398,8 @@ function filterCards(query) {
 }
 
 // ── Custom weights ───────────────────────────────────────────────────────────
-const _DEFAULT_WEIGHTS    = { cloud: 39, pollution: 33, distance: 28 }; // type removed (was 10%)
-const _DEFAULT_WEIGHTS_UK = { cloud: 54, pollution: 46, distance: 0  }; // type removed
+const _DEFAULT_WEIGHTS    = { cloud: 38, pollution: 37, distance: 25 }; // type removed (was 10%)
+const _DEFAULT_WEIGHTS_UK = { cloud: 51, pollution: 49, distance: 0  }; // type removed
 let _activeWeights = null;     // null = backend defaults
 let _pendingWeights = { ..._DEFAULT_WEIGHTS };
 let _lockedSliders  = new Set();
@@ -2517,8 +2517,8 @@ function scoreBreakdownHtml(rec) {
                 distance: (_activeWeights.distance ?? 0) / totalW };
   } else {
     weights = useUkWeights
-      ? { cloud: 0.5385, pollution: 0.4615 }           // 35/65, 30/65
-      : { cloud: 0.3889, pollution: 0.3333, distance: 0.2778 }; // 35/90, 30/90, 25/90
+      ? { cloud: 0.5067, pollution: 0.4933 }           // 38/75, 37/75
+      : { cloud: 0.38,   pollution: 0.37,   distance: 0.25   }; // 38/100, 37/100, 25/100
   }
   const rows = [
     ['☁ Cloud',      rec.cloud_score,      weights.cloud],

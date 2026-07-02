@@ -96,17 +96,17 @@ def score_site(
 
     if ignore_distance:
         total_score = (
-            cloud_score * 0.35
-            + pollution_score * 0.30
+            cloud_score * 0.38
+            + pollution_score * 0.37
             # + type_score * 0.10
-        ) / 0.65
+        ) / 0.75
     else:
         total_score = (
-            cloud_score * 0.35
-            + pollution_score * 0.30
+            cloud_score * 0.38
+            + pollution_score * 0.37
             + distance_score * 0.25
             # + type_score * 0.10
-        ) / 0.90
+        ) / 1.00
 
     return {
         "site": site,

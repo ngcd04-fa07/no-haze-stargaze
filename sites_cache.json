@@ -1910,28 +1910,6 @@
       "amenities_fetched_at": 1782631482.840555
     },
     {
-      "name": "Elsdon Village Hall",
-      "slug": "elsdon-village-hall-2",
-      "url": "https://gostargazing.co.uk/locations/elsdon-village-hall-2/",
-      "address": "Elsdon, Otterburn, Tyne and Wear, NE19 1AA",
-      "latitude": 55.233713,
-      "longitude": -2.102521,
-      "light_pollution": "dark site",
-      "site_type": "Dark Sky Discovery Site",
-      "has_parking": true,
-      "has_toilets": null,
-      "nearest_parking": {
-        "name": "Car park",
-        "distance_m": 167,
-        "lat": 55.2339991,
-        "lng": -2.0999296,
-        "fee": "no",
-        "access": "yes"
-      },
-      "nearest_toilets": null,
-      "amenities_fetched_at": 1782631572.357553
-    },
-    {
       "name": "Llanelian Community Centre",
       "slug": "llanelian-community-centre",
       "url": "https://gostargazing.co.uk/locations/llanelian-community-centre/",
@@ -2694,21 +2672,6 @@
       "has_toilets": null
     },
     {
-      "name": "Cotswold Discovery Centre",
-      "slug": "cotswold-discovery-centre-2",
-      "url": "https://gostargazing.co.uk/locations/cotswold-discovery-centre-2/",
-      "address": "The Old Prison, Northleach, Gloucestershire, GL54 3JH",
-      "latitude": 51.8330311,
-      "longitude": -1.8433086000000003,
-      "light_pollution": "rural",
-      "site_type": "Unknown",
-      "has_parking": false,
-      "has_toilets": null,
-      "nearest_parking": null,
-      "nearest_toilets": null,
-      "amenities_fetched_at": 1782631500.6753469
-    },
-    {
       "name": "Great Wood - Forestry Commission",
       "slug": "great-wood-forestry-commission",
       "url": "https://gostargazing.co.uk/locations/great-wood-forestry-commission/",
@@ -3038,18 +3001,6 @@
       "site_type": "Unknown",
       "has_parking": false,
       "has_toilets": true
-    },
-    {
-      "name": "Green Dragon Eco Farm",
-      "slug": "green-dragon-eco-farm-2",
-      "url": "https://gostargazing.co.uk/locations/green-dragon-eco-farm-2/",
-      "address": "Claydon Road, Hogshaw, Buckinghamshire, MK18 3LA",
-      "latitude": 51.9144765,
-      "longitude": -0.8957831999999826,
-      "light_pollution": "semi-rural",
-      "site_type": "Unknown",
-      "has_parking": false,
-      "has_toilets": null
     },
     {
       "name": "Chevron Fold Car Park",
@@ -3595,18 +3546,6 @@
       "light_pollution": "dark site",
       "site_type": "Go Stargazing Site",
       "has_parking": true,
-      "has_toilets": null
-    },
-    {
-      "name": "Heddon's Mouth - National Trust",
-      "slug": "heddons-mouth-national-trust-2",
-      "url": "https://gostargazing.co.uk/locations/heddons-mouth-national-trust-2/",
-      "address": "Parracombe, Barstaple, Devon, EX31 4PY",
-      "latitude": 51.216795,
-      "longitude": -3.927304999999933,
-      "light_pollution": "rural",
-      "site_type": "Unknown",
-      "has_parking": false,
       "has_toilets": null
     },
     {
@@ -5178,7 +5117,10 @@
       "light_pollution": "semi-rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783015924.748479
     },
     {
       "name": "Moorland House",
@@ -7679,18 +7621,6 @@
       "longitude": -1.3759847413696207,
       "light_pollution": "semi-rural",
       "site_type": "Unknown",
-      "has_parking": true,
-      "has_toilets": null
-    },
-    {
-      "name": "Glyncorrwg Ponds",
-      "slug": "glyncorrwg-ponds-2",
-      "url": "https://gostargazing.co.uk/locations/glyncorrwg-ponds-2/",
-      "address": "Ynyscorrwg Park, Glyncorrwg, West Glamorgan, SA13 3EA",
-      "latitude": 51.6736976,
-      "longitude": -3.631775100000027,
-      "light_pollution": "rural",
-      "site_type": "Dark Sky Discovery Site",
       "has_parking": true,
       "has_toilets": null
     },
@@ -13415,7 +13345,10 @@
       "light_pollution": "semi-rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783015920.886514
     },
     {
       "name": "Fletching Gardens Vicarage",
@@ -13427,7 +13360,10 @@
       "light_pollution": "semi-rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783015922.170202
     },
     {
       "name": "Guisborough Forest & Walkway Visitor Centre",
@@ -15950,7 +15886,10 @@
       "light_pollution": "semi-rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783015923.455959
     },
     {
       "name": "RyePark House",
@@ -16516,18 +16455,6 @@
       "address": "Lake Road, Keswick, Cumbria, CA12 5DG",
       "latitude": 54.596589,
       "longitude": -3.138176,
-      "light_pollution": "semi-rural",
-      "site_type": "Unknown",
-      "has_parking": true,
-      "has_toilets": null
-    },
-    {
-      "name": "Lakeside Car Park - Keswick",
-      "slug": "lakeside-car-park-keswick-2",
-      "url": "https://gostargazing.co.uk/locations/lakeside-car-park-keswick-2/",
-      "address": "30A Lake Road, Keswick, Cumbria, CA12 5DG, North West England",
-      "latitude": 54.596424,
-      "longitude": -3.138215,
       "light_pollution": "semi-rural",
       "site_type": "Unknown",
       "has_parking": true,
@@ -23709,18 +23636,6 @@
       "amenities_fetched_at": 1782631947.1100621
     },
     {
-      "name": "Hanslope Village Hall",
-      "slug": "hanslope-village-hall-2",
-      "url": "https://gostargazing.co.uk/locations/hanslope-village-hall-2/",
-      "address": "Hanslope, Milton Keynes, Buckinghamshire, MK19 7NZ",
-      "latitude": 52.113569,
-      "longitude": -0.824246,
-      "light_pollution": "semi-rural",
-      "site_type": "Unknown",
-      "has_parking": false,
-      "has_toilets": null
-    },
-    {
       "name": "Hawes Market House",
       "slug": "hawes-market-house",
       "url": "https://gostargazing.co.uk/locations/hawes-market-house/",
@@ -24037,18 +23952,6 @@
       "has_toilets": null
     },
     {
-      "name": "Madley Environmental Study Centre",
-      "slug": "madley-environmental-study-centre-2",
-      "url": "https://gostargazing.co.uk/locations/madley-environmental-study-centre-2/",
-      "address": "Stone Street, Madley, Herefordshire, HR2 9NH",
-      "latitude": 52.032871,
-      "longitude": -2.849208,
-      "light_pollution": "semi-rural",
-      "site_type": "Unknown",
-      "has_parking": false,
-      "has_toilets": null
-    },
-    {
       "name": "Maiden Castle Car Park",
       "slug": "maiden-castle-car-park",
       "url": "https://gostargazing.co.uk/locations/maiden-castle-car-park/",
@@ -24164,18 +24067,6 @@
       "latitude": 54.957436,
       "longitude": -4.484598,
       "light_pollution": "suburban",
-      "site_type": "Unknown",
-      "has_parking": false,
-      "has_toilets": null
-    },
-    {
-      "name": "Norfolk Arms - Sheffield",
-      "slug": "norfolk-arms-sheffield-2",
-      "url": "https://gostargazing.co.uk/locations/norfolk-arms-sheffield-2/",
-      "address": "2 Ringinglow Road, Sheffield, South Yorkshire, S11 7TS",
-      "latitude": 53.349886,
-      "longitude": -1.564319,
-      "light_pollution": "semi-rural",
       "site_type": "Unknown",
       "has_parking": false,
       "has_toilets": null
@@ -24343,28 +24234,6 @@
       "site_type": "Unknown",
       "has_parking": true,
       "has_toilets": null
-    },
-    {
-      "name": "Pippingford Park",
-      "slug": "pippingford-park-2",
-      "url": "https://gostargazing.co.uk/locations/pippingford-park-2/",
-      "address": "Nutley, Uckfield, East Sussex, TN22 3HW",
-      "latitude": 51.057332,
-      "longitude": 0.054344,
-      "light_pollution": "rural",
-      "site_type": "Unknown",
-      "has_parking": false,
-      "has_toilets": null,
-      "nearest_parking": {
-        "name": "Car park",
-        "distance_m": 332,
-        "lat": 51.0556584,
-        "lng": 0.0582693,
-        "fee": "unknown",
-        "access": "yes"
-      },
-      "nearest_toilets": null,
-      "amenities_fetched_at": 1782631189.8719082
     },
     {
       "name": "Portobello Beach",
@@ -24799,18 +24668,6 @@
       "has_toilets": null
     },
     {
-      "name": "The Talbot Inn - Loughton",
-      "slug": "the-talbot-inn-loughton",
-      "url": "https://gostargazing.co.uk/locations/the-talbot-inn-loughton/",
-      "address": "Loughton, Milton Keynes, Buckinghamshire, MK5 8AB",
-      "latitude": 52.02757,
-      "longitude": -0.787924,
-      "light_pollution": "suburban",
-      "site_type": "Unknown",
-      "has_parking": false,
-      "has_toilets": true
-    },
-    {
       "name": "The Wensleydale Experience",
       "slug": "the-wensleydale-experience",
       "url": "https://gostargazing.co.uk/locations/the-wensleydale-experience/",
@@ -24940,18 +24797,6 @@
       "light_pollution": "rural",
       "site_type": "Go Stargazing Site",
       "has_parking": true,
-      "has_toilets": null
-    },
-    {
-      "name": "Westerdale Village Hall",
-      "slug": "westerdale-village-hall-2",
-      "url": "https://gostargazing.co.uk/locations/westerdale-village-hall-2/",
-      "address": "West of Main Street, Westerdale, North Yorkshire, YO21 2DT",
-      "latitude": 54.445357,
-      "longitude": -0.972624,
-      "light_pollution": "dark site",
-      "site_type": "Unknown",
-      "has_parking": false,
       "has_toilets": null
     },
     {
@@ -29066,18 +28911,6 @@
       "has_toilets": true
     },
     {
-      "name": "Ribblehead Viaduct Car Park",
-      "slug": "ribblehead-viaduct-car-park__trashed",
-      "url": "https://gostargazing.co.uk/locations/ribblehead-viaduct-car-park__trashed/",
-      "address": "Far Gearstones, Carnforth, Lancashire, LA6 3AS",
-      "latitude": 54.20931,
-      "longitude": -2.360428,
-      "light_pollution": "rural",
-      "site_type": "Go Stargazing Site",
-      "has_parking": true,
-      "has_toilets": null
-    },
-    {
       "name": "Aysgarth Falls Hotel",
       "slug": "aysgarth-falls-hotel",
       "url": "https://gostargazing.co.uk/locations/aysgarth-falls-hotel/",
@@ -31153,18 +30986,6 @@
       "has_toilets": null
     },
     {
-      "name": "Boscombe Overcliff Nature Reserve",
-      "slug": "boscombe-overcliff-nature-reserve-2",
-      "url": "https://gostargazing.co.uk/locations/boscombe-overcliff-nature-reserve-2/",
-      "address": "Boscombe Cliff Road, Bournemouth, Dorset, BH5 1LN",
-      "latitude": 50.721579,
-      "longitude": -1.832723,
-      "light_pollution": "suburban",
-      "site_type": "Unknown",
-      "has_parking": false,
-      "has_toilets": null
-    },
-    {
       "name": "Sutton Veny Village Hall",
       "slug": "sutton-veny-village-hall",
       "url": "https://gostargazing.co.uk/locations/sutton-veny-village-hall/",
@@ -32540,18 +32361,6 @@
       "latitude": 51.210286,
       "longitude": -2.6446,
       "light_pollution": "suburban",
-      "site_type": "Unknown",
-      "has_parking": false,
-      "has_toilets": null
-    },
-    {
-      "name": "Flag Fen Archaeology Park",
-      "slug": "flag-fen-archaeology-park-2",
-      "url": "https://gostargazing.co.uk/locations/flag-fen-archaeology-park-2/",
-      "address": "The Droveway, Northey Road, Peterborough, Cambridgeshire, PE6 7QJ, East of England",
-      "latitude": 52.574577,
-      "longitude": -0.189789,
-      "light_pollution": "semi-rural",
       "site_type": "Unknown",
       "has_parking": false,
       "has_toilets": null
