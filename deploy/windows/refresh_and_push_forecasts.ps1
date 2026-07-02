@@ -182,25 +182,9 @@ Write-Log "forecast_cache.json has changed - preparing commit."
 Write-LogBlank
 
 # ---------------------------------------------------------------------------
-# Step 5: switch to main, commit, push, switch back
+# Step 5: commit and push to main
 # ---------------------------------------------------------------------------
 Write-Log "[5/5] Committing and pushing forecast_cache.json to main..."
-
-# Switch to main so the commit lands on the right branch
-$checkoutOutput = git checkout main 2>&1
-$checkoutCode   = $LASTEXITCODE
-foreach ($line in $checkoutOutput) {
-    $ts    = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $entry = "[$ts] [git] $line"
-    Write-Host $entry
-    Add-Content -Path $LogFile -Value $entry -Encoding UTF8
-}
-
-if ($checkoutCode -ne 0) {
-    Write-Log "ERROR: git checkout main failed (exit $checkoutCode)." "ERROR"
-    Write-Log "=== RESULT: FAILED (git checkout main) ===" "ERROR"
-    exit 1
-}
 
 # Pull any commits pushed to main during the ~35-min sweep before committing.
 # --autostash handles the modified forecast_cache.json in the working tree.
@@ -216,7 +200,6 @@ foreach ($line in $pullOutput) {
 if ($pullCode -ne 0) {
     Write-Log "ERROR: git pull --rebase --autostash origin main failed (exit $pullCode)." "ERROR"
     Write-Log "=== RESULT: FAILED (git pull before push) ===" "ERROR"
-    git checkout - 2>&1 | Out-Null
     exit 1
 }
 
@@ -229,7 +212,6 @@ foreach ($line in $addOutput) {
 if ($addCode -ne 0) {
     Write-Log "ERROR: git add failed (exit $addCode)." "ERROR"
     Write-Log "=== RESULT: FAILED (git add) ===" "ERROR"
-    git checkout - 2>&1 | Out-Null
     exit 1
 }
 
@@ -246,7 +228,6 @@ foreach ($line in $commitOutput) {
 if ($commitCode -ne 0) {
     Write-Log "ERROR: git commit failed (exit $commitCode)." "ERROR"
     Write-Log "=== RESULT: FAILED (git commit) ===" "ERROR"
-    git checkout - 2>&1 | Out-Null
     exit 1
 }
 
@@ -258,9 +239,6 @@ foreach ($line in $pushOutput) {
     Write-Host $entry
     Add-Content -Path $LogFile -Value $entry -Encoding UTF8
 }
-
-# Return to previous branch regardless of push result
-git checkout - 2>&1 | Out-Null
 
 if ($pushCode -ne 0) {
     Write-Log "ERROR: git push failed (exit $pushCode)." "ERROR"
