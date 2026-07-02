@@ -15,6 +15,7 @@ Endpoints:
 """
 
 import concurrent.futures
+import gc
 import json
 import logging
 import math
@@ -100,6 +101,7 @@ def add_cors_headers(response):
 # ---------------------------------------------------------------------------
 _state = {
     "sites": [],
+    "sites_by_slug": {},       # slug -> site dict; kept in sync with "sites" for O(1) lookup
     "scraping": False,
     "scrape_progress": {"done": 0, "total": 0, "found": 0},
     "scrape_started_at": 0.0,
@@ -126,6 +128,7 @@ def _site_found_cb(site: dict, all_sites: list[dict]) -> None:
     if len(all_sites) % _INCREMENTAL_SAVE_EVERY == 0:
         with _state["lock"]:
             _state["sites"] = list(all_sites)
+            _state["sites_by_slug"] = {s["slug"]: s for s in _state["sites"]}
         # Also persist to cache so a restart can resume quickly
         try:
             scraper.save_cache(all_sites)
@@ -151,6 +154,7 @@ def _do_scrape(force: bool = False) -> None:
                 logger.info("Loaded %d sites from fresh cache.", len(cached_sites))
                 with _state["lock"]:
                     _state["sites"] = cached_sites
+                    _state["sites_by_slug"] = {s["slug"]: s for s in cached_sites}
                     _state["scraped_at"] = scraped_at
                 return
             # Stale cache: pre-load so searches work while re-scraping
@@ -160,6 +164,7 @@ def _do_scrape(force: bool = False) -> None:
             )
             with _state["lock"]:
                 _state["sites"] = cached_sites
+                _state["sites_by_slug"] = {s["slug"]: s for s in cached_sites}
                 _state["scraped_at"] = scraped_at
 
         # Fresh scrape
@@ -179,6 +184,7 @@ def _do_scrape(force: bool = False) -> None:
             now = time.time()
             with _state["lock"]:
                 _state["sites"] = sites
+                _state["sites_by_slug"] = {s["slug"]: s for s in sites}
                 _state["scraped_at"] = now
                 _state["next_refresh_at"] = now + scraper.CACHE_MAX_AGE_SECONDS
             logger.info("Scrape complete: %d sites with coordinates.", len(sites))
@@ -208,6 +214,7 @@ def _preload_cached_sites_on_startup() -> bool:
 
     with _state["lock"]:
         _state["sites"] = cached_sites
+        _state["sites_by_slug"] = {s["slug"]: s for s in cached_sites}
         _state["scraped_at"] = scraped_at
         if scraped_at > 0:
             _state["next_refresh_at"] = scraped_at + scraper.CACHE_MAX_AGE_SECONDS
@@ -721,6 +728,10 @@ threading.Thread(target=_warmup_dns, daemon=True, name="dns-warmup").start()
 
 # Load any persisted forecast data from local disk.
 _load_forecast_cache()
+# Free the ~70 MB temporary Python objects created during JSON parse before
+# the first request arrives. Without this, Python holds the RSS until GC runs
+# lazily, which can push Render's 512 MB limit during cold starts.
+gc.collect()
 # Download from GitHub Releases only when explicitly enabled (Render deployment).
 # Windows self-hosted: FORECAST_CACHE_REMOTE_ENABLED=false (default); the local
 # refresh script (scripts/refresh_forecasts_local.py) manages forecast_cache.json.
@@ -749,10 +760,9 @@ def _fetch_amenities_bg(sites: list[dict]) -> None:
         try:
             data = am.fetch_site_amenities(site["latitude"], site["longitude"])
             with _state["lock"]:
-                for s in _state["sites"]:
-                    if s["slug"] == slug:
-                        s.update(data)
-                        break
+                site_obj = _state["sites_by_slug"].get(slug)
+                if site_obj:
+                    site_obj.update(data)
             logger.debug("Amenities updated: %s", slug)
         except Exception as exc:
             logger.debug("Amenity fetch error (%s): %s", slug, exc)
@@ -1115,9 +1125,12 @@ def api_recommend():
     }
 
     # ---- Read forecast from cache ----
+    # Only copy entries for sites that are actually nearby — avoids a full
+    # shallow-copy of all 2640 entries (was ~0.3 MB per request × 4 threads).
+    nearby_slugs = {s["slug"] for s in nearby}
     with _forecast_state["lock"]:
-        hourly_data: dict = dict(_forecast_state["data"])
-        site_ts: dict = dict(_forecast_state["site_timestamps"])
+        hourly_data: dict = {k: v for k, v in _forecast_state["data"].items() if k in nearby_slugs}
+        site_ts: dict = {k: v for k, v in _forecast_state["site_timestamps"].items() if k in nearby_slugs}
         forecast_cached_at = _forecast_state["cached_at"]
 
     if CACHE_ONLY_FORECASTS:
@@ -1170,8 +1183,11 @@ def api_recommend():
         for site in nearby:
             _forecast_state["last_requested_at"][site["slug"]] = now
 
-    # Persist updates to disk without blocking the response
-    _save_forecast_cache_async()
+    # Persist only when new forecast data was fetched (not in cache-only mode on Render).
+    # Saving on every request in cache-only mode allocates a ~24 MB bytes object
+    # needlessly, since the bundled forecast_cache.json never changes between deploys.
+    if not CACHE_ONLY_FORECASTS:
+        _save_forecast_cache_async()
 
     # ---- Build per-site cloud summary ----
     cloud_data: dict[str, float] = {}
