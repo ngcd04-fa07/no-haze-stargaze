@@ -202,6 +202,24 @@ if ($checkoutCode -ne 0) {
     exit 1
 }
 
+# Pull any commits pushed to main during the ~35-min sweep before committing.
+# --autostash handles the modified forecast_cache.json in the working tree.
+$pullOutput = git pull --rebase --autostash origin main 2>&1
+$pullCode   = $LASTEXITCODE
+foreach ($line in $pullOutput) {
+    $ts    = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $entry = "[$ts] [git] $line"
+    Write-Host $entry
+    Add-Content -Path $LogFile -Value $entry -Encoding UTF8
+}
+
+if ($pullCode -ne 0) {
+    Write-Log "ERROR: git pull --rebase --autostash origin main failed (exit $pullCode)." "ERROR"
+    Write-Log "=== RESULT: FAILED (git pull before push) ===" "ERROR"
+    git checkout - 2>&1 | Out-Null
+    exit 1
+}
+
 $addOutput = git add "forecast_cache.json" 2>&1
 $addCode   = $LASTEXITCODE
 foreach ($line in $addOutput) {
