@@ -381,7 +381,7 @@ def best_window_cloud_cover(
 # ---------------------------------------------------------------------------
 
 BACKGROUND_BATCH_SIZE = 20          # sites per Open-Meteo call
-BACKGROUND_BATCH_DELAY_SECONDS = 15.0  # pause between batches; ~33 min for full sweep at this rate
+BACKGROUND_BATCH_DELAY_SECONDS = 30.0  # pause between batches; ~66 min for full sweep, ~2400 calls/hour (under 5000/hour limit)
 BACKGROUND_CHECKPOINT_EVERY = 20    # call on_batch_complete every N successful batches
 
 

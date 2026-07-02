@@ -180,7 +180,7 @@ def main() -> None:
     end_date = today + timedelta(days=FORECAST_LOOKAHEAD_DAYS)
     logger.info(
         "Fetching %d sites: %s to %s. "
-        "Full sweep takes ~35 min at the conservative rate limit.",
+        "Full sweep takes ~66 min at the conservative rate limit.",
         len(all_sites), today.date(), end_date.date(),
     )
 

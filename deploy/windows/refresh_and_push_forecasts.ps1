@@ -115,7 +115,7 @@ Write-LogBlank
 # Step 2: Run forecast refresh
 # ---------------------------------------------------------------------------
 Write-Log "[2/5] Running forecast refresh script..."
-Write-Log "      This takes approx 35 min for a full site sweep."
+Write-Log "      This takes approx 66 min for a full site sweep."
 Write-LogBlank
 
 & $Python $RefreshScript
