@@ -2336,14 +2336,13 @@ function filterCards(query) {
 function scoreBreakdownHtml(rec) {
   const useUkWeights = Boolean(window._allUk);
   const weights = useUkWeights
-    ? { cloud: 0.4118, pollution: 0.3529, type: 0.1176, lunar: 0.1176 }
-    : { cloud: 0.35, pollution: 0.30, distance: 0.15, type: 0.10, lunar: 0.10 };
+    ? { cloud: 0.4667, pollution: 0.40, type: 0.1333 }
+    : { cloud: 0.35, pollution: 0.30, distance: 0.25, type: 0.10 };
   const rows = [
     ['☁ Cloud',      rec.cloud_score,     weights.cloud],
     ['💡 Pollution', rec.pollution_score, weights.pollution],
     ...(!useUkWeights ? [['📍 Distance', rec.distance_score, weights.distance]] : []),
     ['🏕 Site type', rec.type_score,      weights.type],
-    ['🌙 Lunar',      rec.lunar_score,     weights.lunar],
   ].map(([label, val, w]) => {
     const contrib = (val * w).toFixed(1);
     const pct = Math.round(w * 100);
