@@ -692,16 +692,40 @@
     }
 
     /* ── Weights button in sort bar ── */
+    @keyframes weights-gleam {
+      0%   { background-position: 220% center; }
+      45%  { background-position: -80% center; }
+      100% { background-position: -80% center; }
+    }
+    @keyframes weights-glow {
+      0%,100% { box-shadow: 0 0 5px rgba(180,50,255,0.35); border-color: rgba(180,50,255,0.40); }
+      33%     { box-shadow: 0 0 5px rgba(50,210,130,0.38); border-color: rgba(50,210,130,0.42); }
+      66%     { box-shadow: 0 0 5px rgba(0,170,255,0.35); border-color: rgba(0,170,255,0.40); }
+    }
     .weights-btn {
       margin-left: auto; flex-shrink: 0;
-      background: rgba(78,154,241,0.08);
-      border: 1px solid rgba(78,154,241,0.22);
-      color: var(--muted); font-size: 0.67rem;
+      background: linear-gradient(
+        100deg,
+        rgba(60,80,220,0.08) 10%,
+        rgba(200,50,255,0.32) 28%,
+        rgba(50,220,130,0.36) 50%,
+        rgba(0,180,255,0.30) 68%,
+        rgba(60,80,220,0.08) 88%
+      );
+      background-size: 350% 100%;
+      animation: weights-gleam 4.5s ease-in-out infinite, weights-glow 3.5s linear infinite;
+      border: 1px solid rgba(180,50,255,0.40);
+      color: var(--text); font-size: 0.67rem;
       padding: 0.2rem 0.48rem; border-radius: 5px; cursor: pointer;
-      white-space: nowrap; transition: color 0.15s, background 0.15s;
+      white-space: nowrap; transition: color 0.15s;
     }
-    .weights-btn:hover { color: var(--text); background: rgba(78,154,241,0.18); }
-    .weights-btn.active { color: var(--accent); border-color: rgba(78,154,241,0.55); }
+    .weights-btn:hover {
+      color: var(--text);
+      background: rgba(78,154,241,0.18);
+      box-shadow: none;
+      animation: none;
+    }
+    .weights-btn.active { color: var(--accent); border-color: rgba(78,154,241,0.55); box-shadow: none; animation: none; }
 
     /* ── Weights modal overlay ── */
     .weights-overlay {
@@ -1190,6 +1214,7 @@
     <div class="app-info-dropdown" id="app-info-dropdown" role="menu">
       <div class="app-info-stat"><div class="status-dot" id="status-dot"></div><span id="status-text">Loading…</span></div>
       <div class="app-info-stat"><span id="forecast-bar-text">Checking forecast…</span></div>
+      <a href="https://nohazestargaze.blogspot.com/2026/07/how-to-use-no-haze-stargaze-app.html" target="_blank" rel="noopener">How to Use</a>
       <a href="https://www.gostargazing.co.uk" target="_blank" rel="noopener">Dark Sky Sites: gostargazing.co.uk</a>
       <a href="https://www.openstreetmap.org" target="_blank" rel="noopener">Amenities: OpenStreetMap</a>
       <a href="https://open-meteo.com" target="_blank" rel="noopener">Weather: Open-Meteo</a>
