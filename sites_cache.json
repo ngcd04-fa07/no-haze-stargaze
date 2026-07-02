@@ -16949,7 +16949,10 @@
       "light_pollution": "semi-rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783016343.250512
     },
     {
       "name": "Llety Dewi",
@@ -30428,7 +30431,10 @@
       "light_pollution": "semi-rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783016344.5436
     },
     {
       "name": "Delapre Abbey",
@@ -32711,7 +32717,10 @@
       "light_pollution": "semi-rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783016341.960765
     },
     {
       "name": "Reculver Towers and Roman Fort",
