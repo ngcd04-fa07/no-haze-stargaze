@@ -655,15 +655,18 @@
       border: 1px solid rgba(255,255,255,0.08);
       border-left: none;
       color: var(--muted);
-      cursor: pointer;
+      cursor: default;
       font-size: 0.78rem;
       padding: 0.32rem 0.55rem;
       border-radius: 0 var(--radius) var(--radius) 0;
       line-height: 1;
-      transition: color 0.15s;
+      transition: color 0.15s, opacity 0.15s;
       white-space: nowrap;
+      opacity: 0.32;
+      pointer-events: none;
     }
-    .search-clear:hover { color: var(--text); }
+    .search-clear.active { opacity: 1; pointer-events: auto; cursor: pointer; }
+    .search-clear.active:hover { color: var(--text); }
     .results-list {
       flex: 1;
       overflow-y: auto;
@@ -1341,7 +1344,7 @@
       }
       .date-display-btn { min-height: 44px; font-size: 16px !important; }
       .date-picker-btn { min-height: 44px; min-width: 44px; font-size: 1.1rem; }
-      .search-wrap input { font-size: 15px !important; min-height: 40px; }
+      .search-wrap input { font-size: 0.82rem; }
 
       /* ── Buttons ── */
       .btn { padding: 0.65rem; min-height: 48px; font-size: 0.88rem; margin-top: 0.65rem; }
@@ -2141,7 +2144,7 @@
     <div class="search-wrap" id="search-wrap" style="display:none">
       <input id="results-search" type="text" placeholder="Filter by name or area…"
              oninput="onResultsSearch(this.value)" />
-      <button class="search-clear" id="search-clear" onclick="clearResultsSearch()" style="display:none">&times;</button>
+      <button class="search-clear" id="search-clear" onclick="clearResultsSearch()">&times;</button>
     </div>
 
     <!-- Sort toggle (shown after results load) -->
@@ -3067,7 +3070,7 @@ function renderResults(data) {
   const searchWrap = document.getElementById('search-wrap');
   const searchInput = document.getElementById('results-search');
   searchInput.value = '';
-  document.getElementById('search-clear').style.display = 'none';
+  document.getElementById('search-clear').classList.remove('active');
   const _searchWasHidden = searchWrap.style.display !== 'flex';
   searchWrap.style.display = 'flex';
   if (_searchWasHidden) {
@@ -3076,13 +3079,8 @@ function renderResults(data) {
     setTimeout(() => searchWrap.classList.remove('revealing'), 300);
   }
 
-  // Mobile: show "View Results" CTA and auto-collapse form
+  // Mobile: auto-collapse form after search
   if (window.innerWidth <= 640) {
-    const cta = document.getElementById('mobile-results-cta');
-    if (cta) {
-      cta.textContent = `View ${recs.length} Result${recs.length !== 1 ? 's' : ''} ↓`;
-      cta.style.display = 'flex';
-    }
     const formBody = document.getElementById('form-body');
     if (formBody && !formBody.classList.contains('collapsed')) {
       formBody.classList.add('collapsed');
@@ -3274,13 +3272,13 @@ function lunarQuality(pct) {
 
 // ── Results search / filter ───────────────────────────────────────────────
 function onResultsSearch(val) {
-  document.getElementById('search-clear').style.display = val ? 'block' : 'none';
+  document.getElementById('search-clear').classList.toggle('active', !!val);
   filterCards(val.trim());
 }
 function clearResultsSearch() {
   const inp = document.getElementById('results-search');
   inp.value = '';
-  document.getElementById('search-clear').style.display = 'none';
+  document.getElementById('search-clear').classList.remove('active');
   filterCards('');
   inp.focus();
 }
