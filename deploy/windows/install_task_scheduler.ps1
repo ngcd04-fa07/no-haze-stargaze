@@ -41,7 +41,11 @@ $action1     = New-ScheduledTaskAction `
     -Argument "-NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$scriptPath1`"" `
     -WorkingDirectory $RepoRoot
 
-$trigger1  = New-ScheduledTaskTrigger -RepetitionInterval (New-TimeSpan -Hours $RefreshIntervalHours) -Once -At (Get-Date)
+# Anchor to 02:00 local time so runs fall at 02:00 / 10:00 / 18:00 BST.
+# -RepetitionInterval (not property assignment) ensures indefinite repetition.
+$anchor = (Get-Date).Date.AddHours(2)
+if ((Get-Date) -ge $anchor) { $anchor = $anchor.AddDays(1) }
+$trigger1  = New-ScheduledTaskTrigger -Once -At $anchor -RepetitionInterval (New-TimeSpan -Hours $RefreshIntervalHours)
 $settings1 = New-ScheduledTaskSettingsSet `
     -ExecutionTimeLimit (New-TimeSpan -Hours 2) `
     -StartWhenAvailable `
