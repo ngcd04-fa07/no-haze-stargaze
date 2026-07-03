@@ -647,6 +647,8 @@
       padding: 0.32rem 0.55rem;
       border-radius: var(--radius) 0 0 var(--radius);
       font-size: 0.78rem;
+      -webkit-appearance: none; appearance: none;
+      line-height: 1.2;
     }
     .search-wrap input::placeholder { color: var(--muted); }
     .search-wrap input:focus { outline: none; border-color: rgba(78,154,241,0.5); }
@@ -1344,7 +1346,7 @@
       }
       .date-display-btn { min-height: 44px; font-size: 16px !important; }
       .date-picker-btn { min-height: 44px; min-width: 44px; font-size: 1.1rem; }
-      .search-wrap input { font-size: 0.82rem; }
+      .search-wrap input, .search-clear { padding: 0.22rem 0.45rem; font-size: 0.8rem; line-height: 1.2; }
 
       /* ── Buttons ── */
       .btn { padding: 0.65rem; min-height: 48px; font-size: 0.88rem; margin-top: 0.65rem; }
