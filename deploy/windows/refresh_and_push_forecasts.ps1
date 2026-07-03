@@ -187,7 +187,7 @@ Write-LogBlank
 Write-Log "[5/5] Committing and pushing forecast_cache.json to main..."
 
 # Pull any commits pushed to main during the ~66-min sweep before committing.
-# Save our fresh data first — autostash can leave conflict markers in the file
+# Save our fresh data first - autostash can leave conflict markers in the file
 # if GitHub Actions also pushed a forecast update while we were sweeping.
 $tempCache = Join-Path $env:TEMP "forecast_cache_fresh.json"
 Copy-Item $ForecastCache $tempCache -Force
@@ -208,7 +208,7 @@ if ($pullCode -ne 0) {
     exit 1
 }
 
-# Restore our fresh data unconditionally — if autostash had a conflict it left
+# Restore our fresh data unconditionally - if autostash had a conflict it left
 # conflict markers in the file; we always want the Python-generated version.
 Copy-Item $tempCache $ForecastCache -Force
 Remove-Item $tempCache -ErrorAction SilentlyContinue
@@ -254,7 +254,7 @@ foreach ($line in $pushOutput) {
 if ($pushCode -ne 0) {
     # A concurrent GitHub Actions push may have landed between our pull and push.
     # Pull with -X ours so our freshly generated data wins any conflict, then retry.
-    Write-Log "WARNING: git push rejected — concurrent push likely. Pulling and retrying..." "WARN"
+    Write-Log "WARNING: git push rejected - concurrent push likely. Pulling and retrying..." "WARN"
     $retryOutput = git pull --rebase -X ours origin main 2>&1
     foreach ($line in $retryOutput) { Write-Log "[git] $line" }
     $pushOutput = git push origin main 2>&1
