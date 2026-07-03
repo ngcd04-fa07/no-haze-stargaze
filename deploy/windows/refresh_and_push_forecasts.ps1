@@ -186,8 +186,12 @@ Write-LogBlank
 # ---------------------------------------------------------------------------
 Write-Log "[5/5] Committing and pushing forecast_cache.json to main..."
 
-# Pull any commits pushed to main during the ~35-min sweep before committing.
-# --autostash handles the modified forecast_cache.json in the working tree.
+# Pull any commits pushed to main during the ~66-min sweep before committing.
+# Save our fresh data first — autostash can leave conflict markers in the file
+# if GitHub Actions also pushed a forecast update while we were sweeping.
+$tempCache = Join-Path $env:TEMP "forecast_cache_fresh.json"
+Copy-Item $ForecastCache $tempCache -Force
+
 $pullOutput = git pull --rebase --autostash origin main 2>&1
 $pullCode   = $LASTEXITCODE
 foreach ($line in $pullOutput) {
@@ -199,9 +203,16 @@ foreach ($line in $pullOutput) {
 
 if ($pullCode -ne 0) {
     Write-Log "ERROR: git pull --rebase --autostash origin main failed (exit $pullCode)." "ERROR"
+    Remove-Item $tempCache -ErrorAction SilentlyContinue
     Write-Log "=== RESULT: FAILED (git pull before push) ===" "ERROR"
     exit 1
 }
+
+# Restore our fresh data unconditionally — if autostash had a conflict it left
+# conflict markers in the file; we always want the Python-generated version.
+Copy-Item $tempCache $ForecastCache -Force
+Remove-Item $tempCache -ErrorAction SilentlyContinue
+git stash drop 2>&1 | Out-Null   # clean up any leftover stash
 
 $addOutput = git add "forecast_cache.json" 2>&1
 $addCode   = $LASTEXITCODE
