@@ -31,7 +31,8 @@ if (-not (Test-Path $activate)) {
 . $activate
 
 # Set environment variables
-$env:NO_HAZE_DATA_DIR     = $DataDir
+# NO_HAZE_DATA_DIR intentionally not set — defaults to repo root so the app
+# reads forecast_cache.json from the same location the refresh script writes it.
 $env:CACHE_ONLY_FORECASTS = "true"
 $env:DEPLOYMENT_MODE      = "windows_cloudflare"
 $env:PORT                 = "$Port"

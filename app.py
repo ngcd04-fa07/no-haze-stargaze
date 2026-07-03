@@ -728,6 +728,23 @@ threading.Thread(target=_warmup_dns, daemon=True, name="dns-warmup").start()
 
 # Load any persisted forecast data from local disk.
 _load_forecast_cache()
+
+
+def _forecast_file_watcher() -> None:
+    """Reload forecast cache whenever forecast_cache.json is updated on disk."""
+    last_mtime = 0.0
+    while True:
+        time.sleep(60)
+        try:
+            mtime = os.path.getmtime(FORECAST_CACHE_FILE)
+            if mtime > last_mtime + 1:
+                last_mtime = mtime
+                logger.info("Forecast cache file changed — reloading from disk.")
+                _load_forecast_cache()
+        except FileNotFoundError:
+            pass
+        except Exception as exc:
+            logger.warning("Forecast file watcher error: %s", exc)
 # Free the ~70 MB temporary Python objects created during JSON parse before
 # the first request arrives. Without this, Python holds the RSS until GC runs
 # lazily, which can push Render's 512 MB limit during cold starts.
@@ -739,6 +756,7 @@ if FORECAST_CACHE_REMOTE_ENABLED:
     threading.Thread(target=_download_forecast_cache_bg, daemon=True, name="forecast-download").start()
 else:
     logger.info("Remote forecast download disabled — reading local forecast_cache.json only.")
+    threading.Thread(target=_forecast_file_watcher, daemon=True, name="forecast-watcher").start()
 # Full-sweep manager only starts when the flag is enabled.
 if _BACKGROUND_SWEEP_ENABLED:
     threading.Thread(target=_forecast_cache_manager, daemon=True, name="forecast-cache").start()
