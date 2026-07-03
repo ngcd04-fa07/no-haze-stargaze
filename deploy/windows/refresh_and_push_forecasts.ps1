@@ -252,10 +252,24 @@ foreach ($line in $pushOutput) {
 }
 
 if ($pushCode -ne 0) {
-    Write-Log "ERROR: git push failed (exit $pushCode)." "ERROR"
-    Write-Log "You may need to pull first or check your git credentials." "ERROR"
-    Write-Log "=== RESULT: FAILED (git push) ===" "ERROR"
-    exit 1
+    # A concurrent GitHub Actions push may have landed between our pull and push.
+    # Pull with -X ours so our freshly generated data wins any conflict, then retry.
+    Write-Log "WARNING: git push rejected — concurrent push likely. Pulling and retrying..." "WARN"
+    $retryOutput = git pull --rebase -X ours origin main 2>&1
+    foreach ($line in $retryOutput) { Write-Log "[git] $line" }
+    $pushOutput = git push origin main 2>&1
+    $pushCode   = $LASTEXITCODE
+    foreach ($line in $pushOutput) {
+        $ts    = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+        $entry = "[$ts] [git] $line"
+        Write-Host $entry
+        Add-Content -Path $LogFile -Value $entry -Encoding UTF8
+    }
+    if ($pushCode -ne 0) {
+        Write-Log "ERROR: git push failed after retry (exit $pushCode)." "ERROR"
+        Write-Log "=== RESULT: FAILED (git push) ===" "ERROR"
+        exit 1
+    }
 }
 
 Write-LogBlank

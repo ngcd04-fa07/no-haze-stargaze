@@ -39,11 +39,18 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Save fresh data before pull — a concurrent Windows push during our sweep
+          # can cause an autostash conflict that corrupts forecast_cache.json.
+          cp forecast_cache.json /tmp/forecast_cache_fresh.json
+          git pull --rebase --autostash origin main
+          git stash drop 2>/dev/null || true
+          cp /tmp/forecast_cache_fresh.json forecast_cache.json
           git add forecast_cache.json
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
             git commit -m "Update forecast cache $(date -u '+%Y-%m-%d %H:%M') UTC"
-            git pull --rebase origin main
-            git push origin main
+            # Retry once if a concurrent push lands between our pull and push.
+            # -X ours keeps our freshly generated data on conflict.
+            git push origin main || (git pull --rebase -X ours origin main && git push origin main)
           fi
