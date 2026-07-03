@@ -1,17 +1,17 @@
 name: Refresh Forecast Cache
 
-# Runs at 06:00, 14:00, 22:00 BST (05:00, 13:00, 21:00 UTC) — 4 hours after
-# each Windows scheduled run (02:00, 10:00, 18:00 BST) so the two never overlap.
-# GitHub Actions uses a different IP than the Windows machine, giving a separate
-# Open-Meteo quota: 3 more sweeps/day on top of the Windows 3 = 6 total.
+# Targets 06:00, 14:00, 22:00 BST — midway between Windows runs (02:00, 10:00, 18:00 BST).
+# GitHub Actions crons run ~2-3h late in practice, so crons are set 2h early (03:00,
+# 11:00, 19:00 UTC) to compensate and land closer to the intended spacing.
+# GitHub Actions uses a different IP than the Windows machine = separate Open-Meteo quota.
 #
 # Note: cron times are UTC. In winter (GMT) these fire 1 hour earlier BST-equivalent.
 
 on:
   schedule:
-    - cron: '0 5 * * *'    # 06:00 BST / 05:00 UTC
-    - cron: '0 13 * * *'   # 14:00 BST / 13:00 UTC
-    - cron: '0 21 * * *'   # 22:00 BST / 21:00 UTC
+    - cron: '0 3 * * *'    # targets ~06:00 BST (03:00 UTC + ~2.5h delay)
+    - cron: '0 11 * * *'   # targets ~14:00 BST (11:00 UTC + ~2.5h delay)
+    - cron: '0 19 * * *'   # targets ~22:00 BST (19:00 UTC + ~2.5h delay)
   workflow_dispatch:
 
 jobs:
