@@ -121,6 +121,9 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔭</text></svg>" />
   <script>/* dark mode is always the default on load */</script>
 
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
   <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -149,11 +152,12 @@
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background:
-        radial-gradient(circle at 12% 12%, rgba(119,179,255,0.16), transparent 18%),
-        radial-gradient(circle at 92% 18%, rgba(255,255,255,0.06), transparent 16%),
-        linear-gradient(180deg, #050913 0%, #070e1b 45%, #03060f 100%);
+        radial-gradient(ellipse 90% 55% at 50% -5%, rgba(80,120,255,0.13) 0%, transparent 65%),
+        radial-gradient(ellipse at 95% 0%, rgba(167,139,250,0.09) 0%, transparent 40%),
+        radial-gradient(ellipse at 0% 100%, rgba(30,60,140,0.08) 0%, transparent 50%),
+        linear-gradient(180deg, #060b18 0%, #050a14 55%, #020609 100%);
       color: var(--text);
       height: 100%;
       display: flex;
@@ -166,34 +170,92 @@
       position: absolute;
       inset: 0;
       background-image:
-        radial-gradient(circle at 15% 10%, rgba(255,255,255,0.08), transparent 0.35rem),
-        radial-gradient(circle at 80% 15%, rgba(255,255,255,0.06), transparent 0.3rem),
-        radial-gradient(circle at 45% 70%, rgba(255,255,255,0.05), transparent 0.25rem);
-      opacity: 0.35;
+        radial-gradient(circle at 8%  9%,  rgba(255,255,255,0.10), transparent 0.3rem),
+        radial-gradient(circle at 23% 18%, rgba(255,255,255,0.06), transparent 0.2rem),
+        radial-gradient(circle at 72% 12%, rgba(255,255,255,0.07), transparent 0.25rem),
+        radial-gradient(circle at 88% 7%,  rgba(255,255,255,0.08), transparent 0.28rem),
+        radial-gradient(circle at 55% 82%, rgba(255,255,255,0.05), transparent 0.2rem),
+        radial-gradient(circle at 14% 65%, rgba(255,255,255,0.04), transparent 0.15rem);
+      opacity: 0.55;
       pointer-events: none;
     }
 
     /* ── header ── */
+    @keyframes header-aurora {
+      0%, 100% { opacity: 0.6;  transform: translateX(-8%) scaleX(1.05); }
+      50%      { opacity: 1;    transform: translateX(8%)  scaleX(1.05); }
+    }
+    @keyframes nebula-breathe {
+      0%, 100% { opacity: 0.75; transform: scale(1); }
+      50%      { opacity: 1;    transform: scale(1.06); }
+    }
     header {
-      background: linear-gradient(110deg, rgba(10,16,31,0.98), rgba(5,9,19,0.98));
-      border-bottom: 1px solid rgba(94,157,255,0.15);
-      padding: 1rem 1.4rem;
+      background: rgba(5,9,22,0.52);
+      backdrop-filter: blur(22px) saturate(1.6);
+      -webkit-backdrop-filter: blur(22px) saturate(1.6);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding: 1.05rem 1.6rem;
       display: flex;
       align-items: center;
       gap: 0.9rem;
-      box-shadow: inset 0 -1px 0 rgba(255,255,255,0.02), 0 12px 36px rgba(0,0,0,0.22);
+      box-shadow: 0 1px 0 rgba(255,255,255,0.05), 0 8px 32px rgba(0,0,0,0.35);
       position: relative;
-      z-index: 1;
+      z-index: 200;
+      overflow: hidden;
     }
+    /* Nebula + star layer */
+    header::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        /* stars */
+        radial-gradient(circle at  9% 35%, rgba(255,255,255,0.90), transparent 1.2px),
+        radial-gradient(circle at 18% 72%, rgba(255,255,255,0.70), transparent 0.9px),
+        radial-gradient(circle at 32% 22%, rgba(255,255,255,0.80), transparent 1.0px),
+        radial-gradient(circle at 41% 68%, rgba(255,255,255,0.60), transparent 0.8px),
+        radial-gradient(circle at 57% 18%, rgba(255,255,255,0.85), transparent 1.1px),
+        radial-gradient(circle at 63% 78%, rgba(255,255,255,0.65), transparent 0.85px),
+        radial-gradient(circle at 74% 42%, rgba(255,255,255,0.75), transparent 1.0px),
+        radial-gradient(circle at 88% 25%, rgba(255,255,255,0.80), transparent 1.2px),
+        radial-gradient(circle at 95% 65%, rgba(255,255,255,0.55), transparent 0.9px),
+        /* nebula clouds */
+        radial-gradient(ellipse 55% 180% at 18% 55%, rgba(110,50,255,0.22) 0%, transparent 65%),
+        radial-gradient(ellipse 50% 160% at 82% 40%, rgba(30,110,255,0.18) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 130% at 52% 90%, rgba(210,50,140,0.13) 0%, transparent 55%),
+        radial-gradient(ellipse 35% 120% at 65% 15%, rgba(0,180,200,0.10) 0%, transparent 50%);
+      pointer-events: none;
+      animation: nebula-breathe 12s ease-in-out infinite;
+    }
+    /* Aurora sweep on top */
+    header::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(78,154,241,0.10) 20%,
+        rgba(167,139,250,0.16) 50%,
+        rgba(52,211,153,0.08) 78%,
+        transparent 100%
+      );
+      animation: header-aurora 9s ease-in-out infinite;
+      pointer-events: none;
+    }
+    /* All header children above pseudo-elements */
+    header > * { position: relative; z-index: 2; }
     header h1 {
-      font-size: 1.2rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
       text-transform: uppercase;
-      color: #f8fbff;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.18);
+      background: linear-gradient(100deg, #ffffff 0%, #d4e8ff 45%, #a8c8ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
       margin: 0;
+      position: relative; z-index: 1;
     }
+    /* rank badge number */
+    .rank-num { font-weight: 700; color: var(--accent); }
     header .subtitle {
       font-size: 0.78rem;
       color: rgba(210,227,255,0.75);
@@ -215,8 +277,11 @@
     aside {
       width: 370px;
       min-width: 320px;
-      background: var(--surface);
-      border-right: 1px solid var(--border);
+      background: rgba(7,11,24,0.96);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-right: 1px solid rgba(255,255,255,0.065);
+      box-shadow: 4px 0 24px rgba(0,0,0,0.35);
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -224,11 +289,11 @@
 
     .form-section {
       padding: 1rem;
-      border-bottom: 1px solid rgba(94,157,255,0.12);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
       flex-shrink: 0;
-      background: rgba(7, 13, 25, 0.95);
-      backdrop-filter: blur(12px);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
+      background: rgba(6,10,22,0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
     }
     .form-section h2 {
       font-size: 0.72rem;
@@ -241,18 +306,35 @@
       justify-content: space-between;
     }
     .form-toggle-btn {
-      background: none;
-      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
       color: var(--muted);
-      font-size: 0.65rem;
-      padding: 0.1rem 0.45rem;
-      border-radius: 4px;
+      font-size: 0.63rem;
+      padding: 0.14rem 0.5rem;
+      border-radius: 6px;
       cursor: pointer;
       text-transform: none;
       letter-spacing: 0;
-      font-weight: 400;
+      font-weight: 500;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.34em;
     }
-    .form-toggle-btn:hover { color: var(--text); border-color: var(--accent); }
+    .form-toggle-btn::before {
+      content: '';
+      display: inline-block;
+      width: 0.36em; height: 0.36em;
+      border-right: 1.5px solid currentColor;
+      border-top: 1.5px solid currentColor;
+      transform: rotate(-45deg) translateY(0.1em);
+      transition: transform 0.2s ease;
+      flex-shrink: 0;
+    }
+    .form-toggle-btn.collapsed::before {
+      transform: rotate(135deg) translateY(-0.1em);
+    }
+    .form-toggle-btn:hover { color: var(--text); border-color: rgba(78,154,241,0.4); background: rgba(78,154,241,0.08); }
     #form-body {
       overflow: hidden;
       max-height: 900px;
@@ -266,29 +348,31 @@
 
     label {
       display: block;
-      font-size: 0.8rem;
-      color: var(--muted);
-      margin-bottom: 0.2rem;
-      margin-top: 0.6rem;
+      font-size: 0.76rem;
+      font-weight: 500;
+      color: rgba(160,190,240,0.6);
+      margin-bottom: 0.22rem;
+      margin-top: 0.65rem;
+      letter-spacing: 0.02em;
     }
     label:first-child { margin-top: 0; }
 
     input, select {
       width: 100%;
-      background: rgba(7, 14, 24, 0.95);
-      border: 1px solid rgba(78,154,241,0.2);
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.09);
       border-radius: var(--radius);
       color: var(--text);
-      padding: 0.45rem 0.65rem;
+      padding: 0.47rem 0.68rem;
       font-size: 0.875rem;
+      font-family: inherit;
       outline: none;
-      transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.025);
+      transition: border-color 0.18s, box-shadow 0.18s;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
     }
     input:focus, select:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 2px rgba(78,154,241,0.16);
-      transform: translateY(-1px);
+      border-color: rgba(78,154,241,0.6);
+      box-shadow: 0 0 0 3px rgba(78,154,241,0.10);
     }
     input[type="range"] {
       padding: 0;
@@ -310,7 +394,7 @@
     }
     .date-wrap input[type="text"] { flex: 1; }
     .date-picker-btn {
-      background: #0d1422;
+      background: var(--surface);
       border: 1px solid var(--border);
       color: var(--text);
       border-radius: var(--radius);
@@ -336,6 +420,7 @@
     }
     .sun-item { display: inline-flex; align-items: center; gap: 0.35rem; }
     .sun-item b { color: var(--text); font-weight: 600; }
+    .sun-icon { flex-shrink: 0; display: block; }
     .time-window-block { margin-top: 0.35rem; display: flex; flex-direction: column; gap: 0.45rem; }
     .time-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; align-items: end; }
     .time-field { display: flex; flex-direction: column; gap: 0.2rem; }
@@ -367,7 +452,7 @@
     }
     .checkbox-row { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.1rem; }
     .checkbox-label { display: flex; align-items: center; gap: 0.45rem; font-size: 0.82rem; color: var(--text); cursor: pointer; }
-    .checkbox-label input[type="checkbox"] { accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer; }
+    .checkbox-label input[type="checkbox"] { cursor: pointer; }
     .chip-amenity  { color: #86efac; border-color: #14532d; background: #052010; }
     .chip-moon-excellent { color: #a78bfa; border-color: #4c1d95; background: #1e0a40; }
     .chip-moon-good      { color: #6ee7b7; border-color: #065f46; background: #022c22; }
@@ -406,22 +491,23 @@
       display: block;
       width: 100%;
       margin-top: 0.85rem;
-      padding: 0.6rem 1rem;
-      background: linear-gradient(90deg, var(--accent), #6aa9f9);
+      padding: 0.62rem 1rem;
+      background: linear-gradient(135deg, #3b82f6 0%, #4e9af1 60%, #60a5fa 100%);
       color: #fff;
-      font-size: 0.875rem;
+      font-size: 0.88rem;
       font-weight: 600;
+      letter-spacing: 0.01em;
       border: none;
-      border-radius: var(--radius);
+      border-radius: 9px;
       cursor: pointer;
-      transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s;
-      box-shadow: 0 8px 18px rgba(78,154,241,0.18);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      box-shadow: 0 4px 14px rgba(78,154,241,0.28), inset 0 1px 0 rgba(255,255,255,0.15);
     }
     .btn:hover:not(:disabled) {
       transform: translateY(-1px);
-      box-shadow: 0 10px 20px rgba(78,154,241,0.22);
+      box-shadow: 0 8px 22px rgba(78,154,241,0.38), inset 0 1px 0 rgba(255,255,255,0.15);
     }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
     /* ── tab switcher ── */
     .form-section-header {
@@ -479,7 +565,7 @@
       position: absolute;
       top: calc(100% + 2px);
       left: 0; right: 0;
-      background: #0d1422;
+      background: var(--surface);
       border: 1px solid rgba(78,154,241,0.3);
       border-radius: var(--radius);
       max-height: 210px;
@@ -502,14 +588,14 @@
 
     /* ── status bar ── */
     .status-bar {
-      padding: 0.45rem 1rem;
-      font-size: 0.72rem;
+      padding: 0.4rem 1rem;
+      font-size: 0.71rem;
       color: var(--muted);
-      border-bottom: 1px solid rgba(78,154,241,0.12);
+      border-bottom: 1px solid rgba(255,255,255,0.045);
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      background: rgba(255,255,255,0.02);
+      background: transparent;
     }
     .status-dot {
       width: 7px; height: 7px;
@@ -521,17 +607,26 @@
       animation: pulse 1s infinite;
       background: var(--warn);
     }
+    .status-dot.ready { animation: status-breathe 2.5s ease-in-out infinite; }
     @keyframes pulse {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.3; }
     }
+    @keyframes status-breathe {
+      0%,100% { box-shadow: 0 0 0 0 rgba(52,211,153,0.7); }
+      50%     { box-shadow: 0 0 0 5px rgba(52,211,153,0); }
+    }
 
     /* ── results list ── */
     .results-header {
-      padding: 0.55rem 1rem;
-      font-size: 0.72rem;
-      color: var(--muted);
-      border-bottom: 1px solid var(--border);
+      padding: 0.48rem 1.1rem;
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: rgba(150,170,215,0.55);
+      border-bottom: 1px solid rgba(255,255,255,0.045);
+      background: transparent;
     }
 
     /* results search bar */
@@ -545,8 +640,8 @@
     }
     .search-wrap input {
       flex: 1;
-      background: #0d1422;
-      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
       border-right: none;
       color: var(--text);
       padding: 0.32rem 0.55rem;
@@ -554,10 +649,10 @@
       font-size: 0.78rem;
     }
     .search-wrap input::placeholder { color: var(--muted); }
-    .search-wrap input:focus { outline: none; border-color: var(--accent); }
+    .search-wrap input:focus { outline: none; border-color: rgba(78,154,241,0.5); }
     .search-clear {
-      background: #0d1422;
-      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
       border-left: none;
       color: var(--muted);
       cursor: pointer;
@@ -572,57 +667,68 @@
     .results-list {
       flex: 1;
       overflow-y: auto;
+      padding: 0.7rem 0.7rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
     }
-    .results-list::-webkit-scrollbar { width: 6px; }
-    .results-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    .results-list::-webkit-scrollbar { width: 4px; }
+    .results-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+    .results-list::-webkit-scrollbar-track { background: transparent; }
 
     .site-card {
-      background: linear-gradient(180deg, rgba(10,15,28,0.96), rgba(5,8,16,0.98));
-      border: 1px solid rgba(120,168,255,0.1);
-      border-left: 4px solid transparent;
-      border-radius: 16px;
-      padding: 1rem 1.05rem;
+      background: rgba(255,255,255,0.032);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-left: 3px solid rgba(78,154,241,0.28);
+      border-radius: 14px;
+      padding: 1.05rem 1.15rem;
       cursor: pointer;
-      transition: transform 0.24s ease, box-shadow 0.24s ease, border-color 0.24s ease, background 0.24s ease;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
+      transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.22s ease, border-color 0.22s ease, opacity 0.2s ease;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.25), 0 6px 20px rgba(0,0,0,0.15),
+                  inset 0 1px 0 rgba(255,255,255,0.05);
+      animation: card-slide-in 0.32s ease both;
     }
     .site-card:hover, .site-card.active {
-      background: radial-gradient(circle at 10% 15%, rgba(78,154,241,0.15), transparent 24%),
-                  linear-gradient(180deg, rgba(20,30,50,0.96), rgba(7,11,19,0.98));
-      transform: translateY(-1px);
-      box-shadow: 0 22px 44px rgba(0,0,0,0.22);
-      border-left-color: rgba(78,154,241,0.9);
+      background: rgba(255,255,255,0.056);
+      border-color: rgba(255,255,255,0.12);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 28px rgba(0,0,0,0.35), 0 1px 0 rgba(255,255,255,0.07) inset;
+      border-left-color: rgba(78,154,241,0.95);
     }
     .site-card .rank {
-      font-size: 0.75rem;
-      color: rgba(187,210,255,0.78);
-      margin-bottom: 0.22rem;
+      font-size: 0.71rem;
+      font-weight: 500;
+      color: rgba(180,205,255,0.55);
+      margin-bottom: 0.2rem;
       letter-spacing: 0.02em;
     }
     .site-card .name {
-      font-size: 0.98rem;
+      font-size: 1.0rem;
       font-weight: 700;
-      color: #f7fbff;
-      margin-bottom: 0.18rem;
+      color: #f0f6ff;
+      margin-bottom: 0.14rem;
       line-height: 1.3;
     }
     .site-card .address {
-      font-size: 0.78rem;
-      color: rgba(174,196,223,0.85);
-      margin-bottom: 0.55rem;
+      font-size: 0.75rem;
+      color: rgba(165,190,225,0.68);
+      margin-bottom: 0.5rem;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .chips { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-bottom: 0.45rem; }
+    .chips { display: flex; gap: 0.3rem; flex-wrap: wrap; margin-bottom: 0.45rem; }
     .chip {
-      font-size: 0.72rem;
-      padding: 0.24rem 0.55rem;
-      border-radius: 999px;
+      font-size: 0.69rem;
+      font-weight: 500;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
       border: 1px solid rgba(255,255,255,0.08);
       white-space: nowrap;
-      background: rgba(10,14,24,0.92);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+      background: rgba(255,255,255,0.05);
+      letter-spacing: 0.01em;
     }
     .chip-dark     { color: #c6b0ff; border-color: #4f2c9b; background: rgba(55,31,120,0.16); }
     .chip-rural    { color: #b5f0cb; border-color: #11674d; background: rgba(8,36,23,0.15); }
@@ -633,43 +739,72 @@
     .chip-type     { color: #78b5ff; border-color: #1d3a6e; background: rgba(10,23,44,0.18); }
     .chip-cloud    { color: #9ad2ff; border-color: #2a4e80; background: rgba(10,18,34,0.18); }
 
-    .score-bar-wrap { display: flex; align-items: center; gap: 0.5rem; }
+    .score-bar-wrap { display: flex; align-items: center; gap: 0.55rem; margin-top: 0.1rem; }
     .score-bar {
       flex: 1;
-      height: 4px;
-      background: var(--border);
-      border-radius: 2px;
+      height: 7px;
+      background: rgba(255,255,255,0.07);
+      border-radius: 4px;
       overflow: hidden;
     }
     .score-bar-fill {
       height: 100%;
-      border-radius: 2px;
+      border-radius: 4px;
       background: linear-gradient(90deg, var(--accent2), var(--accent));
-      transition: width 0.3s;
+      transition: width 0.55s cubic-bezier(0.4,0,0.2,1);
+      position: relative; overflow: hidden;
+    }
+    .score-bar-fill.revealed::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.38) 50%, transparent 100%);
+      transform: translateX(-100%);
+      animation: score-shimmer 0.85s ease 0.6s both;
     }
     .score-val {
-      font-size: 0.72rem;
+      font-size: 0.82rem;
+      font-weight: 800;
       color: var(--accent);
-      min-width: 38px;
+      min-width: 44px;
       text-align: right;
+      letter-spacing: -0.01em;
     }
+    /* Score quality classes — applied to .site-card */
+    @keyframes card-slide-in {
+      from { opacity: 0; transform: translateY(18px) scale(0.97); filter: blur(2px); }
+      to   { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+    }
+    .sq-excellent { border-left-color: rgba(52,211,153,0.80) !important; }
+    .sq-good      { border-left-color: rgba(78,154,241,0.80) !important; }
+    .sq-fair      { border-left-color: rgba(251,191,36,0.75) !important; }
+    .sq-poor      { border-left-color: rgba(248,113,113,0.70) !important; }
+    .sq-excellent .score-bar-fill { background: linear-gradient(90deg,#059669,#34d399); box-shadow: 0 0 8px rgba(52,211,153,0.50); }
+    .sq-good      .score-bar-fill { background: linear-gradient(90deg,#1d4ed8,#60a5fa); box-shadow: 0 0 8px rgba(96,165,250,0.45); }
+    .sq-fair      .score-bar-fill { background: linear-gradient(90deg,#b45309,#fbbf24); box-shadow: 0 0 8px rgba(251,191,36,0.42); }
+    .sq-poor      .score-bar-fill { background: linear-gradient(90deg,#b91c1c,#f87171); box-shadow: 0 0 8px rgba(248,113,113,0.42); }
+    .sq-excellent .score-val { color: #34d399; }
+    .sq-good      .score-val { color: #60a5fa; }
+    .sq-fair      .score-val { color: #fbbf24; }
+    .sq-poor      .score-val { color: #f87171; }
     .dist-val { font-size: 0.7rem; color: var(--muted); }
 
     /* score breakdown tooltip */
     #score-tip {
-      display: none;
+      display: block;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.14s ease;
       position: fixed;
       z-index: 99999;
-      background: #0d1422;
+      background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 0.55rem 0.75rem;
       font-size: 0.72rem;
       color: var(--text);
-      pointer-events: none;
       min-width: 210px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.55);
     }
+    #score-tip.visible { opacity: 1; }
     .stip-title {
       font-size: 0.65rem;
       color: var(--muted);
@@ -709,17 +844,19 @@
 
     /* floating info tooltip (pointer-events:auto so links are clickable) */
     #info-tip {
-      position: fixed; z-index: 10000; display: none;
-      background: #0d1422;
+      position: fixed; z-index: 10000; display: block;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.14s ease;
+      background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 0.55rem 0.75rem;
       font-size: 0.72rem; color: var(--text);
-      pointer-events: auto;
       min-width: 220px; max-width: 280px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.55);
       line-height: 1.55;
     }
+    #info-tip.visible { opacity: 1; pointer-events: auto; }
     .itip-title {
       font-size: 0.65rem; color: var(--muted);
       text-transform: uppercase; letter-spacing: 0.05em;
@@ -730,9 +867,9 @@
     /* sort toggle bar */
     .sort-bar {
       display: flex; align-items: center; gap: 0.55rem;
-      padding: 0.32rem 0.85rem;
-      border-bottom: 1px solid var(--border);
-      background: rgba(255,255,255,0.01);
+      padding: 0.3rem 0.85rem;
+      border-bottom: 1px solid rgba(255,255,255,0.045);
+      background: rgba(255,255,255,0.015);
     }
     .sort-label {
       font-size: 0.64rem; color: var(--muted);
@@ -803,7 +940,7 @@
     }
     .weights-overlay.open { display: flex; }
     .weights-modal {
-      background: #0d1422; border: 1px solid var(--border);
+      background: var(--surface); border: 1px solid var(--border);
       border-radius: 10px; width: min(340px, 92vw);
       padding: 1.2rem 1.35rem 1rem;
       box-shadow: 0 16px 48px rgba(0,0,0,0.75);
@@ -840,7 +977,7 @@
       border-radius: 6px; cursor: pointer; transition: background 0.15s;
     }
     .weights-apply:hover { background: #1e6bbf; }
-    .light-mode .weights-modal { background: #FDF8F2; }
+    .light-mode .weights-modal { background: var(--surface); }
     .light-mode .weights-cancel { background: rgba(0,0,0,0.04); }
 
     /* confidence chip */
@@ -929,8 +1066,9 @@
     }
     .bar-fill {
       width: 100%;
-      border-radius: 2px 2px 0 0;
-      min-height: 2px;
+      border-radius: 3px 3px 0 0;
+      min-height: 3px;
+      opacity: 0.88;
     }
     .bar-lbl-btm {
       font-size: 0.48rem;
@@ -950,14 +1088,60 @@
 
     /* Leaflet popup override */
     .leaflet-popup-content-wrapper {
-      background: var(--surface);
+      background: rgba(13,18,35,0.96);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
       color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
     }
-    .leaflet-popup-tip { background: var(--surface); }
-    .leaflet-popup-content { margin: 10px 14px; font-size: 0.8rem; line-height: 1.5; }
-    .popup-score { color: var(--accent); font-weight: 700; font-size: 1rem; }
+    .leaflet-popup-tip { background: rgba(13,18,35,0.96); }
+    .leaflet-popup-content { margin: 12px 14px; font-size: 0.8rem; line-height: 1.5; }
+    /* Map popup card layout */
+    .site-popup { min-width: 175px; }
+    .site-popup-rank { font-size: 0.67rem; font-weight: 600; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.12rem; }
+    .site-popup-name { font-size: 0.93rem; font-weight: 700; color: #f0f6ff; line-height: 1.25; margin-bottom: 0.18rem; }
+    .site-popup-loc  { font-size: 0.71rem; color: var(--muted); margin-bottom: 0.42rem; }
+    .site-popup-row  { display: flex; align-items: center; gap: 0.55rem; margin-bottom: 0.32rem; flex-wrap: wrap; }
+    .site-popup-meta { font-size: 0.71rem; color: var(--muted); line-height: 1.9; margin-bottom: 0.1rem; }
+    .site-popup-links { display: flex; gap: 0.38rem; margin-top: 0.55rem; flex-wrap: wrap; }
+    .popup-score { color: var(--accent); font-weight: 700; font-size: 0.88rem; cursor: help; }
+    .popup-cloud { font-size: 0.71rem; color: var(--muted); }
+    .popup-btn {
+      display: inline-flex; align-items: center;
+      padding: 0.26rem 0.62rem;
+      background: rgba(78,154,241,0.1);
+      border: 1px solid rgba(78,154,241,0.28);
+      border-radius: 7px;
+      font-size: 0.72rem; font-weight: 600;
+      color: var(--accent);
+      text-decoration: none !important;
+      transition: background 0.15s, border-color 0.15s;
+      cursor: pointer; white-space: nowrap;
+    }
+    .popup-btn:hover { background: rgba(78,154,241,0.2); border-color: rgba(78,154,241,0.55); text-decoration: none !important; }
+    .popup-link { color: var(--accent); text-decoration: none; }
+    .popup-link:hover { text-decoration: underline; }
+    /* SVG "external link" icon on all outbound link classes */
+    .popup-link::after,
+    .popup-btn::after,
+    .card-link-btn::after,
+    .tip-link::after {
+      content: '';
+      display: inline-block;
+      width: 0.68em; height: 0.68em;
+      margin-left: 0.24em;
+      vertical-align: middle;
+      margin-top: -0.12em;
+      background-color: currentColor;
+      flex-shrink: 0;
+      -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' fill='none'%3E%3Cpath d='M2 8L8 2M8 2H4M8 2V6' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' fill='none'%3E%3Cpath d='M2 8L8 2M8 2H4M8 2V6' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      -webkit-mask-size: contain;
+      mask-size: contain;
+      -webkit-mask-repeat: no-repeat;
+      mask-repeat: no-repeat;
+    }
 
     /* ── loading overlay ── */
     #loading-overlay {
@@ -1007,36 +1191,61 @@
       cursor: pointer;
       white-space: nowrap;
       line-height: 1.4;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.36em;
+    }
+    .app-info-btn::after {
+      content: '';
+      display: inline-block;
+      width: 0.38em; height: 0.38em;
+      border-right: 1.5px solid currentColor;
+      border-bottom: 1.5px solid currentColor;
+      transform: rotate(45deg) translateY(-0.1em);
+      transition: transform 0.2s ease;
+      flex-shrink: 0;
+    }
+    .app-info-btn[aria-expanded="true"]::after {
+      transform: rotate(-135deg) translateY(0.1em);
     }
     .app-info-btn:active { background: rgba(78,154,241,0.2); }
 
     /* ── Theme toggle button ── */
     .theme-toggle-btn {
       margin-left: auto;
-      background: rgba(78,154,241,0.1);
-      border: 1px solid rgba(78,154,241,0.25);
-      color: var(--text);
-      padding: 0.28rem 0.55rem;
-      border-radius: 6px;
-      font-size: 1rem;
+      /* In dark mode: show light-mode preview (cream bg, warm sun) */
+      background: #ede0ce;
+      border: 1px solid rgba(170,135,90,0.45);
+      color: #c26800;
+      padding: 0;
+      border-radius: 8px;
       cursor: pointer;
-      white-space: nowrap;
-      line-height: 1.4;
       flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px; height: 38px;
+      transition: background 0.38s ease, color 0.32s ease, border-color 0.32s ease;
     }
-    .theme-toggle-btn:active { background: rgba(78,154,241,0.2); }
+    .theme-toggle-btn:active { transform: scale(0.91) !important; transition: transform 0.07s ease !important; }
+    /* In light mode: show dark-mode preview (deep navy bg, silver moon) */
+    .light-mode .theme-toggle-btn {
+      background: #090e1f;
+      border-color: rgba(80,100,180,0.5);
+      color: #b4c8ff;
+    }
 
     .app-info-dropdown {
       display: none;
-      position: absolute;
-      right: 0;
-      top: calc(100% + 0.4rem);
-      background: #0d1422;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      min-width: 230px;
-      box-shadow: 0 8px 28px rgba(0,0,0,0.6);
-      z-index: 9999;
+      position: fixed;
+      background: rgba(9,14,28,0.97);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 12px;
+      min-width: 236px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.75), 0 1px 0 rgba(255,255,255,0.05) inset;
+      z-index: 99999;
       overflow: hidden;
     }
     .app-info-dropdown.open { display: block; }
@@ -1062,6 +1271,18 @@
 
     /* ── Mobile card links (hidden on desktop) ── */
     .card-links-mobile { display: none; }
+    .mobile-results-cta {
+      display: none;
+      width: 100%; margin-top: 0.7rem;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff; border: none; border-radius: 10px;
+      padding: 0.65rem 1rem; font-size: 0.86rem; font-weight: 600;
+      cursor: pointer; letter-spacing: 0.01em;
+      box-shadow: 0 4px 18px rgba(78,154,241,0.38);
+      transition: transform 0.15s, box-shadow 0.15s;
+      align-items: center; justify-content: center; gap: 0.4rem;
+    }
+    .mobile-results-cta:active { transform: scale(0.97); }
 
     /* ── Mobile loading overlay (position:fixed so it works when main is hidden) ── */
     #mobile-loading-overlay {
@@ -1080,66 +1301,123 @@
 
     /* ── Mobile responsive ── */
     @media (max-width: 640px) {
-      /* Header: center title, hide subtitle, show App Info button on right */
-      header {
-        padding: 0.65rem 1rem;
-        justify-content: center;
-        position: relative;
-      }
-      header h1 { font-size: 1rem; }
+      /* ── Header: title centred, buttons pinned left/right ── */
+      header { padding: 0.65rem 1rem; justify-content: center; position: relative; }
+      header h1 { font-size: 0.92rem; }
       header .subtitle { display: none; }
+      .theme-toggle-btn {
+        margin-left: 0; position: absolute;
+        left: 0.75rem; top: 50%; transform: translateY(-50%);
+        width: 36px; height: 36px; padding: 0;
+      }
       .app-info-wrap {
         position: absolute;
-        right: 0.75rem;
-        top: 50%;
-        transform: translateY(-50%);
+        right: 0.75rem; top: 50%; transform: translateY(-50%);
       }
-      .theme-toggle-btn {
-        margin-left: 0;
-        position: absolute;
-        left: 0.75rem;
-        top: 50%;
-        transform: translateY(-50%);
-      }
+      .app-info-btn { font-size: 0.74rem; padding: 0.32rem 0.55rem; }
 
-      /* Layout: hide map, aside fills full height */
+      /* ── Layout: map hidden, aside fills viewport ── */
       .layout { flex-direction: column; }
       main { display: none; }
       aside {
-        width: 100%;
-        min-width: 0;
-        flex: 1;
-        border-right: none;
-        min-height: 0;
+        width: 100%; min-width: 0; flex: 1; border-right: none;
+        min-height: 0; overflow-y: auto;
+        animation: none; /* avoid fade-up jank on mobile */
       }
 
-      /* Compact form — static (not scrollable), fits in viewport */
-      .form-section { padding: 0.65rem 0.85rem; }
-      label { margin-top: 0.4rem; font-size: 0.76rem; }
-      input, select { padding: 0.35rem 0.5rem; font-size: 0.82rem; }
-      .time-field input, .time-field select { padding: 0.3rem 0.4rem; font-size: 0.82rem; }
-      .btn { padding: 0.5rem; margin-top: 0.55rem; font-size: 0.82rem; }
-      .sun-info { font-size: 0.68rem; padding: 0.35rem 0.45rem; }
+      /* ── Form section ── */
+      .form-section { padding: 0.7rem 0.9rem 0.85rem; }
+      .form-section-header { margin-bottom: 0.5rem; }
+      label { margin-top: 0.5rem; font-size: 0.78rem; }
+      .sun-info { font-size: 0.68rem; padding: 0.35rem 0.5rem; }
 
-      /* Date picker fix: overlay invisible native input over the button so
-         mobile browsers open their native date picker on tap */
-      .date-picker-wrap { position: relative; }
-      #date-input-native {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        opacity: 0;
+      /* ── Touch-friendly inputs (font-size: 16px stops iOS auto-zoom) ── */
+      input:not([type="checkbox"]):not([type="range"]):not([type="hidden"]):not([type="date"]),
+      select {
+        padding: 0.52rem 0.65rem;
+        font-size: 16px !important;
+        min-height: 44px;
+        box-sizing: border-box;
+      }
+      .date-display-btn { min-height: 44px; font-size: 16px !important; }
+      .date-picker-btn { min-height: 44px; min-width: 44px; font-size: 1.1rem; }
+      .search-wrap input { font-size: 15px !important; min-height: 40px; }
+
+      /* ── Buttons ── */
+      .btn { padding: 0.65rem; min-height: 48px; font-size: 0.88rem; margin-top: 0.65rem; }
+      .sort-btn { min-height: 36px; padding: 0.3rem 0.7rem; font-size: 0.73rem; }
+      .weights-btn { min-height: 36px; }
+      .form-toggle-btn { min-height: 34px; font-size: 0.74rem; }
+
+      /* ── Time window: 2-column grid ── */
+      .time-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+
+      /* ── Cards: more comfortable tap targets ── */
+      .site-card { padding: 0.95rem 1rem; }
+      .chips { gap: 0.28rem; }
+      .chip { font-size: 0.7rem; }
+      .results-header { padding: 0.5rem 0.9rem; font-size: 0.66rem; }
+      .sort-bar { padding: 0.3rem 0.65rem; }
+      .search-wrap { padding: 0.35rem 0.6rem; }
+
+      /* ── Calendar: bottom sheet via .mobile-cal class ── */
+      #cal-overlay.mobile-cal {
         pointer-events: auto;
-        cursor: pointer;
-        z-index: 1;
+        display: flex !important;
+        align-items: flex-end;
+        background: rgba(0,0,0,0.55);
+      }
+      #cal-overlay.mobile-cal .cal-popup {
+        position: static !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        border-radius: 22px 22px 0 0 !important;
+        border-left: none !important;
+        border-right: none !important;
+        border-bottom: none !important;
+        padding-bottom: max(1.2rem, env(safe-area-inset-bottom)) !important;
+        animation: cal-sheet-up 0.3s cubic-bezier(0.34,1.2,0.64,1) both !important;
+        max-height: 92vh; overflow-y: auto;
+      }
+      #cal-overlay.mobile-cal .cal-popup::before {
+        content: '';
+        display: block;
+        width: 40px; height: 4px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 2px;
+        margin: 0 auto 1rem;
+      }
+      #cal-overlay.mobile-cal .cal-day {
+        aspect-ratio: auto !important;
+        min-height: 40px;
+        font-size: 0.85rem;
       }
 
-      /* Card links (shown on mobile only) */
+      /* ── App info dropdown: wider, attached to top ── */
+      .app-info-dropdown {
+        min-width: calc(100vw - 16px) !important;
+        left: 8px !important;
+        right: 8px !important;
+        max-height: 80vh;
+        overflow-y: auto;
+      }
+
+      /* ── Touch-screen tooltips: pin to bottom-centre of viewport ── */
+      #score-tip, #info-tip {
+        left: 12px !important;
+        right: 12px !important;
+        min-width: 0 !important;
+        max-width: calc(100vw - 24px) !important;
+      }
+
+      /* ── Weights modal: full-width ── */
+      .weights-modal { width: min(92vw, 340px); padding: 1rem 1.1rem 0.9rem; }
+
+      /* ── Card links (mobile only) ── */
       .card-links-mobile {
         display: flex;
-        gap: 0.45rem;
-        margin-top: 0.4rem;
+        gap: 0.4rem;
+        margin-top: 0.45rem;
         flex-wrap: wrap;
       }
       .card-link-btn {
@@ -1147,82 +1425,120 @@
         font-size: 0.76rem;
         text-decoration: none;
         border: 1px solid rgba(78,154,241,0.28);
-        padding: 0.22rem 0.55rem;
-        border-radius: 4px;
+        padding: 0.3rem 0.6rem;
+        border-radius: 5px;
         background: rgba(78,154,241,0.06);
         white-space: nowrap;
+        min-height: 34px;
+        display: flex; align-items: center;
       }
-      .card-link-btn:active { background: rgba(78,154,241,0.15); }
+      .card-link-btn:active { background: rgba(78,154,241,0.16); }
+
+      /* ── Date picker: disable native overlay so custom calendar works on mobile ── */
+      .date-picker-wrap { position: relative; }
+      #date-input-native { display: none; }
+
+      /* ── Results CTA: visible only after search (controlled by JS) ── */
+
+      /* ── Lunar banner: compact ── */
+      .lunar-banner { padding: 0.3rem 0.9rem; font-size: 0.7rem; }
+    }
+
+    /* ── Calendar bottom-sheet animation ── */
+    @keyframes cal-sheet-up {
+      from { transform: translateY(100%); opacity: 0.8; }
+      to   { transform: translateY(0);    opacity: 1; }
     }
     /* ── Light mode (warm parchment) ── */
     .light-mode {
-      --bg:      #F1E2D1;
-      --surface: #FDF8F2;
-      --border:  #C9B8A6;
-      --text:    #1c1108;
-      --muted:   #5a4838;
-      --accent:  #2575d4;
-      --accent2: #6d4fcb;
-      --good:    #16a068;
-      --warn:    #b45309;
-      --bad:     #dc2626;
+      --bg:      #EDE0CE;
+      --surface: #FAF4EC;
+      --border:  #D2BFA8;
+      --text:    #1a1008;
+      --muted:   #6b5540;
+      --accent:  #1e6fcc;
+      --accent2: #6340c8;
+      --good:    #14a05e;
+      --warn:    #a04908;
+      --bad:     #cc2020;
+      --radius:  8px;
     }
     .light-mode body {
-      background: linear-gradient(180deg, #EDD8C4 0%, #F1E2D1 50%, #EAD8C6 100%);
+      background:
+        radial-gradient(ellipse 80% 50% at 50% 0%, rgba(220,168,80,0.16) 0%, transparent 55%),
+        radial-gradient(ellipse at 0% 100%, rgba(180,130,60,0.10) 0%, transparent 50%),
+        linear-gradient(180deg, #E6D2B5 0%, #EFE0CB 50%, #E8D4BE 100%);
       color: var(--text);
     }
     .light-mode body::before { opacity: 0; }
     .light-mode header {
-      background: linear-gradient(110deg, #FDF8F2, #F6EEE3);
-      border-bottom-color: rgba(160,110,60,0.18);
-      box-shadow: 0 12px 36px rgba(0,0,0,0.07);
+      background: rgba(250,242,230,0.62);
+      backdrop-filter: blur(22px) saturate(1.6);
+      -webkit-backdrop-filter: blur(22px) saturate(1.6);
+      border-bottom-color: rgba(160,110,60,0.14);
+      box-shadow: 0 1px 0 rgba(255,255,255,0.7), 0 8px 28px rgba(0,0,0,0.07);
     }
-    .light-mode header h1 { color: #1c1108; text-shadow: none; }
-    .light-mode aside { background: #F7EFE4; border-right-color: var(--border); }
-    .light-mode .form-section { background: rgba(253,248,242,0.98); backdrop-filter: none; }
-    .light-mode .status-bar { background: rgba(0,0,0,0.015); }
+    .light-mode header::before {
+      background:
+        radial-gradient(ellipse 55% 180% at 18% 55%, rgba(160,90,255,0.10) 0%, transparent 65%),
+        radial-gradient(ellipse 50% 160% at 82% 40%, rgba(37,100,220,0.09) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 130% at 52% 90%, rgba(210,80,140,0.07) 0%, transparent 55%);
+    }
+    .light-mode header h1 { text-shadow: none; }
+    .light-mode header h1 {
+      background: linear-gradient(90deg, #1c1108 0%, #2d1e0e 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .light-mode aside { background: rgba(240,230,216,0.97); border-right: 1px solid rgba(0,0,0,0.09); }
+    .light-mode .form-section { background: rgba(248,240,228,0.97); backdrop-filter: none; border-bottom-color: rgba(0,0,0,0.07); }
+    .light-mode .status-bar { background: rgba(0,0,0,0.02); border-bottom-color: rgba(0,0,0,0.07); }
     .light-mode .sun-info {
-      background: linear-gradient(180deg, #FAF4EC, #F3EAE0);
-      border-color: rgba(160,110,60,0.18);
+      background: rgba(255,255,255,0.55);
+      border-color: rgba(160,110,60,0.16);
     }
     .light-mode input, .light-mode select {
-      background: #FDF8F2;
-      border-color: rgba(160,110,60,0.25);
+      background: rgba(255,255,255,0.78);
+      border-color: rgba(0,0,0,0.14);
       color: var(--text);
     }
     .light-mode input:focus, .light-mode select:focus {
       border-color: var(--accent);
-      box-shadow: 0 0 0 2px rgba(37,117,212,0.14);
+      box-shadow: 0 0 0 3px rgba(30,111,204,0.12);
     }
     .light-mode input[type="date"]::-webkit-calendar-picker-indicator { filter: none; opacity: 0.55; }
-    .light-mode .date-picker-btn { background: #FDF8F2; border-color: var(--border); color: var(--text); }
-    .light-mode .tab-switcher { background: rgba(0,0,0,0.06); }
-    .light-mode .sort-toggle { background: rgba(0,0,0,0.06); }
-    .light-mode .sort-bar { background: rgba(0,0,0,0.02); }
+    .light-mode .date-picker-btn { background: rgba(255,255,255,0.78); border-color: rgba(0,0,0,0.14); color: var(--text); }
+    .light-mode .tab-switcher { background: rgba(0,0,0,0.07); }
+    .light-mode .sort-toggle { background: rgba(0,0,0,0.07); }
+    .light-mode .sort-bar { background: rgba(0,0,0,0.025); border-bottom-color: rgba(0,0,0,0.07); }
     .light-mode .site-card {
-      background: linear-gradient(180deg, #FFFFFF, #FBF5EE);
-      border-color: rgba(160,110,60,0.14);
+      background: rgba(255,255,255,0.78);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(0,0,0,0.08);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.07), 0 6px 24px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.95);
     }
     .light-mode .site-card:hover, .light-mode .site-card.active {
-      background: radial-gradient(circle at 10% 15%, rgba(37,117,212,0.06), transparent 24%),
-                  linear-gradient(180deg, #F8F4EF, #EDE5DA);
+      background: rgba(255,255,255,0.88);
+      border-color: rgba(0,0,0,0.10);
       border-left-color: var(--accent);
-      box-shadow: 0 22px 44px rgba(0,0,0,0.09);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.10), 0 1px 0 rgba(255,255,255,0.95) inset;
+      transform: translateY(-2px);
     }
     .light-mode .site-card .name { color: #1c1108; }
     .light-mode .site-card .address { color: rgba(50,32,14,0.72); }
     .light-mode .site-card .rank { color: rgba(50,32,14,0.55); }
     .light-mode .site-card .dist-val { color: rgba(50,32,14,0.55); }
     .light-mode .search-wrap input, .light-mode .search-clear {
-      background: #FDF8F2; color: var(--text); border-color: var(--border);
+      background: rgba(255,255,255,0.75); color: var(--text); border-color: rgba(0,0,0,0.12);
     }
     .light-mode #score-tip, .light-mode #info-tip {
-      background: #FDF8F2; border-color: var(--border); color: var(--text);
+      background: var(--surface); border-color: var(--border); color: var(--text);
       box-shadow: 0 4px 20px rgba(0,0,0,0.13);
     }
-    .light-mode .site-autocomplete, .light-mode .app-info-dropdown {
-      background: #FDF8F2; border-color: var(--border);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+    .light-mode .site-autocomplete { background: var(--surface); border-color: var(--border); box-shadow: 0 8px 24px rgba(0,0,0,0.14); }
+    .light-mode .app-info-dropdown {
+      background: rgba(253,248,242,0.97); border-color: rgba(0,0,0,0.1);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.15), 0 1px 0 rgba(255,255,255,0.9) inset;
     }
     .light-mode .app-info-dropdown a { color: var(--text); border-bottom-color: var(--border); }
     .light-mode .app-info-dropdown a:hover,
@@ -1230,13 +1546,16 @@
     .light-mode .site-ac-item:hover { background: rgba(160,110,60,0.07); }
     .light-mode .site-ac-name { color: var(--text); }
     .light-mode .site-ac-addr { color: var(--muted); }
-    .light-mode .app-info-btn, .light-mode .theme-toggle-btn {
+    .light-mode .app-info-btn {
       background: rgba(37,117,212,0.1); border-color: rgba(37,117,212,0.3);
     }
     .light-mode .leaflet-popup-content-wrapper {
-      background: #FDF8F2; color: var(--text); border-color: var(--border);
+      background: rgba(255,248,238,0.97); border-color: rgba(0,0,0,0.1);
+      box-shadow: 0 8px 28px rgba(0,0,0,0.14), 0 2px 6px rgba(0,0,0,0.08);
     }
-    .light-mode .leaflet-popup-tip { background: #FDF8F2; }
+    .light-mode .leaflet-popup-tip { background: rgba(255,248,238,0.97); }
+    .light-mode .site-popup-name { color: #1c1108; }
+    .light-mode .popup-btn { background: rgba(78,154,241,0.08); }
     .light-mode #loading-overlay, .light-mode #mobile-loading-overlay {
       background: rgba(235,220,200,0.88);
     }
@@ -1259,8 +1578,21 @@
     .light-mode .chip-restricted { color: #9a3412; background: rgba(251,146,60,0.1); }
     .light-mode .amenity-free { color: #15803d; }
     .light-mode .amenity-paid { color: #92400e; }
-    .light-mode .score-bar { background: #C9B8A6; }
+    .light-mode .score-bar { background: rgba(0,0,0,0.1); }
+    .light-mode .score-bar-fill { box-shadow: none; }
     .light-mode .score-val { color: #1d4ed8; }
+    .light-mode .sq-excellent .score-val { color: #059669; }
+    .light-mode .sq-good      .score-val { color: #1d4ed8; }
+    .light-mode .sq-fair      .score-val { color: #b45309; }
+    .light-mode .sq-poor      .score-val { color: #dc2626; }
+    .light-mode .sq-excellent { border-left-color: rgba(5,150,105,0.75) !important; }
+    .light-mode .sq-good      { border-left-color: rgba(29,78,216,0.75) !important; }
+    .light-mode .sq-fair      { border-left-color: rgba(180,83,9,0.75)  !important; }
+    .light-mode .sq-poor      { border-left-color: rgba(220,38,38,0.70) !important; }
+    .light-mode header h1 {
+      background: linear-gradient(90deg, #1c1108 0%, #2d1e0e 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
     .light-mode .stip-title, .light-mode .sort-label { color: var(--muted); }
     .light-mode .stip-val { color: #1d4ed8; }
     .light-mode .stip-cont { color: #5b21b6; }
@@ -1270,28 +1602,411 @@
     .light-mode .moon-qual-fair      { color: #78350f; }
     .light-mode .moon-qual-poor      { color: #7f1d1d; }
     .light-mode .moon-qual-very-poor { color: #7f1d1d; }
+    .light-mode .mobile-results-cta { box-shadow: 0 4px 18px rgba(37,117,212,0.28); }
+    .light-mode #cal-overlay.mobile-cal .cal-popup::before { background: rgba(0,0,0,0.15); }
+
+    /* ── Custom Calendar ── */
+    #cal-overlay {
+      position: fixed; inset: 0; z-index: 99999; pointer-events: none;
+    }
+    .cal-popup {
+      position: absolute;
+      background: rgba(8,13,28,0.97);
+      backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
+      border: 1px solid rgba(78,154,241,0.28);
+      border-radius: 16px; padding: 1rem 0.9rem 0.9rem;
+      width: 258px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.80), 0 1px 0 rgba(255,255,255,0.06) inset;
+      pointer-events: auto; transform-origin: top center;
+      animation: cal-pop-in 0.22s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    }
+    @keyframes cal-pop-in {
+      from { opacity:0; transform:scale(0.88) translateY(-12px); }
+      to   { opacity:1; transform:scale(1)    translateY(0); }
+    }
+    @keyframes cal-pop-out {
+      from { opacity:1; transform:scale(1)    translateY(0); }
+      to   { opacity:0; transform:scale(0.88) translateY(-10px); }
+    }
+    @keyframes cal-sheet-down {
+      from { transform:translateY(0);    opacity:1; }
+      to   { transform:translateY(105%); opacity:0.6; }
+    }
+    #cal-overlay:not(.mobile-cal) .cal-popup.cal-closing {
+      animation: cal-pop-out 0.18s ease forwards !important;
+    }
+    #cal-overlay.mobile-cal .cal-popup.cal-closing {
+      animation: cal-sheet-down 0.24s cubic-bezier(0.4,0,1,1) forwards !important;
+    }
+    .cal-header {
+      display:flex; align-items:center; justify-content:space-between;
+      margin-bottom: 0.8rem; padding: 0 0.05rem;
+    }
+    .cal-month-label {
+      font-size: 0.88rem; font-weight: 700; color: var(--text); letter-spacing:0.01em;
+    }
+    .cal-nav {
+      background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 7px; color: var(--muted); cursor:pointer;
+      padding: 0.3rem 0.56rem; line-height:1;
+      display: inline-flex; align-items: center; justify-content: center;
+      transition: background 0.15s, color 0.15s, transform 0.15s;
+    }
+    .cal-nav:hover { background: rgba(78,154,241,0.22); color: var(--accent); transform: scale(1.12); }
+    .cal-weekdays {
+      display:grid; grid-template-columns:repeat(7,1fr);
+      text-align:center; margin-bottom: 0.4rem;
+    }
+    .cal-weekdays span {
+      font-size: 0.59rem; font-weight:600; color:rgba(140,168,220,0.45);
+      text-transform:uppercase; letter-spacing:0.05em; padding:0.12rem 0;
+    }
+    .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+    .cal-day {
+      aspect-ratio:1; display:flex; align-items:center; justify-content:center;
+      font-size:0.74rem; font-weight:500; border-radius:8px; cursor:pointer;
+      border:1px solid transparent; color:var(--text); background:none;
+      transition: background 0.12s, color 0.12s, transform 0.12s, box-shadow 0.12s, border-color 0.12s;
+    }
+    .cal-day:hover:not(.disabled):not(.other-month) {
+      background: rgba(78,154,241,0.2); transform: scale(1.12);
+      border-color: rgba(78,154,241,0.28);
+    }
+    .cal-day.today { border-color: rgba(78,154,241,0.55); color: var(--accent); font-weight:700; }
+    .cal-day.selected {
+      background: var(--accent); color:#fff; font-weight:700;
+      box-shadow: 0 2px 10px rgba(78,154,241,0.55); border-color:transparent;
+    }
+    .cal-day.selected:hover { transform:scale(1.08); }
+    .cal-day.other-month { color:rgba(255,255,255,0.18); cursor:default; }
+    .cal-day.disabled { color:rgba(255,255,255,0.14); cursor:not-allowed; }
+    .cal-separator { border-top:1px solid rgba(255,255,255,0.07); margin:0.65rem 0 0.55rem; }
+    .cal-today-btn {
+      width:100%; background:rgba(78,154,241,0.12); border:1px solid rgba(78,154,241,0.22);
+      color:var(--accent); border-radius:8px; padding:0.3rem;
+      font-size:0.72rem; font-weight:600; cursor:pointer; letter-spacing:0.02em;
+      transition: background 0.15s, box-shadow 0.15s;
+    }
+    .cal-today-btn:hover { background:rgba(78,154,241,0.22); box-shadow:0 2px 8px rgba(78,154,241,0.25); }
+
+    /* light-mode calendar */
+    .light-mode .cal-popup {
+      background: rgba(253,248,242,0.97); border-color:rgba(37,117,212,0.28);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.18), 0 1px 0 rgba(255,255,255,0.9) inset;
+    }
+    .light-mode .cal-nav { background:rgba(0,0,0,0.05); border-color:rgba(0,0,0,0.10); }
+    .light-mode .cal-weekdays span { color:rgba(80,60,40,0.4); }
+    .light-mode .cal-day { color:var(--text); }
+    .light-mode .cal-day.other-month { color:rgba(0,0,0,0.2); }
+    .light-mode .cal-day.disabled { color:rgba(0,0,0,0.15); }
+    .light-mode .cal-day:hover:not(.disabled):not(.other-month) { background:rgba(37,117,212,0.12); }
+    .light-mode .cal-separator { border-top-color:rgba(0,0,0,0.08); }
+    .light-mode .cal-today-btn {
+      background:rgba(37,117,212,0.08); border-color:rgba(37,117,212,0.22); color:var(--accent);
+    }
+
+    /* ── Animation keyframes ── */
+    @keyframes fade-up {
+      from { opacity:0; transform:translateY(10px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    @keyframes dropdown-in {
+      from { opacity:0; transform:translateY(-8px) scale(0.96); }
+      to   { opacity:1; transform:translateY(0)    scale(1); }
+    }
+    @keyframes modal-in {
+      from { opacity:0; transform:scale(0.92) translateY(12px); }
+      to   { opacity:1; transform:scale(1)    translateY(0); }
+    }
+    @keyframes float-icon {
+      0%,100% { transform:translateY(0); }
+      50%     { transform:translateY(-9px); }
+    }
+    @keyframes spin-star {
+      0%   { transform:rotate(0deg)   scale(1); }
+      50%  { transform:rotate(180deg) scale(1.15); }
+      100% { transform:rotate(360deg) scale(1); }
+    }
+    @keyframes list-fade-in {
+      from { opacity:0; transform:translateY(8px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+
+    /* App Info dropdown animation */
+    .app-info-dropdown.open {
+      animation: dropdown-in 0.2s cubic-bezier(0.34,1.2,0.64,1) forwards;
+    }
+    .app-info-dropdown.closing { display: block !important; animation: dropdown-out 0.16s ease forwards; }
+    /* Weights modal animation */
+    .weights-overlay.open .weights-modal {
+      animation: modal-in 0.24s cubic-bezier(0.34,1.2,0.64,1) forwards;
+    }
+    .weights-overlay.closing { display: flex !important; }
+    .weights-overlay.closing .weights-modal { animation: modal-out 0.18s ease forwards; }
+    /* Empty state floating icon */
+    .empty-state .icon { animation: float-icon 4s ease-in-out infinite; display:block; }
+    /* Results list fade-in on populate */
+    .results-list.animating-in { animation: list-fade-in 0.22s ease forwards; }
+
+    /* ── Close animations ── */
+    @keyframes dropdown-out {
+      from { opacity:1; transform:translateY(0) scale(1); }
+      to   { opacity:0; transform:translateY(-8px) scale(0.96); }
+    }
+    @keyframes modal-out {
+      from { opacity:1; transform:scale(1) translateY(0); }
+      to   { opacity:0; transform:scale(0.92) translateY(14px); }
+    }
+    /* ── Calendar month slide ── */
+    @keyframes cal-slide-left {
+      from { opacity:0; transform:translateX(22px); }
+      to   { opacity:1; transform:translateX(0); }
+    }
+    @keyframes cal-slide-right {
+      from { opacity:0; transform:translateX(-22px); }
+      to   { opacity:1; transform:translateX(0); }
+    }
+    .cal-grid.entering-left  { animation: cal-slide-left  0.2s cubic-bezier(0.25,0.46,0.45,0.94) both; }
+    .cal-grid.entering-right { animation: cal-slide-right 0.2s cubic-bezier(0.25,0.46,0.45,0.94) both; }
+    /* ── Score bar shimmer ── */
+    @keyframes score-shimmer {
+      from { transform:translateX(-100%); }
+      to   { transform:translateX(250%); }
+    }
+    /* ── Theme icon morph ── */
+    .theme-icon { display: block; }
+    .theme-icon .sun-group,
+    .theme-icon .moon-group { transform-box: fill-box; transform-origin: center; }
+    .theme-icon .sun-group  { opacity: 1; }
+    .theme-icon .moon-group { opacity: 0; }
+    .light-mode .theme-icon .sun-group  { opacity: 0; }
+    .light-mode .theme-icon .moon-group { opacity: 1; }
+    @keyframes sun-exit  { from{opacity:1;transform:scale(1) rotate(0deg)} to{opacity:0;transform:scale(0.25) rotate(90deg)} }
+    @keyframes moon-enter{ from{opacity:0;transform:scale(0.25) rotate(-60deg)} to{opacity:1;transform:scale(1) rotate(0deg)} }
+    @keyframes moon-exit { from{opacity:1;transform:scale(1) rotate(0deg)} to{opacity:0;transform:scale(0.25) rotate(-90deg)} }
+    @keyframes sun-enter { from{opacity:0;transform:scale(0.25) rotate(60deg)} to{opacity:1;transform:scale(1) rotate(0deg)} }
+    .theme-toggle-btn.to-light .theme-icon .sun-group  { animation: sun-exit   0.26s ease forwards; }
+    .theme-toggle-btn.to-light .theme-icon .moon-group { animation: moon-enter 0.32s cubic-bezier(0.34,1.2,0.64,1) 0.1s both; }
+    .theme-toggle-btn.to-dark  .theme-icon .moon-group { animation: moon-exit  0.26s ease forwards; }
+    .theme-toggle-btn.to-dark  .theme-icon .sun-group  { animation: sun-enter  0.32s cubic-bezier(0.34,1.2,0.64,1) 0.1s both; }
+    /* ── Theme color transition ── */
+    html.theme-transitioning * {
+      transition: background-color 0.36s ease, color 0.32s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
+    }
+    /* ── Sort / search bar reveal ── */
+    @keyframes slide-down-reveal {
+      from { opacity:0; transform:translateY(-7px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    .sort-bar.revealing    { animation: slide-down-reveal 0.22s cubic-bezier(0.34,1.1,0.64,1) both; }
+    .search-wrap.revealing { animation: slide-down-reveal 0.22s cubic-bezier(0.34,1.1,0.64,1) 0.06s both; }
+    /* ── Results header count pop ── */
+    @keyframes count-pop {
+      0%   { transform:scale(1); }
+      45%  { transform:scale(1.06); }
+      100% { transform:scale(1); }
+    }
+    .results-header.pop { animation: count-pop 0.28s cubic-bezier(0.34,1.56,0.64,1); }
+    /* ── Input focus glow pulse ── */
+    @keyframes focus-pulse {
+      0%   { box-shadow:0 0 0 0 rgba(78,154,241,0.5); }
+      60%  { box-shadow:0 0 0 4px rgba(78,154,241,0.15); }
+      100% { box-shadow:0 0 0 3px rgba(78,154,241,0.1); }
+    }
+    .site-search input:focus, .search-wrap input:focus { animation: focus-pulse 0.32s ease forwards; }
+    /* ── Button active press ── */
+    .sort-btn:active, .cal-nav:active, .cal-today-btn:active,
+    .date-picker-btn:active, .search-clear:active, .weights-btn:active,
+    .app-info-btn:active { transform:scale(0.91) !important; transition:transform 0.07s ease !important; }
+    /* ── Page load aside entrance ── */
+    aside { animation: fade-up 0.42s ease 0.06s both; }
+
+    /* ── Skeleton shimmer (while loading) ── */
+    @keyframes shimmer-sweep {
+      from { background-position:-500px 0; }
+      to   { background-position: 500px 0; }
+    }
+    .skeleton-card {
+      height:108px; border-radius:14px;
+      background: linear-gradient(90deg,
+        rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.09) 50%, rgba(255,255,255,0.04) 75%);
+      background-size:500px 100%;
+      animation: shimmer-sweep 1.4s ease-in-out infinite;
+      border:1px solid rgba(255,255,255,0.045);
+    }
+    .light-mode .skeleton-card {
+      background: linear-gradient(90deg,
+        rgba(0,0,0,0.04) 25%, rgba(0,0,0,0.08) 50%, rgba(0,0,0,0.04) 75%);
+      background-size:500px 100%;
+    }
+
+    /* ── Custom range input ── */
+    input[type="range"] {
+      -webkit-appearance:none; appearance:none;
+      height:5px; border-radius:3px;
+      background: rgba(255,255,255,0.1);
+      outline:none; cursor:pointer; padding:0; border:none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance:none; appearance:none;
+      width:17px; height:17px; border-radius:50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 3px rgba(78,154,241,0.22);
+      cursor:pointer; transition: box-shadow 0.15s, transform 0.15s;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      box-shadow: 0 0 0 6px rgba(78,154,241,0.3); transform:scale(1.1);
+    }
+    input[type="range"]::-moz-range-thumb {
+      width:17px; height:17px; border-radius:50%;
+      background:var(--accent); border:none;
+      box-shadow: 0 0 0 3px rgba(78,154,241,0.22);
+    }
+    .light-mode input[type="range"] { background:rgba(0,0,0,0.12); }
+
+    /* ── Custom checkboxes ── */
+    .checkbox-label input[type="checkbox"] {
+      appearance:none; -webkit-appearance:none;
+      width:13px; height:13px; border-radius:3px;
+      border:1.5px solid rgba(255,255,255,0.25);
+      background:rgba(255,255,255,0.06); cursor:pointer; position:relative;
+      flex-shrink:0; vertical-align:middle; display:inline-flex;
+      align-items:center; justify-content:center;
+      transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+    }
+    .checkbox-label input[type="checkbox"]:checked {
+      background:var(--accent); border-color:var(--accent);
+      box-shadow:0 0 0 2px rgba(78,154,241,0.22);
+    }
+    .checkbox-label input[type="checkbox"]:checked::after {
+      content:'✓'; position:absolute; inset:0;
+      display:flex; align-items:center; justify-content:center;
+      font-size:0.6rem; font-weight:700; color:#fff; line-height:1;
+    }
+    .light-mode .checkbox-label input[type="checkbox"] {
+      border-color:rgba(0,0,0,0.32); background:rgba(255,255,255,0.9);
+      box-shadow:inset 0 1px 2px rgba(0,0,0,0.06);
+    }
+    .light-mode .checkbox-label input[type="checkbox"]:checked {
+      background:var(--accent); border-color:var(--accent);
+      box-shadow:0 0 0 2px rgba(37,117,212,0.2);
+    }
+
+    /* ── Date display input ── */
+    .date-display-btn { cursor:pointer; }
+
+    /* ── Sun info card ── */
+    .sun-info {
+      margin-top:0.45rem; padding:0.48rem 0.65rem;
+      border:1px solid rgba(78,154,241,0.14);
+      background:rgba(255,255,255,0.03); border-radius:var(--radius);
+      font-size:0.74rem; color:var(--muted);
+      display:flex; align-items:center; justify-content:center; gap:0.7rem;
+      backdrop-filter:blur(8px); animation: fade-up 0.22s ease;
+    }
+
+    /* ── Lunar banner ── */
+    .lunar-banner {
+      padding:0.38rem 1rem; font-size:0.72rem;
+      border-bottom:1px solid rgba(255,255,255,0.045);
+      display:flex; align-items:flex-start; gap:0.5rem;
+      color:var(--muted); background:rgba(167,139,250,0.04);
+      animation: fade-up 0.25s ease;
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+      padding:2.5rem 1.5rem; text-align:center;
+      color:var(--muted); font-size:0.82rem; line-height:1.85;
+    }
+    .empty-state .icon { font-size:3rem; margin-bottom:0.75rem; }
+
+    /* ── Loading spinner: star ── */
+    .spinner {
+      width:34px; height:34px; font-size:1.6rem; line-height:34px; text-align:center;
+      border:none; background:none;
+      animation: spin-star 1.4s linear infinite;
+    }
+    #loading-overlay, #mobile-loading-overlay {
+      gap:0.65rem;
+    }
+    #loading-overlay p, #mobile-loading-overlay p {
+      font-size:0.82rem; color:var(--muted); letter-spacing:0.02em;
+    }
+
+    /* ── Chip hover lift ── */
+    .chip { transition: transform 0.12s, box-shadow 0.12s; }
+    .chip:hover { transform:translateY(-1px); box-shadow:0 3px 8px rgba(0,0,0,0.25); }
+
+    /* ── Card hover micro-interaction ── */
+    .site-card .name { transition: color 0.15s; }
+    .site-card:hover .name { color:#fff; }
+    .light-mode .site-card:hover .name { color: var(--text); }
+
+    /* ── Score bar fill: start at 0, animate to width on reveal ── */
+    .score-bar-fill { width:0 !important; transition: width 0.7s cubic-bezier(0.4,0,0.2,1) 0.12s; }
+    .score-bar-fill.revealed { width:var(--score-w) !important; }
+
+    /* ── Tab buttons: font weight ── */
+    .tab-btn { font-family: inherit; font-weight:500; }
+    .tab-btn.active { font-weight:600; }
+
+    /* ── Form section h2 ── */
+    .form-section h2 {
+      font-size:0.68rem; text-transform:uppercase; letter-spacing:0.14em;
+      color:rgba(160,190,240,0.5); margin-bottom:0.9rem;
+      display:flex; align-items:center; justify-content:space-between;
+    }
+
+    /* ── App info dropdown links hover ── */
+    .app-info-dropdown a { transition: background 0.15s, padding-left 0.15s; }
+    .app-info-dropdown a:hover { background:rgba(78,154,241,0.1); padding-left:1.15rem; }
+
+    /* ── Weights apply button pulse ── */
+    @keyframes btn-pulse {
+      0%,100% { box-shadow:0 4px 14px rgba(78,154,241,0.28),inset 0 1px 0 rgba(255,255,255,0.15); }
+      50%     { box-shadow:0 6px 22px rgba(78,154,241,0.48),inset 0 1px 0 rgba(255,255,255,0.15); }
+    }
+    .btn:not(:disabled):not(.no-pulse) { animation: btn-pulse 3s ease-in-out infinite; }
+    .btn:hover:not(:disabled) { animation:none; }
+
+    /* ── Results header ── */
+    .results-header { transition: opacity 0.2s; }
+
+    /* ── Scrollbar refinement ── */
+    .results-list { scrollbar-width:thin; scrollbar-color:rgba(255,255,255,0.12) transparent; }
+
+    /* ── Light mode label ── */
+    .light-mode label { color:rgba(80,55,30,0.6); }
+    .light-mode .form-section h2 { color:rgba(80,55,30,0.5); }
+    .light-mode input[type="range"]::-webkit-slider-thumb { background:var(--accent); }
+    .light-mode .sun-info { background:rgba(255,255,255,0.45); border-color:rgba(37,117,212,0.15); }
+    .light-mode .lunar-banner { background:rgba(100,70,200,0.04); border-bottom-color:rgba(0,0,0,0.07); }
+    .light-mode .results-list { scrollbar-color:rgba(0,0,0,0.15) transparent; }
+    .light-mode .app-info-dropdown a:hover { background:rgba(37,117,212,0.08); padding-left:1.15rem; }
   </style>
 </head>
 <body>
 
 <header>
   <h1><a href="https://no-haze-stargaze.onrender.com/" style="color:inherit;text-decoration:none;">No-Haze Stargaze</a></h1>
-  <button class="theme-toggle-btn" id="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle light/dark mode">☀</button>
+  <button class="theme-toggle-btn" id="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle light/dark mode"><svg class="theme-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><g class="sun-group" stroke="#c26800" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/></g><g class="moon-group"><path fill-rule="evenodd" fill="#b4c8ff" d="M12 3A9 9 0 0 1 12 21A9 9 0 0 1 12 3ZM16 5A7 7 0 0 0 16 19A7 7 0 0 0 16 5Z"/></g></svg></button>
   <div class="app-info-wrap" id="app-info-wrap">
-    <button class="app-info-btn" id="app-info-btn" onclick="toggleAppInfo()" aria-expanded="false" aria-label="App Info">App Info &#x25BE;</button>
-    <div class="app-info-dropdown" id="app-info-dropdown" role="menu">
-      <div class="app-info-stat"><div class="status-dot" id="status-dot"></div><span id="status-text">Loading…</span></div>
-      <div class="app-info-stat"><span id="forecast-bar-text">Checking forecast…</span></div>
-      <a href="https://nohazestargaze.blogspot.com/2026/07/how-to-use-no-haze-stargaze-app.html" target="_blank" rel="noopener">How to Use</a>
-      <a href="https://nohazestargaze.blogspot.com/2026/07/choose-what-matters-most-custom.html" target="_blank" rel="noopener">How to Customise Weights</a>
-      <a href="https://www.gostargazing.co.uk" target="_blank" rel="noopener">Dark Sky Sites: gostargazing.co.uk</a>
-      <a href="https://www.openstreetmap.org" target="_blank" rel="noopener">Amenities: OpenStreetMap</a>
-      <a href="https://open-meteo.com" target="_blank" rel="noopener">Weather: Open-Meteo</a>
-      <a href="https://form.typeform.com/to/q3xO7PnE" target="_blank" rel="noopener">Help Us Improve!</a>
-      <a href="mailto:nohazestargaze@gmail.com">Contact Us</a>
-    </div>
+    <button class="app-info-btn" id="app-info-btn" onclick="toggleAppInfo()" aria-expanded="false" aria-label="App Info">App Info</button>
   </div>
 </header>
+<!-- App Info dropdown — lives at body level so backdrop-filter on header doesn't contain it -->
+<div class="app-info-dropdown" id="app-info-dropdown" role="menu">
+  <div class="app-info-stat"><div class="status-dot" id="status-dot"></div><span id="status-text">Loading…</span></div>
+  <div class="app-info-stat"><span id="forecast-bar-text">Checking forecast…</span></div>
+  <a href="https://nohazestargaze.blogspot.com/2026/07/how-to-use-no-haze-stargaze-app.html" target="_blank" rel="noopener">How to Use</a>
+  <a href="https://nohazestargaze.blogspot.com/2026/07/choose-what-matters-most-custom.html" target="_blank" rel="noopener">How to Customise Weights</a>
+  <a href="https://www.gostargazing.co.uk" target="_blank" rel="noopener">Dark Sky Sites: gostargazing.co.uk</a>
+  <a href="https://www.openstreetmap.org" target="_blank" rel="noopener">Amenities: OpenStreetMap</a>
+  <a href="https://open-meteo.com" target="_blank" rel="noopener">Weather: Open-Meteo</a>
+  <a href="https://form.typeform.com/to/q3xO7PnE" target="_blank" rel="noopener">Help Us Improve!</a>
+  <a href="mailto:nohazestargaze@gmail.com">Contact Us</a>
+</div>
 
 <div class="layout">
   <!-- ── Sidebar ── -->
@@ -1303,7 +2018,7 @@
           <button class="tab-btn" id="tab-btn-site" onclick="switchTab('site')">By site name</button>
           <div class="tab-pill" id="tab-pill"></div>
         </div>
-        <button class="form-toggle-btn" id="form-toggle" onclick="toggleForm()">▲ hide</button>
+        <button class="form-toggle-btn" id="form-toggle" onclick="toggleForm()">hide</button>
       </div>
       <div id="form-body">
 
@@ -1374,6 +2089,7 @@
         </div>
 
         <!-- ── Site name tab ── -->
+
         <div class="tab-panel" id="panel-site">
           <label for="site-search-input">Site name</label>
           <div class="site-search-wrap">
@@ -1382,8 +2098,14 @@
             <div class="site-autocomplete" id="site-autocomplete"></div>
           </div>
 
-          <label for="site-date-input">Date (night of)</label>
-          <input id="site-date-input" type="date" />
+          <label>Date (night of)</label>
+          <div class="date-wrap">
+            <input id="site-date-display" type="text" readonly placeholder="Select a date…" class="date-display-btn" autocomplete="off" />
+            <div class="date-picker-wrap">
+              <button class="date-picker-btn" id="site-date-picker-btn" type="button" aria-label="Open calendar">📅</button>
+              <input id="site-date-input" type="hidden" />
+            </div>
+          </div>
           <div class="sun-info" id="site-sun-info" style="display:none"></div>
 
           <label>Night window</label>
@@ -1405,6 +2127,10 @@
         </div>
 
       </div>
+      <!-- Mobile-only: scroll to results after search -->
+      <button class="mobile-results-cta" id="mobile-results-cta" onclick="scrollToResults()" style="display:none">
+        View Results ↓
+      </button>
     </div>
 
     <!-- Results header -->
@@ -1442,7 +2168,7 @@
   <main>
     <div id="map"></div>
     <div id="loading-overlay">
-      <div class="spinner"></div>
+      <div class="spinner">✦</div>
       <p id="loading-msg">Searching…</p>
     </div>
   </main>
@@ -1450,8 +2176,29 @@
 
 <!-- Mobile loading overlay: position fixed so it renders even when <main> is display:none -->
 <div id="mobile-loading-overlay">
-  <div class="spinner"></div>
+  <div class="spinner">✦</div>
   <p id="mobile-loading-msg">Searching…</p>
+</div>
+
+<!-- Custom calendar overlay -->
+<div id="cal-overlay" style="display:none">
+  <div class="cal-popup">
+    <div class="cal-header">
+      <button class="cal-nav" id="cal-prev" type="button">
+        <svg width="7" height="11" viewBox="0 0 7 11" fill="none" aria-hidden="true"><path d="M6 1L1.5 5.5L6 10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <span class="cal-month-label" id="cal-month-label"></span>
+      <button class="cal-nav" id="cal-next" type="button">
+        <svg width="7" height="11" viewBox="0 0 7 11" fill="none" aria-hidden="true"><path d="M1 1L5.5 5.5L1 10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+    <div class="cal-weekdays">
+      <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+    <div class="cal-separator"></div>
+    <button class="cal-today-btn" id="cal-today-btn" type="button">Today</button>
+  </div>
 </div>
 
 <!-- floating score breakdown tooltip -->
@@ -1764,15 +2511,12 @@ function initForm() {
     if (normalized) refreshSunInfo();
   });
   document.getElementById('date-picker-btn').addEventListener('click', () => {
-    if (nativeDateInput.showPicker) {
-      nativeDateInput.showPicker();
-    } else {
-      nativeDateInput.click();
-    }
-  });
-  nativeDateInput.addEventListener('change', () => {
-    applyDateValue(nativeDateInput.value);
-    refreshSunInfo();
+    const currentIso = normalizeDateInput(dateInput.value);
+    openCustomCalendar(
+      document.getElementById('date-picker-btn'),
+      currentIso,
+      (isoDate) => { applyDateValue(isoDate); refreshSunInfo(); }
+    );
   });
 
   const locInput = document.getElementById('loc-input');
@@ -1788,7 +2532,7 @@ function initForm() {
     }
     if (!hasConfiguredBackend()) {
       const sunInfo = document.getElementById('sun-info');
-      sunInfo.innerHTML = '<div class="sun-item">🌙 <b>—</b></div>';
+      sunInfo.innerHTML = '<div class="sun-item" style="color:var(--muted)"><b>—</b></div>';
       sunInfo.style.display = 'flex';
       document.getElementById('time-help').textContent = API_SETUP_HINT;
       return;
@@ -1807,8 +2551,8 @@ function initForm() {
       const sunset = data.sunset || '00:00';
       const sunInfo = document.getElementById('sun-info');
       sunInfo.innerHTML = `
-        <div class="sun-item">🔆⬇️ <span>Sunset</span> <b>${sunset}</b></div>
-        <div class="sun-item">🔆⬆️ <span>Sunrise</span> <b>${sunrise}</b></div>`;
+        <div class="sun-item"><svg class="sun-icon" width="22" height="22" viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M20 1.5v10.5M16 9l4 3 4-3" stroke="#ef4444" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><g stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round"><line x1="30.8" y1="26.1" x2="34.3" y2="25.5"/><line x1="28.4" y1="20.9" x2="31.1" y2="18.7"/><line x1="23.8" y1="17.7" x2="25" y2="14.4"/><line x1="16.2" y1="17.7" x2="15" y2="14.4"/><line x1="11.6" y1="20.9" x2="8.9" y2="18.7"/><line x1="9.2" y1="26.1" x2="5.7" y2="25.5"/></g><path d="M11 28A9 9 0 0 1 29 28" stroke="#f97316" stroke-width="1.9" stroke-linecap="round"/><line x1="9" y1="30.5" x2="31" y2="30.5" stroke="#f97316" stroke-width="1.5" stroke-linecap="round"/><line x1="11" y1="34" x2="29" y2="34" stroke="#f97316" stroke-width="1.3" stroke-linecap="round" opacity="0.5"/></svg><span>Sunset</span> <b>${sunset}</b></div>
+        <div class="sun-item"><svg class="sun-icon" width="22" height="22" viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M20 12v-10.5M16 4.5l4-3 4 3" stroke="#ef4444" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><g stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round"><line x1="30.8" y1="26.1" x2="34.3" y2="25.5"/><line x1="28.4" y1="20.9" x2="31.1" y2="18.7"/><line x1="23.8" y1="17.7" x2="25" y2="14.4"/><line x1="16.2" y1="17.7" x2="15" y2="14.4"/><line x1="11.6" y1="20.9" x2="8.9" y2="18.7"/><line x1="9.2" y1="26.1" x2="5.7" y2="25.5"/></g><path d="M11 28A9 9 0 0 1 29 28" stroke="#f97316" stroke-width="1.9" stroke-linecap="round"/><line x1="9" y1="30.5" x2="31" y2="30.5" stroke="#f97316" stroke-width="1.5" stroke-linecap="round"/><line x1="11" y1="34" x2="29" y2="34" stroke="#f97316" stroke-width="1.3" stroke-linecap="round" opacity="0.5"/></svg><span>Sunrise</span> <b>${sunrise}</b></div>`;
       sunInfo.style.display = 'flex';
       const sunsetHour = parseInt(sunset.slice(0, 2), 10);
       const sunriseHour = parseInt(sunrise.slice(0, 2), 10);
@@ -1818,7 +2562,7 @@ function initForm() {
       setDefaultWindow(startHour, endHour);
     } catch (_) {
       const sunInfo = document.getElementById('sun-info');
-      sunInfo.innerHTML = '<div class="sun-item">🌙 <b>—</b></div>';
+      sunInfo.innerHTML = '<div class="sun-item" style="color:var(--muted)"><b>—</b></div>';
       sunInfo.style.display = 'flex';
       document.getElementById('time-help').textContent = 'Sunrise/sunset unavailable — the window can still be adjusted manually.';
     }
@@ -1855,6 +2599,23 @@ function initForm() {
   const siteDateEl = document.getElementById('site-date-input');
   siteDateEl.value = todayStr;
   siteDateEl.addEventListener('change', refreshSiteSunInfo);
+  // init display
+  const siteDateDisplay = document.getElementById('site-date-display');
+  if (siteDateDisplay) siteDateDisplay.value = formatDateForDisplay(todayStr);
+  const siteDatePickerBtn = document.getElementById('site-date-picker-btn');
+  if (siteDatePickerBtn) {
+    siteDatePickerBtn.addEventListener('click', () => {
+      openCustomCalendar(
+        siteDatePickerBtn,
+        siteDateEl.value,
+        (isoDate) => {
+          siteDateEl.value = isoDate;
+          siteDateEl.dispatchEvent(new Event('change'));
+          if (siteDateDisplay) siteDateDisplay.value = formatDateForDisplay(isoDate);
+        }
+      );
+    });
+  }
   const siteStartSel = document.getElementById('site-start-hour');
   const siteEndSel   = document.getElementById('site-end-hour');
   const fmtSite = h => `${String(h).padStart(2,'0')}:00`;
@@ -1937,10 +2698,12 @@ async function pollStatus() {
     } else {
       dot.classList.remove('spinning');
       if (d.sites_loaded > 0) {
+        dot.classList.add('ready');
         txt.textContent = `${d.sites_loaded} dark sky sites loaded`;
         document.getElementById('search-btn').disabled = false;
         document.getElementById('site-search-btn').disabled = false;
       } else {
+        dot.classList.remove('ready');
         txt.textContent = 'No site data — the server is warming up';
         document.getElementById('search-btn').disabled = true;
         document.getElementById('site-search-btn').disabled = true;
@@ -1959,7 +2722,8 @@ function toggleForm() {
   const body = document.getElementById('form-body');
   const btn  = document.getElementById('form-toggle');
   const nowCollapsed = body.classList.toggle('collapsed');
-  btn.textContent = nowCollapsed ? '▼ show' : '▲ hide';
+  btn.textContent = nowCollapsed ? 'show' : 'hide';
+  btn.classList.toggle('collapsed', nowCollapsed);
 }
 
 // ── Tab switching ─────────────────────────────────────────────────────────
@@ -1971,7 +2735,8 @@ function switchTab(tab) {
   const formBody = document.getElementById('form-body');
   if (formBody.classList.contains('collapsed')) {
     formBody.classList.remove('collapsed');
-    document.getElementById('form-toggle').textContent = '▲ hide';
+    const ft = document.getElementById('form-toggle');
+    ft.textContent = 'hide'; ft.classList.remove('collapsed');
   }
   if (tab === _activeTab) return;
   const oldPanel = document.getElementById('panel-' + _activeTab);
@@ -2059,7 +2824,7 @@ async function refreshSiteSunInfo() {
   const dateVal = document.getElementById('site-date-input').value;
   if (!dateVal) { siteInfo.style.display = 'none'; return; }
   if (!hasConfiguredBackend()) {
-    siteInfo.innerHTML = '<div class="sun-item">🌙 <b>—</b></div>';
+    siteInfo.innerHTML = '<div class="sun-item" style="color:var(--muted)"><b>—</b></div>';
     siteInfo.style.display = 'flex';
     return;
   }
@@ -2081,15 +2846,15 @@ async function refreshSiteSunInfo() {
     const sunrise = data.sunrise || '00:00';
     const sunset  = data.sunset  || '00:00';
     siteInfo.innerHTML = `
-      <div class="sun-item">🔆⬇️ <span>Sunset</span> <b>${sunset}</b></div>
-      <div class="sun-item">🔆⬆️ <span>Sunrise</span> <b>${sunrise}</b></div>`;
+      <div class="sun-item"><svg class="sun-icon" width="22" height="22" viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M20 1.5v10.5M16 9l4 3 4-3" stroke="#ef4444" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><g stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round"><line x1="30.8" y1="26.1" x2="34.3" y2="25.5"/><line x1="28.4" y1="20.9" x2="31.1" y2="18.7"/><line x1="23.8" y1="17.7" x2="25" y2="14.4"/><line x1="16.2" y1="17.7" x2="15" y2="14.4"/><line x1="11.6" y1="20.9" x2="8.9" y2="18.7"/><line x1="9.2" y1="26.1" x2="5.7" y2="25.5"/></g><path d="M11 28A9 9 0 0 1 29 28" stroke="#f97316" stroke-width="1.9" stroke-linecap="round"/><line x1="9" y1="30.5" x2="31" y2="30.5" stroke="#f97316" stroke-width="1.5" stroke-linecap="round"/><line x1="11" y1="34" x2="29" y2="34" stroke="#f97316" stroke-width="1.3" stroke-linecap="round" opacity="0.5"/></svg><span>Sunset</span> <b>${sunset}</b></div>
+      <div class="sun-item"><svg class="sun-icon" width="22" height="22" viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M20 12v-10.5M16 4.5l4-3 4 3" stroke="#ef4444" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><g stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round"><line x1="30.8" y1="26.1" x2="34.3" y2="25.5"/><line x1="28.4" y1="20.9" x2="31.1" y2="18.7"/><line x1="23.8" y1="17.7" x2="25" y2="14.4"/><line x1="16.2" y1="17.7" x2="15" y2="14.4"/><line x1="11.6" y1="20.9" x2="8.9" y2="18.7"/><line x1="9.2" y1="26.1" x2="5.7" y2="25.5"/></g><path d="M11 28A9 9 0 0 1 29 28" stroke="#f97316" stroke-width="1.9" stroke-linecap="round"/><line x1="9" y1="30.5" x2="31" y2="30.5" stroke="#f97316" stroke-width="1.5" stroke-linecap="round"/><line x1="11" y1="34" x2="29" y2="34" stroke="#f97316" stroke-width="1.3" stroke-linecap="round" opacity="0.5"/></svg><span>Sunrise</span> <b>${sunrise}</b></div>`;
     siteInfo.style.display = 'flex';
     const sunsetHour  = parseInt(sunset.slice(0,2), 10);
     const sunriseHour = parseInt(sunrise.slice(0,2), 10);
     const sunriseMin  = parseInt(sunrise.slice(3,5), 10);
     setSiteDefaultWindow(sunsetHour, Math.max(0, Math.min(23, sunriseHour + (sunriseMin > 0 ? 1 : 0))));
   } catch (_) {
-    siteInfo.innerHTML = '<div class="sun-item">🌙 <b>—</b></div>';
+    siteInfo.innerHTML = '<div class="sun-item" style="color:var(--muted)"><b>—</b></div>';
     siteInfo.style.display = 'flex';
   }
 }
@@ -2203,13 +2968,15 @@ function renderResults(data) {
 
   if (recs.length === 0) {
     header.textContent = data.message || 'No sites found with these criteria.';
-    list.innerHTML = '<div class="empty-state"><div class="icon">🌫️</div><div>' +
-      (data.message || 'No matching sites found.') + '</div></div>';
+    _popHeader(header);
+    _setListHtml('<div class="empty-state"><div class="icon">🌫️</div><div>' +
+      (data.message || 'No matching sites found.') + '</div></div>');
     if (origin) map.setView([origin.lat, origin.lon], 8);
     return;
   }
 
   header.textContent = `${recs.length} sites found (checking ${data.sites_checked} within range)`;
+  _popHeader(header);
   if (data.forecast_refreshing) {
     header.textContent += ' · forecast updating…';
   }
@@ -2233,12 +3000,23 @@ function renderResults(data) {
         `<span class="moon-name">Moon: <strong>${lunar.phase_name}</strong></span>` +
         `<span class="moon-details moon-qual-${quality}">` +
           `${lunar.illumination_pct}% illuminated &middot; ${qualityLabel}&thinsp;` +
-          `<span class="chip-i" data-tip-type="lunar" data-tip-quality="${quality}" data-tip-pct="${lunar.illumination_pct}" onmouseenter="showChipTip(event,this)" onmouseleave="hideInfoTipDelayed()">ⓘ</span>` +
+          `<span class="chip-i" data-tip-type="lunar" data-tip-quality="${quality}" data-tip-pct="${lunar.illumination_pct}" onclick="toggleChipTipClick(event,this)" onmouseenter="showChipTip(event,this)" onmouseleave="hideInfoTipDelayed()">ⓘ</span>` +
         `</span>` +
       `</span>`;
-    lunarBanner.style.display = 'flex';
+    if (lunarBanner.style.display !== 'flex') {
+      lunarBanner.style.display = 'flex';
+      lunarBanner.style.opacity = '0';
+      lunarBanner.style.transform = 'translateY(-4px)';
+      lunarBanner.style.transition = 'opacity 0.28s ease, transform 0.28s ease';
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        lunarBanner.style.opacity = '1';
+        lunarBanner.style.transform = '';
+      }));
+    }
   } else {
-    lunarBanner.style.display = 'none';
+    lunarBanner.style.opacity = '0';
+    lunarBanner.style.transform = 'translateY(-4px)';
+    setTimeout(() => { lunarBanner.style.display = 'none'; lunarBanner.style.opacity = ''; lunarBanner.style.transform = ''; }, 250);
   }
 
   // Site markers — index matches original API order (used for siteMarkers[origIdx])
@@ -2274,7 +3052,13 @@ function renderResults(data) {
   document.getElementById('sort-btn-conditions').classList.add('active');
   document.getElementById('sort-btn-closest').classList.remove('active');
   const sortBar = document.getElementById('sort-bar');
+  const _sortWasHidden = sortBar.style.display !== 'flex';
   sortBar.style.display = 'flex';
+  if (_sortWasHidden) {
+    sortBar.classList.remove('revealing'); sortBar.offsetWidth;
+    sortBar.classList.add('revealing');
+    setTimeout(() => sortBar.classList.remove('revealing'), 300);
+  }
   const sortToggle = document.getElementById('sort-toggle');
   sortToggle.style.opacity = window._allUk ? '0.38' : '';
   sortToggle.style.pointerEvents = window._allUk ? 'none' : '';
@@ -2284,12 +3068,39 @@ function renderResults(data) {
   const searchInput = document.getElementById('results-search');
   searchInput.value = '';
   document.getElementById('search-clear').style.display = 'none';
+  const _searchWasHidden = searchWrap.style.display !== 'flex';
   searchWrap.style.display = 'flex';
+  if (_searchWasHidden) {
+    searchWrap.classList.remove('revealing'); searchWrap.offsetWidth;
+    searchWrap.classList.add('revealing');
+    setTimeout(() => searchWrap.classList.remove('revealing'), 300);
+  }
+
+  // Mobile: show "View Results" CTA and auto-collapse form
+  if (window.innerWidth <= 640) {
+    const cta = document.getElementById('mobile-results-cta');
+    if (cta) {
+      cta.textContent = `View ${recs.length} Result${recs.length !== 1 ? 's' : ''} ↓`;
+      cta.style.display = 'flex';
+    }
+    const formBody = document.getElementById('form-body');
+    if (formBody && !formBody.classList.contains('collapsed')) {
+      formBody.classList.add('collapsed');
+      const ft2 = document.getElementById('form-toggle');
+      ft2.textContent = 'show'; ft2.classList.add('collapsed');
+    }
+  }
 
   // Cards
-  list.innerHTML = _displayRecs.map((rec, di) => buildCard(rec, di)).join('');
-  attachDisplayCardListeners();
-  initSortPill();
+  _setListHtml(
+    _displayRecs.map((rec, di) => buildCard(rec, di)).join(''),
+    () => { attachDisplayCardListeners(); initSortPill(); }
+  );
+}
+
+function scrollToResults() {
+  const header = document.getElementById('results-header');
+  if (header) header.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function attachDisplayCardListeners() {
@@ -2315,7 +3126,7 @@ function buildCard(rec, idx) {
   const restrictedChip = RESTRICTED_SLUGS.has(site.slug)
     ? `<span class="chip chip-restricted">🔒 Restricted access</span>` : '';
   const typeChip = rec.site.site_type === 'Dark Sky Discovery Site'
-    ? `<span class="chip chip-type">${rec.site.site_type}&thinsp;<span class="chip-i" data-tip-type="dsds" onmouseenter="showChipTip(event,this)" onmouseleave="hideInfoTipDelayed()">ⓘ</span></span>` : '';
+    ? `<span class="chip chip-type">${rec.site.site_type}&thinsp;<span class="chip-i" data-tip-type="dsds" onclick="toggleChipTipClick(event,this)" onmouseenter="showChipTip(event,this)" onmouseleave="hideInfoTipDelayed()">ⓘ</span></span>` : '';
   const parkingChip = site.has_parking === true
     ? '<span class="chip chip-amenity">🅿 Parking</span>' : '';
   const toiletsChip = site.has_toilets === true
@@ -2334,16 +3145,18 @@ function buildCard(rec, idx) {
   const amenityRow = (parkingRow || toiletRow)
     ? `<div class="amenity-row">${parkingRow}${toiletRow}</div>` : '';
 
+  const sqClass = scoreQualityClass(rec.total_score);
+  const animDelay = `${(idx * 0.045).toFixed(2)}s`;
   const rankText = window._allUk
-    ? `#${idx + 1}`
-    : `#${idx + 1} · ${kmToMiStr(rec.distance_km)} away`;
+    ? `<span class="rank-num">#${idx + 1}</span>`
+    : `<span class="rank-num">#${idx + 1}</span> · ${kmToMiStr(rec.distance_km)} away`;
   const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${site.latitude},${site.longitude}`;
   const cardLinks = `<div class="card-links-mobile">
-      <a href="${mapsUrl}" target="_blank" rel="noopener" class="card-link-btn" onclick="event.stopPropagation()">Directions &#x2197;</a>
-      ${site.url ? `<a href="${site.url}" target="_blank" rel="noopener" class="card-link-btn" onclick="event.stopPropagation()">Site Info &#x2197;</a>` : ''}
+      <a href="${mapsUrl}" target="_blank" rel="noopener" class="card-link-btn" onclick="event.stopPropagation()">Directions</a>
+      ${site.url ? `<a href="${site.url}" target="_blank" rel="noopener" class="card-link-btn" onclick="event.stopPropagation()">Site Info</a>` : ''}
     </div>`;
   return `
-    <div class="site-card" id="card-${origIdx}" data-orig-idx="${origIdx}">
+    <div class="site-card ${sqClass}" id="card-${origIdx}" data-orig-idx="${origIdx}" style="animation-delay:${animDelay}">
       <div class="rank">${rankText}</div>
       <div class="name">${esc(site.name)}</div>
       <div class="address">${esc(site.address || 'No address')}</div>
@@ -2355,11 +3168,11 @@ function buildCard(rec, idx) {
         ${toiletsChip}
         <span class="chip chip-cloud" style="color:${cloudColor}">${cloudTxt}${confSuffix}</span>
       </div>
-      <div class="score-bar-wrap" onmouseenter="showScoreTip(event,currentRecs[${origIdx}])" onmouseleave="hideScoreTip()" onmousemove="positionScoreTip(event)">
+      <div class="score-bar-wrap" onclick="toggleScoreTipClick(event,currentRecs[${origIdx}])" onmouseenter="showScoreTip(event,currentRecs[${origIdx}])" onmouseleave="hideScoreTip()" onmousemove="positionScoreTip(event)">
         <div class="score-bar">
-          <div class="score-bar-fill" style="width:${rec.total_score}%"></div>
+          <div class="score-bar-fill" data-w="${rec.total_score}%" style="--score-w:${rec.total_score}%"></div>
         </div>
-        <span class="score-val">${rec.total_score} <span style="font-size:0.6rem;color:var(--muted)">/ 100 ⓘ</span></span>
+        <span class="score-val">${rec.total_score} <span style="font-size:0.58rem;opacity:0.5">/ 100 ⓘ</span></span>
       </div>
       ${amenityRow}
       ${cardLinks}
@@ -2405,19 +3218,23 @@ function buildPopup(rec, rank) {
     ? `🅿 ${feeStr(site.nearest_parking.fee) || 'Parking'} · ${distMiStr(site.nearest_parking.distance_m)}<br>` : '';
   const toiletStr = site.nearest_toilets
     ? `🚻 ${feeStr(site.nearest_toilets.fee) || 'Toilets'} · ${distMiStr(site.nearest_toilets.distance_m)}<br>` : '';
+  const metaParts = [moonStr ? moonStr.replace('<br>', '') : null,
+    parkingStr ? parkingStr.replace('<br>', '') : null,
+    toiletStr  ? toiletStr.replace('<br>',  '') : null].filter(Boolean);
   return `
-    <div>
-      <b>#${rank} ${esc(site.name)}</b><br>
-      <span class="popup-score" onmouseenter="showScoreTip(event,currentRecs[${rank-1}])" onmouseleave="hideScoreTip()" onmousemove="positionScoreTip(event)">${rec.total_score}/100 ⓘ</span><br>
-      ${locationLine}<br>
-      ☁ ${cloudStr}<br>
-      ${moonStr}${parkingStr}${toiletStr}
-      <a href="https://www.google.com/maps/dir/?api=1&destination=${site.latitude},${site.longitude}" target="_blank" rel="noopener" style="color:#4e9af1">
-        Directions ↗
-      </a><br>
-      <a href="${site.url}" target="_blank" rel="noopener" style="color:#4e9af1">
-        View on gostargazing.co.uk ↗
-      </a>
+    <div class="site-popup">
+      <div class="site-popup-rank">#${rank}</div>
+      <div class="site-popup-name">${esc(site.name)}</div>
+      <div class="site-popup-loc">${locationLine}</div>
+      <div class="site-popup-row">
+        <span class="popup-score" onmouseenter="showScoreTip(event,currentRecs[${rank-1}])" onmouseleave="hideScoreTip()" onmousemove="positionScoreTip(event)">${rec.total_score}/100 ⓘ</span>
+        <span class="popup-cloud">☁ ${cloudStr}</span>
+      </div>
+      ${metaParts.length ? `<div class="site-popup-meta">${metaParts.join(' &middot; ')}</div>` : ''}
+      <div class="site-popup-links">
+        <a href="https://www.google.com/maps/dir/?api=1&destination=${site.latitude},${site.longitude}" target="_blank" rel="noopener" class="popup-btn">Directions</a>
+        ${site.url ? `<a href="${site.url}" target="_blank" rel="noopener" class="popup-btn">Site Info</a>` : ''}
+      </div>
     </div>`;
 }
 
@@ -2473,22 +3290,39 @@ function filterCards(query) {
   const header = document.getElementById('results-header');
   const q = query.toLowerCase();
   if (q.length <= 2) {
-    cards.forEach(c => c.style.display = '');
+    cards.forEach(c => {
+      c.style.display = '';
+      requestAnimationFrame(() => { c.style.opacity = ''; c.style.pointerEvents = ''; });
+    });
     header.textContent = `${currentRecs.length} sites found (checking ${_lastSitesChecked} within range)`;
+    _popHeader(header);
     return;
   }
   let shown = 0;
   cards.forEach(card => {
     const origIdx = parseInt(card.dataset.origIdx);
     const rec = currentRecs[origIdx];
-    if (!rec) { card.style.display = 'none'; return; }
-    const haystack = [rec.site.name, rec.site.address, rec.site.site_type, rec.light_pollution_label]
-      .filter(Boolean).join(' ').toLowerCase();
-    const match = haystack.includes(q);
-    card.style.display = match ? '' : 'none';
-    if (match) shown++;
+    const haystack = rec ? [rec.site.name, rec.site.address, rec.site.site_type, rec.light_pollution_label]
+      .filter(Boolean).join(' ').toLowerCase() : '';
+    const match = rec && haystack.includes(q);
+    if (match) {
+      card.style.display = '';
+      requestAnimationFrame(() => { card.style.opacity = '1'; card.style.pointerEvents = ''; });
+      shown++;
+    } else {
+      card.style.opacity = '0';
+      card.style.pointerEvents = 'none';
+      setTimeout(() => { if (card.style.opacity === '0') card.style.display = 'none'; }, 220);
+    }
   });
   header.textContent = `${shown} of ${currentRecs.length} sites match “${query}”`;
+  _popHeader(header);
+}
+
+function _popHeader(el) {
+  el.classList.remove('pop');
+  el.offsetWidth;
+  el.classList.add('pop');
 }
 
 // ── Custom weights ───────────────────────────────────────────────────────────
@@ -2510,8 +3344,10 @@ function openWeightsModal() {
 }
 
 function closeWeightsModal() {
-  document.getElementById('weights-overlay').classList.remove('open');
+  const overlay = document.getElementById('weights-overlay');
+  overlay.classList.add('closing');
   document.getElementById('weights-btn').classList.remove('active');
+  setTimeout(() => overlay.classList.remove('open', 'closing'), 210);
 }
 
 function handleWeightsOverlayClick(e) {
@@ -2594,9 +3430,10 @@ function _recomputeAndRender() {
   document.getElementById('sort-btn-closest').classList.remove('active');
   initSortPill();
   _displayRecs = [...currentRecs].sort((a, b) => b.total_score - a.total_score);
-  const list = document.getElementById('results-list');
-  list.innerHTML = _displayRecs.map((rec, di) => buildCard(rec, di)).join('');
-  attachDisplayCardListeners();
+  _setListHtml(
+    _displayRecs.map((rec, di) => buildCard(rec, di)).join(''),
+    attachDisplayCardListeners
+  );
 }
 
 // ── Score breakdown tooltip ─────────────────────────────────────────────────────
@@ -2638,22 +3475,28 @@ function scoreBreakdownHtml(rec) {
     <div class="stip-total"><span>Total</span><span class="stip-total-val">${rec.total_score} / 100</span></div>`;
 }
 function showScoreTip(e, rec) {
+  if (window.innerWidth <= 640) return;
   if (!rec) return;
   const tip = document.getElementById('score-tip');
   tip.innerHTML = scoreBreakdownHtml(rec);
-  tip.style.display = 'block';
-  positionScoreTip(e);
+  const x = e.clientX + 14;
+  const y = e.clientY - tip.offsetHeight - 10;
+  tip.style.left = Math.min(x, window.innerWidth - tip.offsetWidth - 6) + 'px';
+  tip.style.top  = Math.max(6, y) + 'px';
+  tip.classList.add('visible');
 }
 function positionScoreTip(e) {
+  if (window.innerWidth <= 640) return;
   const tip = document.getElementById('score-tip');
-  if (tip.style.display === 'none') return;
+  if (!tip.classList.contains('visible')) return;
   const x = e.clientX + 14;
   const y = e.clientY - tip.offsetHeight - 10;
   tip.style.left = Math.min(x, window.innerWidth  - tip.offsetWidth  - 6) + 'px';
   tip.style.top  = Math.max(6, y) + 'px';
 }
 function hideScoreTip() {
-  document.getElementById('score-tip').style.display = 'none';
+  if (window.innerWidth <= 640) return;
+  document.getElementById('score-tip').classList.remove('visible');
 }
 
 // ── Chip info tooltips ──────────────────────────────────────────────────────
@@ -2673,23 +3516,28 @@ const LUNAR_TIPS = {
 };
 
 function showInfoTip(e, html) {
+  if (window.innerWidth <= 640) return;
   clearTimeout(_infoTipTimer);
   const tip = document.getElementById('info-tip');
   tip.innerHTML = html;
-  tip.style.display = 'block';
-  positionInfoTip(e);
+  const x = e.clientX + 14;
+  const y = e.clientY - tip.offsetHeight - 10;
+  tip.style.left = Math.min(x, window.innerWidth - tip.offsetWidth - 6) + 'px';
+  tip.style.top  = Math.max(6, y) + 'px';
+  tip.classList.add('visible');
 }
 function positionInfoTip(e) {
   const tip = document.getElementById('info-tip');
-  if (tip.style.display === 'none') return;
+  if (!tip.classList.contains('visible')) return;
   const x = e.clientX + 14;
   const y = e.clientY - tip.offsetHeight - 10;
   tip.style.left = Math.min(x, window.innerWidth  - tip.offsetWidth  - 6) + 'px';
   tip.style.top  = Math.max(6, y) + 'px';
 }
 function hideInfoTipDelayed() {
+  if (window.innerWidth <= 640) return;
   _infoTipTimer = setTimeout(() => {
-    document.getElementById('info-tip').style.display = 'none';
+    document.getElementById('info-tip').classList.remove('visible');
   }, 200);
 }
 function keepInfoTip() { clearTimeout(_infoTipTimer); }
@@ -2702,7 +3550,7 @@ function showChipTip(e, el) {
     const siteUrl = el.dataset.siteUrl;
     const desc = POLLUTION_TIPS[level] || 'Light pollution level for this site.';
     const link = siteUrl && siteUrl !== 'undefined' && siteUrl !== ''
-      ? `<br><br>For a visual representation, visit <a href="${siteUrl}" target="_blank" rel="noopener" class="tip-link">Go Stargazing ↗</a>.`
+      ? `<br><br>For a visual representation, visit <a href="${siteUrl}" target="_blank" rel="noopener" class="tip-link">Go Stargazing</a>.`
       : '';
     html = `<div class="itip-title">Light pollution</div><div>${desc}${link}</div>`;
   } else if (type === 'dsds') {
@@ -2715,6 +3563,56 @@ function showChipTip(e, el) {
     html = `<div class="itip-title">Lunar conditions</div><div>${desc}${note}</div>`;
   }
   showInfoTip(e, html);
+}
+
+// ── Mobile touch tooltips ────────────────────────────────────────────────────
+function _positionTipMobile(tip) {
+  tip.style.left = '12px'; tip.style.right = '12px';
+  tip.style.maxWidth = 'calc(100vw - 24px)';
+  requestAnimationFrame(() => {
+    tip.style.top = Math.max(60, window.innerHeight - tip.offsetHeight - 96) + 'px';
+  });
+}
+function toggleScoreTipClick(e, rec) {
+  if (window.innerWidth > 640) return;
+  e.stopPropagation();
+  const tip = document.getElementById('score-tip');
+  if (tip.classList.contains('visible')) { tip.classList.remove('visible'); return; }
+  if (!rec) return;
+  tip.innerHTML = scoreBreakdownHtml(rec);
+  _positionTipMobile(tip);
+  tip.classList.add('visible');
+}
+function _buildChipTipHtml(el) {
+  const type = el.dataset.tipType;
+  if (type === 'pollution') {
+    const level = el.dataset.tipLevel;
+    const siteUrl = el.dataset.siteUrl;
+    const desc = POLLUTION_TIPS[level] || 'Light pollution level for this site.';
+    const link = siteUrl && siteUrl !== 'undefined' && siteUrl !== ''
+      ? `<br><br>For a visual representation, visit <a href="${siteUrl}" target="_blank" rel="noopener" class="tip-link">Go Stargazing</a>.`
+      : '';
+    return `<div class="itip-title">Light pollution</div><div>${desc}${link}</div>`;
+  } else if (type === 'dsds') {
+    return `<div class="itip-title">Dark Sky Discovery Site</div><div>A publicly accessible location officially designated for stargazing under the Go Stargazing scheme. Sites range from village halls and car parks to playing fields and nature reserves — any open-sky location that local people, visitors, schools and groups can visit to observe the night sky. Designated sites appear on the official Go Stargazing location maps.</div>`;
+  } else if (type === 'lunar') {
+    const quality = el.dataset.tipQuality;
+    const pct = el.dataset.tipPct;
+    const desc = LUNAR_TIPS[quality] || '';
+    const note = pct ? `<br><span style="color:var(--muted);font-size:0.67rem">${pct}% illuminated</span>` : '';
+    return `<div class="itip-title">Lunar conditions</div><div>${desc}${note}</div>`;
+  }
+  return '';
+}
+function toggleChipTipClick(e, el) {
+  if (window.innerWidth > 640) return;
+  e.stopPropagation();
+  clearTimeout(_infoTipTimer);
+  const tip = document.getElementById('info-tip');
+  if (tip.classList.contains('visible')) { tip.classList.remove('visible'); return; }
+  tip.innerHTML = _buildChipTipHtml(el);
+  _positionTipMobile(tip);
+  tip.classList.add('visible');
 }
 
 // ── Sort toggle ─────────────────────────────────────────────────────────────
@@ -2736,11 +3634,18 @@ function setSortMode(mode) {
     ? [...currentRecs].sort((a, b) => (a.distance_km ?? Infinity) - (b.distance_km ?? Infinity))
     : [...currentRecs];
   _displayRecs = sorted;
-  const list = document.getElementById('results-list');
-  list.innerHTML = _displayRecs.map((rec, di) => buildCard(rec, di)).join('');
-  attachDisplayCardListeners();
   const fv = document.getElementById('results-search').value.trim();
-  if (fv.length > 2) filterCards(fv);
+  _setListHtml(
+    _displayRecs.map((rec, di) => buildCard(rec, di)).join(''),
+    () => { attachDisplayCardListeners(); if (fv.length > 2) filterCards(fv); }
+  );
+}
+
+function scoreQualityClass(score) {
+  if (score >= 72) return 'sq-excellent';
+  if (score >= 52) return 'sq-good';
+  if (score >= 35) return 'sq-fair';
+  return 'sq-poor';
 }
 
 function scoreColor(score) {
@@ -2770,7 +3675,7 @@ function pollutionChip(level, siteUrl) {
   };
   const [cls, label] = map[level] || ['chip-unknown', '❓ Unknown'];
   const u = siteUrl || '';
-  return `<span class="chip ${cls}">${label}&thinsp;<span class="chip-i" data-tip-type="pollution" data-tip-level="${level}" data-site-url="${u}" onmouseenter="showChipTip(event,this)" onmouseleave="hideInfoTipDelayed()">ⓘ</span></span>`;
+  return `<span class="chip ${cls}">${label}&thinsp;<span class="chip-i" data-tip-type="pollution" data-tip-level="${level}" data-site-url="${u}" onclick="toggleChipTipClick(event,this)" onmouseenter="showChipTip(event,this)" onmouseleave="hideInfoTipDelayed()">ⓘ</span></span>`;
 }
 
 function esc(str) {
@@ -2798,9 +3703,25 @@ function hideLoading() {
 
 // ── Theme toggle ───────────────────────────────────────────────────────────
 function toggleTheme() {
-  const isLight = document.documentElement.classList.toggle('light-mode');
   const btn = document.getElementById('theme-toggle-btn');
-  if (btn) btn.textContent = isLight ? '🌙' : '☀';
+  const html = document.documentElement;
+
+  const isCurrentlyDark = !html.classList.contains('light-mode');
+  if (btn) {
+    btn.classList.remove('to-light', 'to-dark');
+    btn.offsetWidth;
+    btn.classList.add(isCurrentlyDark ? 'to-light' : 'to-dark');
+    setTimeout(() => btn.classList.remove('to-light', 'to-dark'), 500);
+  }
+
+  html.classList.add('theme-transitioning');
+  setTimeout(() => html.classList.remove('theme-transitioning'), 420);
+
+  if (document.startViewTransition) {
+    document.startViewTransition(() => html.classList.toggle('light-mode'));
+  } else {
+    html.classList.toggle('light-mode');
+  }
 }
 
 // ── App Info dropdown (mobile header) ─────────────────────────────────────
@@ -2808,16 +3729,241 @@ function toggleAppInfo() {
   const dd  = document.getElementById('app-info-dropdown');
   const btn = document.getElementById('app-info-btn');
   if (!dd || !btn) return;
-  const isOpen = dd.classList.toggle('open');
-  btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-  btn.innerHTML = isOpen ? 'App Info &#x25B4;' : 'App Info &#x25BE;';
+  if (dd.classList.contains('open') && !dd.classList.contains('closing')) {
+    closeAppInfo();
+    return;
+  }
+  dd.classList.remove('closing');
+  dd.classList.add('open');
+  btn.setAttribute('aria-expanded', 'true');
+  btn.textContent = 'App Info';
+  const rect = btn.getBoundingClientRect();
+  const ddW = 236;
+  let left = rect.right - ddW;
+  if (left < 8) left = 8;
+  dd.style.top  = (rect.bottom + 6) + 'px';
+  dd.style.left = left + 'px';
+  dd.style.right = '';
 }
 
 function closeAppInfo() {
   const dd  = document.getElementById('app-info-dropdown');
   const btn = document.getElementById('app-info-btn');
-  if (dd)  dd.classList.remove('open');
-  if (btn) { btn.setAttribute('aria-expanded', 'false'); btn.innerHTML = 'App Info &#x25BE;'; }
+  if (!dd || !dd.classList.contains('open')) return;
+  dd.classList.add('closing');
+  if (btn) { btn.setAttribute('aria-expanded', 'false'); btn.textContent = 'App Info'; }
+  setTimeout(() => dd.classList.remove('open', 'closing'), 180);
+}
+
+// ── Custom Calendar Widget ───────────────────────────────────────────────────
+// Use local date string to avoid UTC shift (toISOString() can return yesterday in BST)
+function _localISO(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+let _calCallback = null;
+let _calYear, _calMonth, _calSelectedDate;
+
+function _closeCalendar() {
+  const overlay = document.getElementById('cal-overlay');
+  if (overlay.style.display === 'none') return;
+  const popup = overlay.querySelector('.cal-popup');
+  if (popup.classList.contains('cal-closing')) return;
+  popup.classList.add('cal-closing');
+  let fired = false;
+  const finish = () => {
+    if (fired) return; fired = true;
+    popup.classList.remove('cal-closing');
+    overlay.style.display = 'none';
+    overlay.classList.remove('mobile-cal');
+    delete overlay._calAnchor;
+  };
+  popup.addEventListener('animationend', finish, { once: true });
+  setTimeout(finish, 320);
+}
+
+function openCustomCalendar(anchorEl, currentIso, onSelect) {
+  const overlay = document.getElementById('cal-overlay');
+
+  // Toggle: if already open for the same button, close it
+  if (overlay.style.display !== 'none' && overlay._calAnchor === anchorEl) {
+    _closeCalendar();
+    return;
+  }
+  overlay._calAnchor = anchorEl;
+
+  const today = new Date();
+  _calYear  = today.getFullYear();
+  _calMonth = today.getMonth();
+  _calSelectedDate = null;
+  _calCallback = onSelect;
+
+  if (currentIso && /^\d{4}-\d{2}-\d{2}$/.test(currentIso)) {
+    const [y, m, d] = currentIso.split('-').map(Number);
+    _calYear  = y;
+    _calMonth = m - 1;
+    _calSelectedDate = currentIso;
+  }
+
+  _renderCalendar();
+
+  const isMobile = window.innerWidth <= 640;
+  const popup = overlay.querySelector('.cal-popup');
+
+  if (isMobile) {
+    overlay.classList.add('mobile-cal');
+    overlay.style.display = 'block';
+    // Reset bottom-sheet animation
+    popup.style.animation = 'none';
+    popup.offsetHeight;
+    popup.style.animation = '';
+    popup.style.left = '';
+    popup.style.top  = '';
+  } else {
+    overlay.classList.remove('mobile-cal');
+    overlay.style.display = 'block';
+    // Reset popup animation
+    popup.style.animation = 'none';
+    popup.offsetHeight;
+    popup.style.animation = '';
+    // Position below anchor
+    const rect = anchorEl.getBoundingClientRect();
+    let left = rect.left;
+    let top  = rect.bottom + 8;
+    const pw = 258;
+    if (left + pw > window.innerWidth - 8) left = window.innerWidth - pw - 8;
+    if (top + 340 > window.innerHeight) top = rect.top - 340;
+    popup.style.left = left + 'px';
+    popup.style.top  = top  + 'px';
+  }
+}
+
+function _renderCalendar(dir = 0) {
+  const MONTHS = ['January','February','March','April','May','June',
+                  'July','August','September','October','November','December'];
+  document.getElementById('cal-month-label').textContent = `${MONTHS[_calMonth]} ${_calYear}`;
+
+  const today = new Date();
+  const todayStr = _localISO(today);
+  const maxD = new Date(today); maxD.setDate(maxD.getDate() + 14);
+  const maxStr = _localISO(maxD);
+
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+
+  if (dir !== 0) {
+    grid.classList.remove('entering-left', 'entering-right');
+    grid.offsetWidth;
+    grid.classList.add(dir > 0 ? 'entering-left' : 'entering-right');
+    setTimeout(() => grid.classList.remove('entering-left', 'entering-right'), 250);
+  }
+
+  const first = new Date(_calYear, _calMonth, 1);
+  let startDay = first.getDay() - 1; if (startDay < 0) startDay = 6;
+  const daysInMonth = new Date(_calYear, _calMonth + 1, 0).getDate();
+  const daysInPrev  = new Date(_calYear, _calMonth,     0).getDate();
+
+  for (let i = 0; i < 42; i++) {
+    const cell = document.createElement('button');
+    cell.type = 'button';
+    cell.className = 'cal-day';
+    let date;
+    if (i < startDay) {
+      date = new Date(_calYear, _calMonth - 1, daysInPrev - startDay + i + 1);
+      cell.classList.add('other-month');
+    } else if (i >= startDay + daysInMonth) {
+      date = new Date(_calYear, _calMonth + 1, i - startDay - daysInMonth + 1);
+      cell.classList.add('other-month');
+    } else {
+      date = new Date(_calYear, _calMonth, i - startDay + 1);
+    }
+    const ds = _localISO(date);
+    cell.textContent = date.getDate();
+    cell.dataset.date = ds;
+    if (ds === todayStr)        cell.classList.add('today');
+    if (ds === _calSelectedDate) cell.classList.add('selected');
+    if (!cell.classList.contains('other-month') && (ds < todayStr || ds > maxStr))
+      cell.classList.add('disabled');
+    cell.addEventListener('click', () => {
+      if (cell.classList.contains('disabled') || cell.classList.contains('other-month')) return;
+      _calSelectedDate = ds;
+      _closeCalendar();
+      if (_calCallback) _calCallback(ds);
+    });
+    grid.appendChild(cell);
+  }
+  // Hide last row if it's entirely next-month
+  const cells = grid.querySelectorAll('.cal-day');
+  let lastRowAllOther = true;
+  for (let i = 35; i < 42; i++) {
+    if (!cells[i].classList.contains('other-month')) { lastRowAllOther = false; break; }
+  }
+  if (lastRowAllOther) for (let i = 35; i < 42; i++) cells[i].style.display = 'none';
+}
+
+document.addEventListener('click', (e) => {
+  const overlay = document.getElementById('cal-overlay');
+  if (!overlay || overlay.style.display === 'none') return;
+  const popup = overlay.querySelector('.cal-popup');
+  if (!popup.contains(e.target) &&
+      e.target.id !== 'date-picker-btn' && !e.target.closest('#date-picker-btn') &&
+      e.target.id !== 'site-date-picker-btn' && !e.target.closest('#site-date-picker-btn')) {
+    _closeCalendar();
+  }
+}, true);
+
+// Dismiss mobile tooltips on tap-away
+document.addEventListener('click', (e) => {
+  if (window.innerWidth > 640) return;
+  const scoreTip = document.getElementById('score-tip');
+  const infoTip  = document.getElementById('info-tip');
+  if (scoreTip && scoreTip.classList.contains('visible') && !scoreTip.contains(e.target))
+    scoreTip.classList.remove('visible');
+  if (infoTip && infoTip.classList.contains('visible') && !infoTip.contains(e.target))
+    infoTip.classList.remove('visible');
+});
+
+document.getElementById('cal-prev').addEventListener('click', () => {
+  _calMonth--; if (_calMonth < 0) { _calMonth = 11; _calYear--; } _renderCalendar(-1);
+});
+document.getElementById('cal-next').addEventListener('click', () => {
+  _calMonth++; if (_calMonth > 11) { _calMonth = 0; _calYear++; } _renderCalendar(1);
+});
+document.getElementById('cal-today-btn').addEventListener('click', () => {
+  const ds = _localISO(new Date());
+  _closeCalendar();
+  if (_calCallback) _calCallback(ds);
+});
+
+// ── Animated list helper ─────────────────────────────────────────────────────
+function _setListHtml(html, afterFn) {
+  const list = document.getElementById('results-list');
+  list.style.opacity = '0';
+  list.style.transform = 'translateY(6px)';
+  list.style.transition = 'opacity 0.16s ease, transform 0.16s ease';
+  setTimeout(() => {
+    list.innerHTML = html;
+    list.style.opacity = '1';
+    list.style.transform = 'translateY(0)';
+    // Animate score bars after DOM settles
+    setTimeout(_revealScoreBars, 60);
+    if (afterFn) afterFn();
+  }, 160);
+}
+
+function _revealScoreBars() {
+  document.querySelectorAll('.score-bar-fill').forEach(el => {
+    const w = el.style.width || el.getAttribute('data-w');
+    if (!w || w === '0%') return;
+    el.setAttribute('data-w', w);
+    el.style.setProperty('--score-w', w);
+    el.style.width = '0';
+    el.offsetWidth; // force reflow
+    el.classList.add('revealed');
+  });
 }
 
 // Allow pressing Enter in location input to search

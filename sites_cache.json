@@ -718,7 +718,24 @@
       "light_pollution": "dark site",
       "site_type": "Go Stargazing Site",
       "has_parking": true,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": {
+        "name": "Carn Galver",
+        "distance_m": 19,
+        "lat": 50.1717698,
+        "lng": -5.6126913,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "nearest_toilets": {
+        "name": "Public toilet",
+        "distance_m": 273,
+        "lat": 50.1705618,
+        "lng": -5.6161004,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "amenities_fetched_at": 1783073518.612074
     },
     {
       "name": "Elf Kirk Viewpoint",
@@ -1849,7 +1866,24 @@
       "light_pollution": "semi-rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 561,
+        "lat": 50.8968981,
+        "lng": 0.0698751,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "nearest_toilets": {
+        "name": "Public toilet",
+        "distance_m": 1590,
+        "lat": 50.8933265,
+        "lng": 0.0563312,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "amenities_fetched_at": 1783085443.386989
     },
     {
       "name": "Langton Grammar School for Boys",
@@ -2585,7 +2619,17 @@
       "light_pollution": "rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": {
+        "name": "West Stoke",
+        "distance_m": 8,
+        "lat": 50.8726741,
+        "lng": -0.8294292,
+        "fee": "no",
+        "access": "yes"
+      },
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783070846.7017841
     },
     {
       "name": "Harehope Quarry Project",
@@ -2850,7 +2894,17 @@
       "light_pollution": "dark site",
       "site_type": "Go Stargazing Site",
       "has_parking": true,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 7,
+        "lat": 50.5306646,
+        "lng": -3.8778487,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783073521.962215
     },
     {
       "name": "Whiteworks Car Park - Dartmoor",
@@ -2918,7 +2972,10 @@
       "light_pollution": "dark site",
       "site_type": "Go Stargazing Site",
       "has_parking": true,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783089501.815423
     },
     {
       "name": "Harford Car Park - Dartmoor",
@@ -3060,7 +3117,10 @@
       "light_pollution": "dark site",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783068768.796258
     },
     {
       "name": "Morton Castle and Loch",
@@ -3072,7 +3132,10 @@
       "light_pollution": "rural",
       "site_type": "Go Stargazing Site",
       "has_parking": true,
-      "has_toilets": true
+      "has_toilets": true,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783082766.8478851
     },
     {
       "name": "Bradley Burn Farm Shop",
@@ -3242,7 +3305,10 @@
       "light_pollution": "urban",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783083101.037771
     },
     {
       "name": "Meeth Quarry Reserve",
@@ -3710,7 +3776,24 @@
       "light_pollution": "semi-rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 101,
+        "lat": 56.1759008,
+        "lng": -3.3558511,
+        "fee": "yes",
+        "access": "yes"
+      },
+      "nearest_toilets": {
+        "name": "Public toilet",
+        "distance_m": 15,
+        "lat": 56.1765863,
+        "lng": -3.354768,
+        "fee": "no",
+        "access": "yes"
+      },
+      "amenities_fetched_at": 1783068804.6919732
     },
     {
       "name": "Chumleigh Gardens - Burgess Park",
@@ -4071,7 +4154,17 @@
       "light_pollution": "dark site",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": true
+      "has_toilets": true,
+      "nearest_parking": {
+        "name": "Loch of the Lowes",
+        "distance_m": 75,
+        "lat": 56.5736701,
+        "lng": -3.5627071,
+        "fee": "no",
+        "access": "yes"
+      },
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783068772.949396
     },
     {
       "name": "Romsey War Memorial Park",
@@ -4324,7 +4417,10 @@
       "light_pollution": "semi-rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": true
+      "has_toilets": true,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783068830.844865
     },
     {
       "name": "Featherstone Castle",
@@ -6178,7 +6274,24 @@
       "light_pollution": "semi-rural",
       "site_type": "Go Stargazing Site",
       "has_parking": true,
-      "has_toilets": true
+      "has_toilets": true,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 50,
+        "lat": 54.1866609,
+        "lng": -0.4544343,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "nearest_toilets": {
+        "name": "Public toilet",
+        "distance_m": 10,
+        "lat": 54.186312,
+        "lng": -0.4545876,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "amenities_fetched_at": 1783070490.787719
     },
     {
       "name": "Flag Fen Archaeology Park",
@@ -8024,7 +8137,24 @@
       "light_pollution": "rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": {
+        "name": "Steephill Carpark",
+        "distance_m": 336,
+        "lat": 50.5904564,
+        "lng": -1.2235696,
+        "fee": "yes",
+        "access": "yes"
+      },
+      "nearest_toilets": {
+        "name": "Public toilet",
+        "distance_m": 73,
+        "lat": 50.5896119,
+        "lng": -1.2291625,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "amenities_fetched_at": 1783070849.044074
     },
     {
       "name": "M&S Bank Arena - Liverpool",
@@ -8356,7 +8486,10 @@
       "light_pollution": "semi-rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783085438.2689111
     },
     {
       "name": "Nottingham Contemporary",
@@ -9127,7 +9260,17 @@
       "light_pollution": "dark site",
       "site_type": "Go Stargazing Site",
       "has_parking": true,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 8,
+        "lat": 50.5554532,
+        "lng": -3.918594,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783073532.829005
     },
     {
       "name": "Row Tor Car Park - Dartmoor",
@@ -9173,7 +9316,10 @@
       "light_pollution": "dark site",
       "site_type": "Go Stargazing Site",
       "has_parking": true,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783089479.3704169
     },
     {
       "name": "Boggle Hole Car Park",
@@ -9277,7 +9423,10 @@
       "light_pollution": "semi-rural",
       "site_type": "Unknown",
       "has_parking": true,
-      "has_toilets": true
+      "has_toilets": true,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783070458.679353
     },
     {
       "name": "High Brow Crossroads",
@@ -10585,7 +10734,10 @@
       "light_pollution": "dark site",
       "site_type": "Go Stargazing Site",
       "has_parking": true,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783089510.568179
     },
     {
       "name": "British Queen Public House",
@@ -11392,7 +11544,10 @@
       "light_pollution": "rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783068762.5765362
     },
     {
       "name": "Bumblebarn Bell Tents",
@@ -11575,7 +11730,24 @@
       "light_pollution": "suburban",
       "site_type": "Dark Sky Discovery Site",
       "has_parking": true,
-      "has_toilets": true
+      "has_toilets": true,
+      "nearest_parking": {
+        "name": "Viewfield Terrace/West Drive",
+        "distance_m": 243,
+        "lat": 56.0707016,
+        "lng": -3.4529663,
+        "fee": "no",
+        "access": "yes"
+      },
+      "nearest_toilets": {
+        "name": "Public toilet",
+        "distance_m": 575,
+        "lat": 56.072765,
+        "lng": -3.4577681,
+        "fee": "no",
+        "access": "yes"
+      },
+      "amenities_fetched_at": 1783082764.741685
     },
     {
       "name": "Sallachan Beach",
@@ -11643,7 +11815,10 @@
       "light_pollution": "semi-rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783083053.789263
     },
     {
       "name": "The Bog Oak Car Park",
@@ -12264,7 +12439,10 @@
       "light_pollution": "rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783070858.4438322
     },
     {
       "name": "Morton Stanley Cafe",
@@ -13858,7 +14036,24 @@
       "light_pollution": "semi-rural",
       "site_type": "Go Stargazing Site",
       "has_parking": true,
-      "has_toilets": true
+      "has_toilets": true,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 13,
+        "lat": 52.7499971,
+        "lng": 0.4812709,
+        "fee": "yes",
+        "access": "yes"
+      },
+      "nearest_toilets": {
+        "name": "Public toilet",
+        "distance_m": 57,
+        "lat": 52.749724,
+        "lng": 0.4807352,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "amenities_fetched_at": 1783070414.035192
     },
     {
       "name": "Dunster Tithe Barn",
@@ -14210,7 +14405,17 @@
       "light_pollution": "rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": true
+      "has_toilets": true,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 1156,
+        "lat": 56.195766,
+        "lng": -3.5146781,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783068753.1918411
     },
     {
       "name": "Simonsbath House Hotel",
@@ -14874,7 +15079,17 @@
       "light_pollution": "dark site",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 53,
+        "lat": 55.1642552,
+        "lng": -2.5316824,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783073528.7795908
     },
     {
       "name": "The Old Inverasdale Schoolhouse",
@@ -15838,7 +16053,24 @@
       "light_pollution": "suburban",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 59,
+        "lat": 55.9408354,
+        "lng": -3.3025433,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "nearest_toilets": {
+        "name": "Public toilet",
+        "distance_m": 540,
+        "lat": 55.9423095,
+        "lng": -3.2935649,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "amenities_fetched_at": 1783068780.64867
     },
     {
       "name": "The Palm House at Sefton Park",
@@ -15862,7 +16094,10 @@
       "light_pollution": "semi-rural",
       "site_type": "Go Stargazing Site",
       "has_parking": true,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783083529.7306519
     },
     {
       "name": "Newton Stewart Tennis Club",
@@ -16362,7 +16597,10 @@
       "light_pollution": "semi-rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783085458.7169752
     },
     {
       "name": "Green Farm - Wiverton",
@@ -17801,7 +18039,10 @@
       "light_pollution": "semi-rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783083053.764974
     },
     {
       "name": "Crowhurst Village Hall",
@@ -18140,7 +18381,10 @@
       "light_pollution": "dark site",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783068800.9535449
     },
     {
       "name": "Ingram House Bed and Breakfast",
@@ -18467,7 +18711,24 @@
       "light_pollution": "semi-rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": true
+      "has_toilets": true,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 131,
+        "lat": 55.9601015,
+        "lng": -3.6592364,
+        "fee": "unknown",
+        "access": "permissive"
+      },
+      "nearest_toilets": {
+        "name": "Public toilet",
+        "distance_m": 120,
+        "lat": 55.9601093,
+        "lng": -3.6589946,
+        "fee": "no",
+        "access": "yes"
+      },
+      "amenities_fetched_at": 1783068832.827636
     },
     {
       "name": "St Mary's Church - Wiveton",
@@ -18790,7 +19051,17 @@
       "light_pollution": "dark site",
       "site_type": "Unknown",
       "has_parking": true,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": {
+        "name": "Gutter Tor Car Park",
+        "distance_m": 10,
+        "lat": 50.4883066,
+        "lng": -4.0047865,
+        "fee": "no",
+        "access": "yes"
+      },
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783089493.146795
     },
     {
       "name": "Trowlesworthy Car Park - Dartmoor",
@@ -18826,7 +19097,10 @@
       "light_pollution": "dark site",
       "site_type": "Go Stargazing Site",
       "has_parking": true,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783089488.797427
     },
     {
       "name": "Bellever Forest Cart Park - Dartmoor",
@@ -18976,7 +19250,17 @@
       "light_pollution": "dark site",
       "site_type": "Go Stargazing Site",
       "has_parking": true,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 9,
+        "lat": 50.5205636,
+        "lng": -3.9638208,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783089490.940233
     },
     {
       "name": "New Beaconsfield Hall",
@@ -20902,7 +21186,10 @@
       "light_pollution": "semi-rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783083042.728848
     },
     {
       "name": "The Gate Inn - Swanwick",
@@ -21200,7 +21487,24 @@
       "light_pollution": "dark site",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 1357,
+        "lat": 60.8124188,
+        "lng": -0.8766052,
+        "fee": "no",
+        "access": "yes"
+      },
+      "nearest_toilets": {
+        "name": "Public toilet",
+        "distance_m": 1391,
+        "lat": 60.8127539,
+        "lng": -0.876491,
+        "fee": "no",
+        "access": "yes"
+      },
+      "amenities_fetched_at": 1783083474.940738
     },
     {
       "name": "Hermaness Nature Reserve - Shetland",
@@ -21212,7 +21516,10 @@
       "light_pollution": "dark site",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783083455.405535
     },
     {
       "name": "Houlland - Shetland",
@@ -21224,7 +21531,10 @@
       "light_pollution": "dark site",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783083484.683131
     },
     {
       "name": "Halligarth - Shetland",
@@ -21236,7 +21546,10 @@
       "light_pollution": "dark site",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783083492.473233
     },
     {
       "name": "Viking Haroldswick - Shetland",
@@ -21248,7 +21561,17 @@
       "light_pollution": "dark site",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 18,
+        "lat": 60.7852096,
+        "lng": -0.8345887,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783083457.593346
     },
     {
       "name": "Unst Heritage Centre - Shetland",
@@ -21260,7 +21583,10 @@
       "light_pollution": "dark site",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": true
+      "has_toilets": true,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783083465.528051
     },
     {
       "name": "Collaster - Shetland",
@@ -21272,7 +21598,10 @@
       "light_pollution": "dark site",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783083500.5987551
     },
     {
       "name": "Lund - Shetland",
@@ -21284,7 +21613,10 @@
       "light_pollution": "dark site",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783083508.7391
     },
     {
       "name": "Muness - Shetland",
@@ -21296,7 +21628,17 @@
       "light_pollution": "dark site",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 22,
+        "lat": 60.6886643,
+        "lng": -0.8486581,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783083531.511843
     },
     {
       "name": "Tissington Solar System Walk",
@@ -21320,7 +21662,24 @@
       "light_pollution": "dark site",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": {
+        "name": "St Cyrus National Nature Reserve",
+        "distance_m": 22,
+        "lat": 56.7616351,
+        "lng": -2.4243072,
+        "fee": "no",
+        "access": "yes"
+      },
+      "nearest_toilets": {
+        "name": "Public toilet",
+        "distance_m": 35,
+        "lat": 56.7611392,
+        "lng": -2.4243736,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "amenities_fetched_at": 1783073534.532405
     },
     {
       "name": "Lewes Town Hall",
@@ -21647,7 +22006,24 @@
       "light_pollution": "semi-rural",
       "site_type": "Unknown",
       "has_parking": true,
-      "has_toilets": true
+      "has_toilets": true,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 53,
+        "lat": 53.3438981,
+        "lng": -1.7774215,
+        "fee": "yes",
+        "access": "yes"
+      },
+      "nearest_toilets": {
+        "name": "High Peak Borough Council",
+        "distance_m": 32,
+        "lat": 53.343622,
+        "lng": -1.7778162,
+        "fee": "no",
+        "access": "yes"
+      },
+      "amenities_fetched_at": 1783070472.444971
     },
     {
       "name": "Stanpit Marsh Visitor Centre",
@@ -21755,7 +22131,24 @@
       "light_pollution": "dark site",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 632,
+        "lat": 49.4315843,
+        "lng": -2.3531081,
+        "fee": "no",
+        "access": "yes"
+      },
+      "nearest_toilets": {
+        "name": "Public toilet",
+        "distance_m": 195,
+        "lat": 49.4337259,
+        "lng": -2.3583041,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "amenities_fetched_at": 1783070837.45681
     },
     {
       "name": "Sark Observatory",
@@ -21767,7 +22160,24 @@
       "light_pollution": "dark site",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": true
+      "has_toilets": true,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 625,
+        "lat": 49.4315843,
+        "lng": -2.3531081,
+        "fee": "no",
+        "access": "yes"
+      },
+      "nearest_toilets": {
+        "name": "Public toilet",
+        "distance_m": 276,
+        "lat": 49.4337259,
+        "lng": -2.3583041,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "amenities_fetched_at": 1783070839.19054
     },
     {
       "name": "Sark Old Hall Bistro",
@@ -21779,7 +22189,24 @@
       "light_pollution": "dark site",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 428,
+        "lat": 49.4315843,
+        "lng": -2.3531081,
+        "fee": "no",
+        "access": "yes"
+      },
+      "nearest_toilets": {
+        "name": "Public toilet",
+        "distance_m": 20,
+        "lat": 49.4337259,
+        "lng": -2.3583041,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "amenities_fetched_at": 1783070840.9374552
     },
     {
       "name": "Sark Pilcher Monument",
@@ -21791,7 +22218,24 @@
       "light_pollution": "dark site",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 944,
+        "lat": 49.4217529,
+        "lng": -2.3654059,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "nearest_toilets": {
+        "name": "Public toilet",
+        "distance_m": 950,
+        "lat": 49.4216219,
+        "lng": -2.3655329,
+        "fee": "no",
+        "access": "yes"
+      },
+      "amenities_fetched_at": 1783070844.8315141
     },
     {
       "name": "Redditch Library",
@@ -22794,7 +23238,10 @@
       "light_pollution": "rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783083088.577336
     },
     {
       "name": "Etchingham Village Hall",
@@ -22806,7 +23253,10 @@
       "light_pollution": "rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783083054.732364
     },
     {
       "name": "The Bale House Visitor Centre",
@@ -23081,7 +23531,10 @@
       "light_pollution": "suburban",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783083044.472501
     },
     {
       "name": "All Hallows RC High School",
@@ -23132,7 +23585,17 @@
       "light_pollution": "dark site",
       "site_type": "Go Stargazing Site",
       "has_parking": true,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": {
+        "name": "Backwater Reservoir",
+        "distance_m": 23,
+        "lat": 56.7164306,
+        "lng": -3.2254549,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783068811.798251
     },
     {
       "name": "Basingstoke Discovery Centre",
@@ -23366,7 +23829,10 @@
       "light_pollution": "semi-rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": true
+      "has_toilets": true,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783083063.486602
     },
     {
       "name": "Dark Art Distillery",
@@ -23708,7 +24174,24 @@
       "light_pollution": "suburban",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 326,
+        "lat": 55.9547889,
+        "lng": -3.1653974,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "nearest_toilets": {
+        "name": "Public toilet",
+        "distance_m": 304,
+        "lat": 55.9536719,
+        "lng": -3.1680274,
+        "fee": "no",
+        "access": "yes"
+      },
+      "amenities_fetched_at": 1783068775.168185
     },
     {
       "name": "Herschel Astronomical Society Observatory",
@@ -23964,7 +24447,10 @@
       "light_pollution": "semi-rural",
       "site_type": "Go Stargazing Site",
       "has_parking": true,
-      "has_toilets": true
+      "has_toilets": true,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783070488.720618
     },
     {
       "name": "Mariandyrys Nature Reserve",
@@ -24048,7 +24534,17 @@
       "light_pollution": "rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": true
+      "has_toilets": true,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 273,
+        "lat": 56.4203492,
+        "lng": -3.3695647,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783068802.705892
     },
     {
       "name": "Nettwood Farm",
@@ -24248,7 +24744,10 @@
       "light_pollution": "semi-rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783068744.556309
     },
     {
       "name": "Plas Dolerw",
@@ -25819,7 +26318,24 @@
       "light_pollution": "semi-rural",
       "site_type": "Go Stargazing Site",
       "has_parking": true,
-      "has_toilets": true
+      "has_toilets": true,
+      "nearest_parking": {
+        "name": "Hastings Country Park",
+        "distance_m": 10,
+        "lat": 50.8759584,
+        "lng": 0.6422365,
+        "fee": "yes",
+        "access": "yes"
+      },
+      "nearest_toilets": {
+        "name": "Hastings Country Park",
+        "distance_m": 26,
+        "lat": 50.876246,
+        "lng": 0.6420133,
+        "fee": "no",
+        "access": "yes"
+      },
+      "amenities_fetched_at": 1783070407.7527401
     },
     {
       "name": "Lord Crewe Arms",
@@ -25999,7 +26515,17 @@
       "light_pollution": "dark site",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 1325,
+        "lat": 50.1534524,
+        "lng": -5.6149811,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783073520.250219
     },
     {
       "name": "Kendal Museum",
@@ -26095,7 +26621,10 @@
       "light_pollution": "suburban",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783085450.613958
     },
     {
       "name": "Cavendish Memorial Hall",
@@ -26448,7 +26977,10 @@
       "light_pollution": "semi-rural",
       "site_type": "Unknown",
       "has_parking": true,
-      "has_toilets": true
+      "has_toilets": true,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783070480.5807948
     },
     {
       "name": "Rushall Olympic Football Club",
@@ -26784,7 +27316,10 @@
       "light_pollution": "semi-rural",
       "site_type": "Dark Sky Discovery Site",
       "has_parking": true,
-      "has_toilets": true
+      "has_toilets": true,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783070427.548643
     },
     {
       "name": "The Bettridge Centre",
@@ -26868,7 +27403,17 @@
       "light_pollution": "suburban",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 1398,
+        "lat": 51.6466453,
+        "lng": -0.6527163,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783083044.6793149
     },
     {
       "name": "Aldershot Cricket Club",
@@ -27699,7 +28244,24 @@
       "light_pollution": "semi-rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 157,
+        "lat": 49.1865229,
+        "lng": -2.216027,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "nearest_toilets": {
+        "name": "Public toilet",
+        "distance_m": 755,
+        "lat": 49.1840765,
+        "lng": -2.2040975,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "amenities_fetched_at": 1783083520.834612
     },
     {
       "name": "Friends Meeting House - Derby",
@@ -28707,7 +29269,17 @@
       "light_pollution": "semi-rural",
       "site_type": "Unknown",
       "has_parking": true,
-      "has_toilets": true
+      "has_toilets": true,
+      "nearest_parking": {
+        "name": "Wellow car park",
+        "distance_m": 6,
+        "lat": 51.3207152,
+        "lng": -2.3774192,
+        "fee": "no",
+        "access": "yes"
+      },
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783070418.124821
     },
     {
       "name": "Oxford University - Atmospheric, Oceanic and Planetary Physics Building",
@@ -29553,7 +30125,17 @@
       "light_pollution": "semi-rural",
       "site_type": "Dark Sky Discovery Site",
       "has_parking": true,
-      "has_toilets": true
+      "has_toilets": true,
+      "nearest_parking": {
+        "name": "Parking on side of track",
+        "distance_m": 972,
+        "lat": 52.4486897,
+        "lng": -0.1841612,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783070450.396306
     },
     {
       "name": "Blackling Hole Car Park",
@@ -29744,7 +30326,24 @@
       "light_pollution": "rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": {
+        "name": "Memorial hall car park",
+        "distance_m": 147,
+        "lat": 55.6212939,
+        "lng": -3.0614681,
+        "fee": "no",
+        "access": "yes"
+      },
+      "nearest_toilets": {
+        "name": "Public toilet",
+        "distance_m": 453,
+        "lat": 55.618872,
+        "lng": -3.0664075,
+        "fee": "yes",
+        "access": "yes"
+      },
+      "amenities_fetched_at": 1783068770.830938
     },
     {
       "name": "Plas Llanfair",
@@ -30158,7 +30757,17 @@
       "light_pollution": "dark site",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 1429,
+        "lat": 55.6258865,
+        "lng": -1.8525419,
+        "fee": "no",
+        "access": "yes"
+      },
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783068778.28111
     },
     {
       "name": "The Watchtower at Waren Mill",
@@ -30383,7 +30992,17 @@
       "light_pollution": "rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": true
+      "has_toilets": true,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 954,
+        "lat": 55.9838982,
+        "lng": -3.5133614,
+        "fee": "no",
+        "access": "yes"
+      },
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783068746.3635
     },
     {
       "name": "Maple Field Campsite",
@@ -30530,7 +31149,17 @@
       "light_pollution": "semi-rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": true
+      "has_toilets": true,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 747,
+        "lat": 51.2141407,
+        "lng": 0.2278025,
+        "fee": "yes",
+        "access": "yes"
+      },
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783085435.709383
     },
     {
       "name": "Seven Sisters Country Park",
@@ -30542,7 +31171,24 @@
       "light_pollution": "rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": true
+      "has_toilets": true,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 62,
+        "lat": 50.7760514,
+        "lng": 0.1526018,
+        "fee": "yes",
+        "access": "yes"
+      },
+      "nearest_toilets": {
+        "name": "Public toilet",
+        "distance_m": 67,
+        "lat": 50.7754496,
+        "lng": 0.1526766,
+        "fee": "no",
+        "access": "yes"
+      },
+      "amenities_fetched_at": 1783083439.878349
     },
     {
       "name": "Queen Elizabeth Country Park",
@@ -30799,7 +31445,10 @@
       "light_pollution": "semi-rural",
       "site_type": "Dark Sky Discovery Site",
       "has_parking": true,
-      "has_toilets": true
+      "has_toilets": true,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783070441.6808
     },
     {
       "name": "University of St Andrews Observatory",
@@ -30857,7 +31506,10 @@
       "light_pollution": "semi-rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": true
+      "has_toilets": true,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783083071.64237
     },
     {
       "name": "Dovestone Reservoir Car Park",
@@ -30965,7 +31617,10 @@
       "light_pollution": "semi-rural",
       "site_type": "Dark Sky Discovery Site",
       "has_parking": true,
-      "has_toilets": true
+      "has_toilets": true,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783070469.675325
     },
     {
       "name": "James Irwin Observatory",
@@ -31564,7 +32219,24 @@
       "light_pollution": "rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 247,
+        "lat": 56.0452826,
+        "lng": -2.7808688,
+        "fee": "no",
+        "access": "yes"
+      },
+      "nearest_toilets": {
+        "name": "Public toilet",
+        "distance_m": 238,
+        "lat": 56.0453457,
+        "lng": -2.7809786,
+        "fee": "no",
+        "access": "yes"
+      },
+      "amenities_fetched_at": 1783068751.140967
     },
     {
       "name": "Kithurst Hill",
@@ -31576,7 +32248,10 @@
       "light_pollution": "semi-rural",
       "site_type": "Go Stargazing Site",
       "has_parking": true,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783083063.494632
     },
     {
       "name": "Cranfield University - Bedford",
@@ -31600,7 +32275,10 @@
       "light_pollution": "rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783068788.803088
     },
     {
       "name": "Nonsuch Park Solar System Walk",
@@ -32441,7 +33119,24 @@
       "light_pollution": "suburban",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 768,
+        "lat": 51.643578,
+        "lng": -0.4654397,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "nearest_toilets": {
+        "name": "Public toilet",
+        "distance_m": 1257,
+        "lat": 51.636671,
+        "lng": -0.4762703,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "amenities_fetched_at": 1783083046.6401541
     },
     {
       "name": "Ancrum Village Hall",
@@ -32621,7 +33316,10 @@
       "light_pollution": "rural",
       "site_type": "Go Stargazing Site",
       "has_parking": true,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783068820.814971
     },
     {
       "name": "Wembury Beach Car Park",
@@ -33125,7 +33823,24 @@
       "light_pollution": "suburban",
       "site_type": "Dark Sky Discovery Site",
       "has_parking": true,
-      "has_toilets": true
+      "has_toilets": true,
+      "nearest_parking": {
+        "name": "Car park",
+        "distance_m": 867,
+        "lat": 51.0622084,
+        "lng": -1.2760661,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "nearest_toilets": {
+        "name": "Public toilet",
+        "distance_m": 573,
+        "lat": 51.0614438,
+        "lng": -1.2719964,
+        "fee": "unknown",
+        "access": "yes"
+      },
+      "amenities_fetched_at": 1783070460.9067562
     },
     {
       "name": "West Bay Cafe",
@@ -33209,7 +33924,10 @@
       "light_pollution": "semi-rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783085430.456608
     },
     {
       "name": "St Pauls Church Hall - Isle of Bute",
@@ -33245,7 +33963,10 @@
       "light_pollution": "semi-rural",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": null
+      "has_toilets": null,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783083079.793074
     },
     {
       "name": "St Peter's Church Hall - Earley",
@@ -33452,7 +34173,10 @@
       "light_pollution": "dark site",
       "site_type": "Unknown",
       "has_parking": false,
-      "has_toilets": true
+      "has_toilets": true,
+      "nearest_parking": null,
+      "nearest_toilets": null,
+      "amenities_fetched_at": 1783068834.609011
     },
     {
       "name": "Danby Lodge Dark Skies Station",
