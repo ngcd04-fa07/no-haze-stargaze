@@ -166,6 +166,21 @@ def _extract_site_type(text: str) -> str:
     return "Unknown"
 
 
+# gostargazing.co.uk's own boilerplate notice for private/prior-arrangement sites:
+#   "{Site Name} is a private location and is only accessible out of normal
+#    hours for stargazing by prior arrangement or when public events are
+#    scheduled."
+_RESTRICTED_ACCESS_PATTERN = re.compile(
+    r"is a private location and is only accessible.{0,120}?prior arrangement",
+    re.IGNORECASE | re.DOTALL,
+)
+
+
+def _extract_restricted_access(text: str) -> bool:
+    """Return True if the page carries gostargazing's private-location notice."""
+    return bool(_RESTRICTED_ACCESS_PATTERN.search(text))
+
+
 # Keywords in site names that imply toilets are likely present
 _TOILET_NAME_KEYWORDS = (
     "visitor centre", "visitor center", "museum", "planetarium",
@@ -333,6 +348,7 @@ def scrape_location(slug: str) -> dict | None:
     site_type = _extract_site_type(page_text)
     has_parking = _extract_parking(name, slug, resp.text)
     has_toilets = _extract_toilets(name, slug, resp.text)
+    restricted_access = _extract_restricted_access(page_text)
 
     return {
         "name": name,
@@ -345,6 +361,7 @@ def scrape_location(slug: str) -> dict | None:
         "site_type": site_type,
         "has_parking": has_parking,
         "has_toilets": has_toilets,   # True | False | None
+        "restricted_access": restricted_access,
     }
 
 

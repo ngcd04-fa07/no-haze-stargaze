@@ -1,0 +1,48 @@
+name: Full Site Scrape
+
+# Monthly full re-scrape of gostargazing.co.uk: rediscovers slugs from the
+# sitemaps and re-fetches every field for every site (name, address, coords,
+# light pollution, site type, parking/toilets heuristics, restricted access).
+# First scheduled run: 1 August 2026.
+
+on:
+  schedule:
+    - cron: '0 4 1 * *'   # 04:00 UTC on the 1st of every month
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Full site scrape
+        run: python scripts/refresh_sites_cache.py --mode full
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          cp sites_cache.json /tmp/sites_cache_fresh.json
+          git pull --rebase --autostash origin main
+          git stash drop 2>/dev/null || true
+          cp /tmp/sites_cache_fresh.json sites_cache.json
+          git add sites_cache.json
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Full site scrape $(date -u '+%Y-%m-%d %H:%M') UTC"
+            git push origin main || (git pull --rebase -X ours origin main && git push origin main)
+          fi

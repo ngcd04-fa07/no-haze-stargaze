@@ -1,0 +1,47 @@
+name: Update Restricted-Access Flags
+
+# Weekly re-check of gostargazing.co.uk's own private-location notice for every
+# known site. Cheaper than a full scrape since it skips sitemap discovery and
+# only merges the restricted_access field — see scripts/refresh_sites_cache.py.
+
+on:
+  schedule:
+    - cron: '0 2 * * 1'   # 02:00 UTC every Monday
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Refresh restricted-access flags
+        run: python scripts/refresh_sites_cache.py --mode restricted
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          cp sites_cache.json /tmp/sites_cache_fresh.json
+          git pull --rebase --autostash origin main
+          git stash drop 2>/dev/null || true
+          cp /tmp/sites_cache_fresh.json sites_cache.json
+          git add sites_cache.json
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update restricted-access flags $(date -u '+%Y-%m-%d %H:%M') UTC"
+            git push origin main || (git pull --rebase -X ours origin main && git push origin main)
+          fi

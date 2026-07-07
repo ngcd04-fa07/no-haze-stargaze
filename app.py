@@ -43,7 +43,6 @@ from flask import Flask, jsonify, render_template, request, send_from_directory
 
 from config import DATA_DIR
 import geocoder as geo
-import amenities as am
 import lunar as lu
 import recommender as rec
 import scraper
@@ -764,42 +763,6 @@ threading.Thread(target=_keep_alive, daemon=True, name="keep-alive").start()
 
 
 # ---------------------------------------------------------------------------
-# Amenity background fetcher
-# ---------------------------------------------------------------------------
-
-_amenity_in_flight: set[str] = set()   # slugs currently being fetched
-_amenity_lock = threading.Lock()
-
-
-def _fetch_amenities_bg(sites: list[dict]) -> None:
-    """Background thread: query Overpass for each site and update the cache."""
-    for site in sites:
-        slug = site["slug"]
-        try:
-            data = am.fetch_site_amenities(site["latitude"], site["longitude"])
-            with _state["lock"]:
-                site_obj = _state["sites_by_slug"].get(slug)
-                if site_obj:
-                    site_obj.update(data)
-            logger.debug("Amenities updated: %s", slug)
-        except Exception as exc:
-            logger.debug("Amenity fetch error (%s): %s", slug, exc)
-        finally:
-            with _amenity_lock:
-                _amenity_in_flight.discard(slug)
-
-    # Persist with the ORIGINAL scraped_at so weekly re-scrape isn't triggered
-    with _state["lock"]:
-        sites_copy = list(_state["sites"])
-        original_ts = _state["scraped_at"]
-    try:
-        scraper.save_cache(sites_copy, scraped_at=original_ts)
-        logger.info("Amenity data persisted to cache.")
-    except Exception as exc:
-        logger.warning("Could not save amenity cache: %s", exc)
-
-
-# ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
 
@@ -1240,21 +1203,6 @@ def api_recommend():
         ignore_distance=all_uk,
         top_n=25,
     )
-
-    # ---- Kick off background amenity fetch for sites that need it ----
-    with _amenity_lock:
-        to_fetch = [
-            r["site"] for r in recommendations
-            if am.needs_refresh(r["site"]) and r["site"]["slug"] not in _amenity_in_flight
-        ]
-        for site in to_fetch:
-            _amenity_in_flight.add(site["slug"])
-    if to_fetch:
-        threading.Thread(
-            target=_fetch_amenities_bg, args=(to_fetch,), daemon=True,
-            name="amenity-fetch",
-        ).start()
-        logger.info("Queued amenity fetch for %d sites.", len(to_fetch))
 
     # Lunar summary for the primary search date
     primary_date = base_date

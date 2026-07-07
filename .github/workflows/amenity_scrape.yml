@@ -1,0 +1,53 @@
+name: Amenity Scrape
+
+# Bi-monthly full amenity sweep: queries OpenStreetMap's Overpass API for
+# parking/toilets near every cached site (see scripts/refresh_amenities.py).
+# Replaces the old per-request reactive fetch that used to run inline from
+# live user searches on Render (whose ephemeral disk lost the accumulated
+# data on every deploy). First scheduled run: 15 July 2026.
+#
+# Single-threaded and paced at ~1.2s/site to stay respectful of the free
+# public Overpass instance — a full sweep of ~2625 sites takes roughly an
+# hour, well within the job's time budget.
+
+on:
+  schedule:
+    - cron: '0 5 15 */2 *'   # 05:00 UTC on the 15th, every 2 months (Jan, Mar, May, Jul, Sep, Nov)
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Full amenity sweep
+        run: python scripts/refresh_amenities.py
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          cp sites_cache.json /tmp/sites_cache_fresh.json
+          git pull --rebase --autostash origin main
+          git stash drop 2>/dev/null || true
+          cp /tmp/sites_cache_fresh.json sites_cache.json
+          git add sites_cache.json
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update site amenities $(date -u '+%Y-%m-%d %H:%M') UTC"
+            git push origin main || (git pull --rebase -X ours origin main && git push origin main)
+          fi
