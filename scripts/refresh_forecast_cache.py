@@ -176,6 +176,12 @@ def main() -> None:
     all_sites = load_sites()
     existing_data, existing_site_ts = load_existing_cache()
 
+    # Prioritize the sites with the oldest (or missing) forecast timestamp first,
+    # so a sweep cut short by rate limits or timeouts always makes progress on
+    # whichever sites need it most, instead of stalling on the same fixed prefix
+    # of sites_cache.json every run.
+    all_sites.sort(key=lambda s: existing_site_ts.get(s["slug"], 0))
+
     today    = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
     end_date = today + timedelta(days=FORECAST_LOOKAHEAD_DAYS)
     logger.info(

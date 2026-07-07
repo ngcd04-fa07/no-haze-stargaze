@@ -166,6 +166,10 @@ def _request_forecast(params: dict) -> dict | list | None:
             logger.error("Open-Meteo API error: %s", exc)
             return None
         except requests.RequestException as exc:
+            if attempt < 1:
+                logger.warning("Open-Meteo request error (retrying): %s", exc)
+                time.sleep(1.0)
+                continue
             logger.error("Open-Meteo API error: %s", exc)
             return None
     return None
