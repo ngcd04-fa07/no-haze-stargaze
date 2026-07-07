@@ -812,6 +812,10 @@ def index():
 def og_image():
     return send_from_directory("static", "og-image.png")
 
+@app.route("/favicon.svg")
+def favicon():
+    return send_from_directory("static", "favicon.svg", mimetype="image/svg+xml")
+
 
 @app.route("/api/status")
 def api_status():
