@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Full amenity sweep: query Overpass for parking/toilets near every cached site.
+"""Full amenity sweep: query Overpass for parking/toilets/street lighting near every cached site.
 
 Replaces the old per-request reactive amenity fetch (previously triggered
 inline from live user searches in app.py) with a scheduled bulk sweep.
 Single-threaded and paced at amenities.REQUEST_DELAY between requests
 (currently 1.2s) to stay respectful of the free public Overpass instance —
-~2625 sites takes roughly an hour. Intended to run every 2 months.
+~2625 sites takes roughly an hour. Intended to run monthly.
 
 Safety guarantees (matching scripts/refresh_forecast_cache.py):
 - Writes to a .tmp file first; validates; atomically replaces the real file

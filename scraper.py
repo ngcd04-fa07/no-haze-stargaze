@@ -175,10 +175,94 @@ _RESTRICTED_ACCESS_PATTERN = re.compile(
     re.IGNORECASE | re.DOTALL,
 )
 
+# Looser, lower-confidence signals for access restrictions that don't use the
+# standard boilerplate above — mainly observatories and astronomical-society
+# run venues, each written with their own bespoke wording. A match here is
+# surfaced to users as "likely restricted" rather than "restricted", since
+# these phrasings are more varied and carry more false-positive/negative risk.
+_LIKELY_RESTRICTED_PATTERNS = [
+    re.compile(r"not available for private visits", re.IGNORECASE),
+    re.compile(r"(?:visits?|access)[^.]{0,60}(?:are|is) not currently offered", re.IGNORECASE | re.DOTALL),
+    re.compile(r"only (?:publicly )?accessible during[^.]{0,80}events", re.IGNORECASE | re.DOTALL),
+    re.compile(
+        r"please contact[^.]{0,100}(?:astronomical|astronomy)[^.]{0,40}society[^.]{0,40}directly",
+        re.IGNORECASE | re.DOTALL,
+    ),
+    re.compile(r"open to the (?:general )?public (?:only )?through events organi[sz]ed by", re.IGNORECASE),
+    re.compile(r"not open to the (?:general )?public\b", re.IGNORECASE),
+    re.compile(r"by (?:prior )?appointment only", re.IGNORECASE),
+]
 
-def _extract_restricted_access(text: str) -> bool:
-    """Return True if the page carries gostargazing's private-location notice."""
-    return bool(_RESTRICTED_ACCESS_PATTERN.search(text))
+
+def _extract_sentence(text: str, start: int, end: int, window: int = 100) -> str:
+    """
+    Return the sentence containing text[start:end], trimmed to whitespace.
+
+    Sentence boundaries are searched for within `window` characters either
+    side of the match rather than across the whole page — gostargazing's
+    pages concatenate unrelated blocks (nav, social links, headings, contact
+    details) with no punctuation between them, so an unbounded backward/
+    forward scan for ". " can wander into unrelated page furniture when the
+    actual sentence has no nearby period. When no boundary is found within
+    the window, fall back to a whole-word cutoff with an ellipsis rather than
+    truncating mid-word.
+    """
+    search_start = max(0, start - window)
+    left = text.rfind(". ", search_start, start)
+    if left != -1:
+        left += 2
+        left_ellipsis = ""
+    else:
+        left = search_start
+        if left > 0:
+            next_space = text.find(" ", left, start)
+            if next_space != -1:
+                left = next_space + 1
+        left_ellipsis = "…" if left > 0 else ""
+
+    search_end = min(len(text), end + window)
+    right = text.find(". ", end, search_end)
+    if right != -1:
+        right += 1
+        right_ellipsis = ""
+    else:
+        right = search_end
+        if right < len(text):
+            last_space = text.rfind(" ", end, right)
+            if last_space != -1:
+                right = last_space
+        right_ellipsis = "…" if right < len(text) else ""
+
+    snippet = re.sub(r"\s+", " ", text[left:right]).strip()
+    return f"{left_ellipsis}{snippet}{right_ellipsis}"
+
+
+def _extract_restriction_info(text: str) -> tuple[bool, bool, str | None]:
+    """
+    Detect access restrictions from page text.
+
+    Returns (restricted_access, likely_restricted_access, restriction_notice):
+      restricted_access:        True if the page carries gostargazing's own
+                                 standard private-location/prior-arrangement
+                                 boilerplate (high confidence).
+      likely_restricted_access: True if the page uses other access-restriction
+                                 language that doesn't match the standard
+                                 boilerplate (lower confidence — common for
+                                 observatories/society-run venues with their
+                                 own bespoke wording).
+      restriction_notice:       the matched sentence, for display to users,
+                                 or None if neither pattern matched.
+    """
+    m = _RESTRICTED_ACCESS_PATTERN.search(text)
+    if m:
+        return True, False, _extract_sentence(text, m.start(), m.end())
+
+    for pattern in _LIKELY_RESTRICTED_PATTERNS:
+        m = pattern.search(text)
+        if m:
+            return False, True, _extract_sentence(text, m.start(), m.end())
+
+    return False, False, None
 
 
 # Keywords in site names that imply toilets are likely present
@@ -348,7 +432,7 @@ def scrape_location(slug: str) -> dict | None:
     site_type = _extract_site_type(page_text)
     has_parking = _extract_parking(name, slug, resp.text)
     has_toilets = _extract_toilets(name, slug, resp.text)
-    restricted_access = _extract_restricted_access(page_text)
+    restricted_access, likely_restricted_access, restriction_notice = _extract_restriction_info(page_text)
 
     return {
         "name": name,
@@ -362,6 +446,8 @@ def scrape_location(slug: str) -> dict | None:
         "has_parking": has_parking,
         "has_toilets": has_toilets,   # True | False | None
         "restricted_access": restricted_access,
+        "likely_restricted_access": likely_restricted_access,
+        "restriction_notice": restriction_notice,
     }
 
 

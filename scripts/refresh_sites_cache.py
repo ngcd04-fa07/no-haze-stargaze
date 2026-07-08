@@ -8,10 +8,11 @@ Two modes:
                       type, parking/toilets heuristics, restricted access).
                       Intended to run monthly.
   --mode restricted   Re-fetches only the sites already in the cache and
-                      updates just the `restricted_access` flag, leaving
-                      every other field untouched. Cheaper than a full scrape
-                      since it skips sitemap discovery. Intended to run
-                      weekly.
+                      updates just the restricted-access fields
+                      (restricted_access, likely_restricted_access,
+                      restriction_notice), leaving every other field
+                      untouched. Cheaper than a full scrape since it skips
+                      sitemap discovery. Intended to run monthly.
 
 Safety guarantees (matching scripts/refresh_forecast_cache.py):
 - Writes to a .tmp file first; validates; atomically replaces the real file
@@ -41,7 +42,11 @@ import scraper  # noqa: E402
 OUTPUT_FILE = REPO_ROOT / "sites_cache.json"
 TMP_FILE = REPO_ROOT / "sites_cache.json.tmp"
 MIN_COVERAGE = 0.90  # require at least 90% of the expected site count to be present
-AMENITY_FIELDS = ("nearest_parking", "nearest_toilets", "amenities_fetched_at")
+AMENITY_FIELDS = (
+    "nearest_parking", "nearest_toilets",
+    "nearest_street_lamp_m", "local_light_pollution",
+    "amenities_fetched_at",
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -124,6 +129,8 @@ def run_restricted() -> None:
         fresh = refreshed_by_slug.get(site["slug"])
         if fresh is not None:
             site["restricted_access"] = fresh["restricted_access"]
+            site["likely_restricted_access"] = fresh["likely_restricted_access"]
+            site["restriction_notice"] = fresh["restriction_notice"]
             updated += 1
 
     ok, reason = validate_sites(existing_sites, len(existing_sites))

@@ -986,7 +986,7 @@ def api_site_forecast():
     )
     cloud_data = {slug: w_info["avg_cover"]} if w_info["avg_cover"] is not None else {}
 
-    recommendations = rec.recommend(
+    _open, _restricted = rec.recommend(
         origin_lat=site["latitude"],
         origin_lon=site["longitude"],
         sites=[site],
@@ -1000,6 +1000,9 @@ def api_site_forecast():
         ignore_distance=True,
         top_n=1,
     )
+    # Single-site lookup: the site lands in whichever list matches its own
+    # restricted_access status — concatenating is safe since exactly one is non-empty.
+    recommendations = _open + _restricted
 
     primary_lunar = lu.lunar_info(base_date)
 
@@ -1215,7 +1218,7 @@ def api_recommend():
             cloud_data[slug] = w_info["avg_cover"]
 
     # ---- Generate recommendations ----
-    recommendations = rec.recommend(
+    recommendations, restricted_recommendations = rec.recommend(
         origin_lat=origin_lat,
         origin_lon=origin_lon,
         sites=nearby,
@@ -1237,6 +1240,7 @@ def api_recommend():
     return jsonify(
         {
             "recommendations": recommendations,
+            "restricted_recommendations": restricted_recommendations,
             "origin": {"lat": origin_lat, "lon": origin_lon, "name": origin_name},
             "lunar": primary_lunar,
             "lunar_by_date": lunar_by_date,

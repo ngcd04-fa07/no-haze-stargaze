@@ -4,13 +4,21 @@ recommender.py — Score and rank stargazing sites.
 Scoring (all components 0–100, weighted sum):
 
   Cloud cover   40%  (100 − avg_cloud_cover_pct)  ← most important
-  Light pollution 35% (Dark site=100, Rural=80, Semi-rural=60, Suburban=40, Urban=20)
+  Light pollution 35% — itself a blend of:
+      Site light pollution rating  75%  (Dark site=100, Rural=80, Semi-rural=60, Suburban=40, Urban=20)
+      Street lighting                25%  (graduated by distance to nearest OSM street lamp — see amenities.py)
   Distance       15%  (100 at origin, 0 at max_distance_km)
   Site type      10%  (Dark Sky Discovery=100, Recommended=85, Go Stargazing=70, Aurora=70)
 """
 
 import math
 from typing import Optional
+
+import amenities
+
+# Weights for the two components blended into pollution_score.
+SITE_POLLUTION_WEIGHT = 0.75
+STREET_LIGHT_WEIGHT = 0.25
 
 LIGHT_POLLUTION_SCORE: dict[str, int] = {
     "dark site":  100,
@@ -50,6 +58,23 @@ def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return 2 * R * math.asin(math.sqrt(a))
 
 
+def _street_light_score(nearest_lamp_m: Optional[int]) -> float:
+    """
+    Score 0-100 for local street lighting: 100 = no nearby light source,
+    0 = a lamp within LAMP_SOLO_RADIUS_M (glare, full stop). Linearly
+    interpolated between LAMP_SOLO_RADIUS_M and LAMP_CLUSTER_RADIUS_M so
+    scoring doesn't have an artificial cliff at either threshold.
+    """
+    if nearest_lamp_m is None:
+        return 100.0
+    if nearest_lamp_m <= amenities.LAMP_SOLO_RADIUS_M:
+        return 0.0
+    if nearest_lamp_m >= amenities.LAMP_CLUSTER_RADIUS_M:
+        return 100.0
+    span = amenities.LAMP_CLUSTER_RADIUS_M - amenities.LAMP_SOLO_RADIUS_M
+    return round(100.0 * (nearest_lamp_m - amenities.LAMP_SOLO_RADIUS_M) / span, 1)
+
+
 def score_site(
     site: dict,
     origin_lat: float,
@@ -79,7 +104,12 @@ def score_site(
         distance_score = max(0.0, 100.0 * (1.0 - dist_km / max_distance_km))
 
     pollution_level = site.get("light_pollution", "unknown")
-    pollution_score = LIGHT_POLLUTION_SCORE.get(pollution_level, 50)
+    site_pollution_score = LIGHT_POLLUTION_SCORE.get(pollution_level, 50)
+    street_light_score = _street_light_score(site.get("nearest_street_lamp_m"))
+    pollution_score = (
+        site_pollution_score * SITE_POLLUTION_WEIGHT
+        + street_light_score * STREET_LIGHT_WEIGHT
+    )
 
     site_type = site.get("site_type", "Unknown")
     type_score = SITE_TYPE_SCORE.get(site_type, 50)
@@ -114,6 +144,8 @@ def score_site(
         "total_score": round(min(total_score, 100.0), 1),
         "cloud_score": round(cloud_score, 1),
         "pollution_score": round(pollution_score, 1),
+        "site_pollution_score": round(site_pollution_score, 1),
+        "street_light_score": round(street_light_score, 1),
         "distance_score": round(distance_score, 1),
         "type_score": round(type_score, 1),
         "lunar_score": round(lunar_score, 1),
@@ -136,10 +168,18 @@ def recommend(
     lunar_by_date: dict[str, float] | None = None,
     ignore_distance: bool = False,
     top_n: int = 25,
-) -> list[dict]:
+) -> tuple[list[dict], list[dict]]:
     """
-    Return top-N sites ranked by score, filtered by radius, pollution level,
-    parking requirement, and toilet requirement.
+    Return (recommendations, restricted_recommendations): two top-N lists
+    ranked by score, filtered by radius, pollution level, parking requirement,
+    and toilet requirement.
+
+    Confirmed restricted_access sites are hard-filtered out of the main
+    `recommendations` list and returned separately in
+    `restricted_recommendations` instead — the frontend only merges them back
+    in if the user opts in via the "Show Restricted Access sites" checkbox.
+    likely_restricted_access sites are NOT filtered; they stay in the main
+    list as before (chip + tooltip only).
     """
     min_pollution_score = 0
     if min_pollution_level:
@@ -182,4 +222,8 @@ def recommend(
             scored.append(result)
 
     scored.sort(key=lambda x: x["total_score"], reverse=True)
-    return scored[:top_n]
+
+    open_sites = [r for r in scored if not r["site"].get("restricted_access")]
+    restricted_sites = [r for r in scored if r["site"].get("restricted_access")]
+
+    return open_sites[:top_n], restricted_sites[:top_n]
