@@ -375,6 +375,71 @@
       border-color: rgba(78,154,241,0.6);
       box-shadow: 0 0 0 3px rgba(78,154,241,0.10);
     }
+    /* Some browsers (e.g. Safari) render the native <select> popup with its
+       own default (often white) background while still inheriting the
+       theme's light text colour — illegible. Pin both explicitly. */
+    select option {
+      background-color: var(--surface);
+      color: var(--text);
+    }
+
+    /* Custom <select> replacement — native selects can't be made to reliably
+       toggle-close on a second click across browsers, since the open popup
+       is a native OS overlay outside normal page click handling. */
+    .custom-select-wrap { position: relative; }
+    .custom-select-btn {
+      width: 100%;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 0.5rem;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: var(--radius);
+      color: var(--text);
+      padding: 0.47rem 0.68rem;
+      font-size: 0.875rem;
+      font-family: inherit;
+      text-align: left;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.18s, box-shadow 0.18s;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+    }
+    .custom-select-btn:focus, .custom-select-btn[aria-expanded="true"] {
+      border-color: rgba(78,154,241,0.6);
+      box-shadow: 0 0 0 3px rgba(78,154,241,0.10);
+    }
+    .custom-select-arrow {
+      color: var(--muted); font-size: 0.7rem; flex-shrink: 0;
+      transition: transform 0.18s ease;
+    }
+    .custom-select-btn[aria-expanded="true"] .custom-select-arrow { transform: rotate(180deg); }
+    .custom-select-dropdown {
+      display: none;
+      position: fixed;
+      background: rgba(9,14,28,0.97);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.75), 0 1px 0 rgba(255,255,255,0.05) inset;
+      z-index: 99999;
+      overflow: hidden;
+    }
+    .custom-select-dropdown.open {
+      display: block;
+      animation: dropdown-in 0.2s cubic-bezier(0.34,1.2,0.64,1) forwards;
+    }
+    .custom-select-dropdown.closing { display: block !important; animation: dropdown-out 0.16s ease forwards; }
+    .custom-select-option {
+      padding: 0.55rem 0.85rem;
+      font-size: 0.83rem;
+      color: var(--text);
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+    }
+    .custom-select-option:last-child { border-bottom: none; }
+    .custom-select-option:hover { background: rgba(78,154,241,0.12); }
+    .custom-select-option.selected { color: var(--accent); font-weight: 600; }
     input[type="range"] {
       padding: 0;
       border: none;
@@ -486,6 +551,13 @@
     .moon-qual-very-poor { color: #f87171; }
     .chip-restricted {
       color: #fb923c; border-color: #9a3412; background: rgba(251,146,60,0.1);
+    }
+    .chip-likely-restricted {
+      color: #fbbf24; border-color: #78350f; background: rgba(69,39,7,0.16);
+    }
+    .chip-light-pollution {
+      color: #eab308; border-color: #713f12; background: rgba(113,63,18,0.16);
+      display: inline-flex; align-items: center; gap: 0.15rem;
     }
 
     .btn {
@@ -877,6 +949,13 @@
       border-bottom: 1px solid rgba(255,255,255,0.045);
       background: rgba(255,255,255,0.015);
     }
+    .restricted-toggle-row {
+      padding: 0.4rem 0.85rem;
+      border-bottom: 1px solid rgba(255,255,255,0.045);
+      background: rgba(255,255,255,0.015);
+      margin-bottom: 0;
+    }
+    .restricted-toggle-row .checkbox-label { font-size: 0.78rem; }
     .sort-label {
       font-size: 0.64rem; color: var(--muted);
       text-transform: uppercase; letter-spacing: 0.07em; flex-shrink: 0;
@@ -964,6 +1043,10 @@
     .weight-pct {
       font-size: 0.76rem; color: var(--accent);
       text-align: right; font-variant-numeric: tabular-nums;
+    }
+    .weight-note {
+      font-size: 0.66rem; color: var(--muted);
+      margin: -0.45rem 0 0.7rem 0;
     }
     .weights-total-row {
       font-size: 0.72rem; color: var(--muted); text-align: right;
@@ -1535,6 +1618,7 @@
     .light-mode .tab-switcher { background: rgba(0,0,0,0.07); }
     .light-mode .sort-toggle { background: rgba(0,0,0,0.07); }
     .light-mode .sort-bar { background: rgba(0,0,0,0.025); border-bottom-color: rgba(0,0,0,0.07); }
+    .light-mode .restricted-toggle-row { background: rgba(0,0,0,0.025); border-bottom-color: rgba(0,0,0,0.07); }
     .light-mode .site-card {
       background: rgba(255,255,255,0.78);
       backdrop-filter: blur(14px);
@@ -1568,6 +1652,11 @@
     .light-mode .app-info-dropdown a { color: var(--text); border-bottom-color: var(--border); }
     .light-mode .app-info-dropdown a:hover,
     .light-mode .app-info-dropdown a:active { background: rgba(160,110,60,0.08); }
+    .light-mode .custom-select-dropdown {
+      background: rgba(253,248,242,0.97); border-color: rgba(0,0,0,0.1);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.15), 0 1px 0 rgba(255,255,255,0.9) inset;
+    }
+    .light-mode .custom-select-option:hover { background: rgba(160,110,60,0.08); }
     .light-mode .site-ac-item:hover { background: rgba(160,110,60,0.07); }
     .light-mode .site-ac-name { color: var(--text); }
     .light-mode .site-ac-addr { color: var(--muted); }
@@ -1601,6 +1690,8 @@
     .light-mode .chip-moon-very-poor { color: #7f1d1d; background: rgba(248,113,113,0.1); }
     .light-mode .chip-confidence { color: #78350f; background: rgba(251,191,36,0.1); }
     .light-mode .chip-restricted { color: #9a3412; background: rgba(251,146,60,0.1); }
+    .light-mode .chip-likely-restricted { color: #92400e; background: rgba(251,191,36,0.12); }
+    .light-mode .chip-light-pollution { color: #854d0e; background: rgba(234,179,8,0.12); }
     .light-mode .amenity-free { color: #15803d; }
     .light-mode .amenity-paid { color: #92400e; }
     .light-mode .score-bar { background: rgba(0,0,0,0.1); }
@@ -2033,6 +2124,22 @@
   <a href="mailto:nohazestargaze@gmail.com">Contact Us</a>
 </div>
 
+<!-- Custom <select> dropdowns live at body level, same reason as App Info above:
+     aside has backdrop-filter + overflow:hidden, which would clip/contain them. -->
+<div class="custom-select-dropdown" id="pollution-filter-dropdown" role="listbox">
+  <div class="custom-select-option selected" role="option" data-value="" onclick="selectCustomOption('pollution-filter', '', 'Any (include urban)')">Any (include urban)</div>
+  <div class="custom-select-option" role="option" data-value="suburban" onclick="selectCustomOption('pollution-filter', 'suburban', 'Suburban or better')">Suburban or better</div>
+  <div class="custom-select-option" role="option" data-value="semi-rural" onclick="selectCustomOption('pollution-filter', 'semi-rural', 'Semi-rural or better')">Semi-rural or better</div>
+  <div class="custom-select-option" role="option" data-value="rural" onclick="selectCustomOption('pollution-filter', 'rural', 'Rural or better')">Rural or better</div>
+  <div class="custom-select-option" role="option" data-value="dark site" onclick="selectCustomOption('pollution-filter', 'dark site', 'Dark site only')">Dark site only</div>
+</div>
+
+<!-- Populated dynamically by setCustomSelectHourOptions() -->
+<div class="custom-select-dropdown" id="start-hour-dropdown" role="listbox"></div>
+<div class="custom-select-dropdown" id="end-hour-dropdown" role="listbox"></div>
+<div class="custom-select-dropdown" id="site-start-hour-dropdown" role="listbox"></div>
+<div class="custom-select-dropdown" id="site-end-hour-dropdown" role="listbox"></div>
+
 <div class="layout">
   <!-- ── Sidebar ── -->
   <aside>
@@ -2066,12 +2173,28 @@
           <div class="time-window-block">
             <div class="time-row">
               <div class="time-field">
-                <label for="start-hour">Start</label>
-                <select id="start-hour"></select>
+                <label for="start-hour-btn">Start</label>
+                <div class="custom-select-wrap" id="start-hour-wrap">
+                  <button type="button" class="custom-select-btn" id="start-hour-btn"
+                          aria-haspopup="listbox" aria-expanded="false"
+                          onclick="toggleCustomSelect('start-hour')">
+                    <span id="start-hour-label"></span>
+                    <span class="custom-select-arrow" aria-hidden="true">▾</span>
+                  </button>
+                  <input type="hidden" id="start-hour" value="" />
+                </div>
               </div>
               <div class="time-field">
-                <label for="end-hour">End</label>
-                <select id="end-hour"></select>
+                <label for="end-hour-btn">End</label>
+                <div class="custom-select-wrap" id="end-hour-wrap">
+                  <button type="button" class="custom-select-btn" id="end-hour-btn"
+                          aria-haspopup="listbox" aria-expanded="false"
+                          onclick="toggleCustomSelect('end-hour')">
+                    <span id="end-hour-label"></span>
+                    <span class="custom-select-arrow" aria-hidden="true">▾</span>
+                  </button>
+                  <input type="hidden" id="end-hour" value="" />
+                </div>
               </div>
             </div>
             <div class="time-help" id="time-help">Choose the window for the selected night.</div>
@@ -2089,14 +2212,16 @@
             </label>
           </div>
 
-          <label for="pollution-filter">Min light-pollution quality</label>
-          <select id="pollution-filter">
-            <option value="">Any (include urban)</option>
-            <option value="suburban">Suburban or better</option>
-            <option value="semi-rural">Semi-rural or better</option>
-            <option value="rural">Rural or better</option>
-            <option value="dark site">Dark site only</option>
-          </select>
+          <label for="pollution-filter-btn">Min light-pollution quality</label>
+          <div class="custom-select-wrap" id="pollution-filter-wrap">
+            <button type="button" class="custom-select-btn" id="pollution-filter-btn"
+                    aria-haspopup="listbox" aria-expanded="false"
+                    onclick="toggleCustomSelect('pollution-filter')">
+              <span id="pollution-filter-label">Any (include urban)</span>
+              <span class="custom-select-arrow" aria-hidden="true">▾</span>
+            </button>
+            <input type="hidden" id="pollution-filter" value="" />
+          </div>
 
           <label>Amenities</label>
           <div class="checkbox-row">
@@ -2137,12 +2262,28 @@
           <div class="time-window-block">
             <div class="time-row">
               <div class="time-field">
-                <label for="site-start-hour">Start</label>
-                <select id="site-start-hour"></select>
+                <label for="site-start-hour-btn">Start</label>
+                <div class="custom-select-wrap" id="site-start-hour-wrap">
+                  <button type="button" class="custom-select-btn" id="site-start-hour-btn"
+                          aria-haspopup="listbox" aria-expanded="false"
+                          onclick="toggleCustomSelect('site-start-hour')">
+                    <span id="site-start-hour-label"></span>
+                    <span class="custom-select-arrow" aria-hidden="true">▾</span>
+                  </button>
+                  <input type="hidden" id="site-start-hour" value="" />
+                </div>
               </div>
               <div class="time-field">
-                <label for="site-end-hour">End</label>
-                <select id="site-end-hour"></select>
+                <label for="site-end-hour-btn">End</label>
+                <div class="custom-select-wrap" id="site-end-hour-wrap">
+                  <button type="button" class="custom-select-btn" id="site-end-hour-btn"
+                          aria-haspopup="listbox" aria-expanded="false"
+                          onclick="toggleCustomSelect('site-end-hour')">
+                    <span id="site-end-hour-label"></span>
+                    <span class="custom-select-arrow" aria-hidden="true">▾</span>
+                  </button>
+                  <input type="hidden" id="site-end-hour" value="" />
+                </div>
               </div>
             </div>
             <div class="time-help" id="site-time-help"></div>
@@ -2178,6 +2319,14 @@
         <div class="sort-pill" id="sort-pill"></div>
       </div>
       <button class="weights-btn" id="weights-btn" onclick="openWeightsModal()">⚙ Weights</button>
+    </div>
+
+    <!-- Restricted-access sites are hard-filtered out by default; shown once results load -->
+    <div class="checkbox-row restricted-toggle-row" id="restricted-toggle-row" style="display:none">
+      <label class="checkbox-label">
+        <input type="checkbox" id="show-restricted" onchange="onToggleRestricted(this.checked)" />
+        🔒 Show Restricted Access sites
+      </label>
     </div>
 
     <!-- Results list -->
@@ -2233,42 +2382,6 @@
 <div id="info-tip" onmouseenter="keepInfoTip()" onmouseleave="hideInfoTipDelayed()"></div>
 
 <script>
-// ── Restricted access sites ────────────────────────────────────────────────
-const RESTRICTED_SLUGS = new Set([
-  // private_or_prior_arrangement_only (65 sites — slugs from gostargazing.co.uk URLs)
-  "little-easton-manor","burghley-house","hardwick-park-visitors-centre",
-  "parkgate-shopping-centre","cotswold-discovery-centre","emberton-country-park",
-  "castell-aberlleiniog","hinstock-memorial-hall","falstone-village-hall",
-  "the-national-stone-centre","how-stean-gorge","worthy-farm",
-  "old-college-aberystwyth-university","rspb-dungeness","tanat-valley-light-railway",
-  "orford-ness-national-nature-reserve","cody-observatory","rhondda-heritage-park",
-  "dyrham-park-national-trust","brockholes-nature-reserve","tabor-centre",
-  "the-space-at-field-lane","hadleigh-country-park","tredegar-house-national-trust",
-  "findon-place","exeter-university-physics-building","york-knavesmire",
-  "flag-fen-archaeology-park","tyntesfield-house","severndroog-castle",
-  "birdsall-house","fountains-abbey","keld-resource-centre","harehope-quarry-project",
-  "hexham-racecourse","wells-mendip-museum","herschel-astronomical-society-observatory",
-  "rhyd-ddu-outdoor-centre","samuel-worth-chapel","ballamoar-campsite-isle-man",
-  "broughton-sanctuary","chelmer-valley-high-school","rspb-minsmere",
-  "half-moon-inn-cade-street","diss-golf-club","deal-castle","earth-camp-chailey",
-  "messems-west","bodiam-castle-national-trust","nottingham-contemporary",
-  "friars-square-shopping-centre","dolwyddelan-castle","lanhydrock-national-trust",
-  "maumbury-rings","low-mill-outdoor-centre","st-andrews-school-of-physics-and-astronomy",
-  "kestle-barton","westminster-reference-library","bradfield-centre-cambridge-science-park",
-  "sackville-observatory","bayfordbury-observatory","toothill-observatory",
-  "alston-observatory","athenaeum-observatory","edinburgh-playfair-observatory",
-  // private_venue (29 sites)
-  "abbey-gardens-bury","aberdare-coliseum-theatre","aberdeen-science-centre",
-  "abingdon-road-car-park-tubney","aden-country-park","ainsdale-discovery-centre",
-  "alice-holt-forest-forestry-england","all-saints-church-hall-sidley",
-  "allendale-village-hall","alnmouth-golf-club","alston-moor-golf-club","alston-town-hall",
-  "amberley-museum-heritage-centre","ambersham-polo-grounds","american-museum-and-gardens",
-  "amersham-school","an-lanntair","an-lochan-inverness-college-campus",
-  "ansty-pick-farm-shop","arlington-court-national-trust","artrix-arts-centre",
-  "ascott-estate-national-trust","ash-rescue-centre","ashlack-hall","ashmore-village-hall",
-  "aston-hall","astronomy-ireland-head-office","attenborough-nature-reserve","attingham-park",
-]);
-
 // ── State ──────────────────────────────────────────────────────────────────
 let map, tileLayer, originMarker, siteMarkers = [], activeSiteIdx = -1;
 
@@ -2280,6 +2393,10 @@ let currentRecs = [];
 let _displayRecs = [];
 let _sortMode = 'conditions';
 let _infoTipTimer = null;
+let _openRecs = [];         // default (non-restricted) top-N recs, API order
+let _restrictedRecs = [];   // restricted_access top-N recs, API order
+let _showRestricted = false;
+let _restrictedFound = 0;
 
 if (!window.STARGAZE_API_BASE && /github\.io$/i.test(window.location.hostname || '')) {
   window.STARGAZE_API_BASE = 'https://no-haze-stargaze.onrender.com';
@@ -2489,9 +2606,6 @@ function initForm() {
   const clampHour = (value) => Math.max(0, Math.min(23, parseInt(value || 0, 10) || 0));
   const formatHour = (hour) => `${String(hour).padStart(2, '0')}:00`;
 
-  const setSelectOptions = (selectEl, values) => {
-    selectEl.innerHTML = values.map((h) => `<option value="${h}">${formatHour(h)}</option>`).join('');
-  };
   const buildStartHourOptions = (startHour, endHour) => {
     const hours = [];
     let current = clampHour(startHour);
@@ -2508,10 +2622,8 @@ function initForm() {
   const setDefaultWindow = (startHour, endHour) => {
     const displayStart = clampHour(startHour);
     const displayEnd = clampHour(endHour);
-    setSelectOptions(startHourSelect, buildStartHourOptions(displayStart, displayEnd));
-    setSelectOptions(endHourSelect, Array.from({ length: displayEnd + 1 }, (_, i) => i));
-    startHourSelect.value = String(displayStart);
-    endHourSelect.value = String(displayEnd);
+    setCustomSelectHourOptions('start-hour', buildStartHourOptions(displayStart, displayEnd), displayStart);
+    setCustomSelectHourOptions('end-hour', Array.from({ length: displayEnd + 1 }, (_, i) => i), displayEnd);
     document.getElementById('time-help').textContent = `Night window available from ${formatHour(displayStart)} to ${formatHour(displayEnd)}.`;
   };
 
@@ -2628,12 +2740,9 @@ function initForm() {
   refreshSunInfo();
 
   // Init site panel selects
-  const siteStartHour = document.getElementById('site-start-hour');
-  const siteEndHour   = document.getElementById('site-end-hour');
-  const fmtH = h => `${String(h).padStart(2,'0')}:00`;
   const allHours = Array.from({length: 24}, (_, i) => i);
-  siteStartHour.innerHTML = allHours.map(h => `<option value="${h}"${h===22?' selected':''}>${fmtH(h)}</option>`).join('');
-  siteEndHour.innerHTML   = allHours.map(h => `<option value="${h}"${h===4 ?' selected':''}>${fmtH(h)}</option>`).join('');
+  setCustomSelectHourOptions('site-start-hour', allHours, 22);
+  setCustomSelectHourOptions('site-end-hour', allHours, 4);
   const siteDateEl = document.getElementById('site-date-input');
   siteDateEl.value = todayStr;
   siteDateEl.addEventListener('change', refreshSiteSunInfo);
@@ -2846,12 +2955,8 @@ function setSiteDefaultWindow(startHour, endHour) {
     if (w === (((e - 1) % 24 + 24) % 24)) break;
     cur++;
   }
-  const startSel = document.getElementById('site-start-hour');
-  const endSel   = document.getElementById('site-end-hour');
-  startSel.innerHTML = startOpts.map(h => `<option value="${h}">${fmtH(h)}</option>`).join('');
-  endSel.innerHTML   = Array.from({length: e + 1}, (_, i) => i).map(h => `<option value="${h}">${fmtH(h)}</option>`).join('');
-  startSel.value = String(s);
-  endSel.value   = String(e);
+  setCustomSelectHourOptions('site-start-hour', startOpts, s);
+  setCustomSelectHourOptions('site-end-hour', Array.from({length: e + 1}, (_, i) => i), e);
   const help = document.getElementById('site-time-help');
   if (help) help.textContent = `Night window available from ${fmtH(s)} to ${fmtH(e)}.`;
 }
@@ -2981,12 +3086,80 @@ async function search() {
 }
 
 // ── Rendering ──────────────────────────────────────────────────────────────
+function _resultsHeaderText() {
+  let txt = `${currentRecs.length} sites found (checking ${_lastSitesChecked} within range`;
+  if (_restrictedFound > 0) txt += `, found ${_restrictedFound} restricted sites`;
+  txt += ')';
+  return txt;
+}
+
+function _buildMarkersForRecs(recs, originLatLngArr) {
+  siteMarkers.forEach(m => map.removeLayer(m));
+  siteMarkers = [];
+  _activeMarkerIdx = -1;
+  amenityMarkers.forEach(m => map.removeLayer(m));
+  amenityMarkers = [];
+  const bounds = originLatLngArr ? [originLatLngArr] : [];
+  recs.forEach((rec, idx) => {
+    rec._origIdx = idx;  // tag for card/marker sync after re-sort
+    const site = rec.site;
+    const color = scoreColor(rec.total_score);
+    const marker = L.circleMarker([site.latitude, site.longitude], {
+      radius: 8, color: color, fillColor: color, fillOpacity: 0.85, weight: 1.5,
+    }).addTo(map);
+    marker._origColor = color;
+
+    marker.bindPopup(buildPopup(rec, idx + 1));
+    marker.on('click', (event) => {
+      L.DomEvent.stopPropagation(event);
+      highlightCard(idx);
+      highlightMarker(idx);
+    });
+    siteMarkers.push(marker);
+    bounds.push([site.latitude, site.longitude]);
+  });
+  return bounds;
+}
+
+function onToggleRestricted(checked) {
+  _showRestricted = checked;
+  if (!_openRecs.length && !_restrictedRecs.length) return;
+
+  currentRecs = _showRestricted && _restrictedRecs.length
+    ? [..._openRecs, ..._restrictedRecs].sort((a, b) => b.total_score - a.total_score)
+    : [..._openRecs];
+
+  const originLatLngArr = originMarker
+    ? [originMarker.getLatLng().lat, originMarker.getLatLng().lng] : null;
+  const bounds = _buildMarkersForRecs(currentRecs, originLatLngArr);
+  if (bounds.length) map.fitBounds(bounds, { padding: [40, 40] });
+
+  const header = document.getElementById('results-header');
+  header.textContent = _resultsHeaderText();
+  _popHeader(header);
+
+  if (_activeWeights) {
+    _recomputeAndRender();   // re-applies custom weights across the new set, re-sorts, re-renders
+  } else {
+    _sortMode = 'conditions';
+    document.getElementById('sort-btn-conditions').classList.add('active');
+    document.getElementById('sort-btn-closest').classList.remove('active');
+    initSortPill();
+    _displayRecs = [...currentRecs];
+    _setListHtml(
+      _displayRecs.map((rec, di) => buildCard(rec, di)).join(''),
+      attachDisplayCardListeners
+    );
+  }
+}
+
 function renderResults(data) {
   const recs = data.recommendations || [];
   const origin = data.origin;
   window._allUk = data.all_uk === true;
   const header = document.getElementById('results-header');
   const list = document.getElementById('results-list');
+  const restrictedRow = document.getElementById('restricted-toggle-row');
 
   // Clear old markers
   siteMarkers.forEach(m => map.removeLayer(m));
@@ -3010,10 +3183,23 @@ function renderResults(data) {
     _setListHtml('<div class="empty-state"><div class="icon">🌫️</div><div>' +
       (data.message || 'No matching sites found.') + '</div></div>');
     if (origin) map.setView([origin.lat, origin.lon], 8);
+    restrictedRow.style.display = 'none';
     return;
   }
 
-  header.textContent = `${recs.length} sites found (checking ${data.sites_checked} within range)`;
+  // Restricted-access sites are hard-filtered out by default (see onToggleRestricted)
+  _openRecs = recs;
+  _restrictedRecs = data.restricted_recommendations || [];
+  _restrictedFound = _restrictedRecs.length;
+  _showRestricted = false;
+  const showRestrictedCheckbox = document.getElementById('show-restricted');
+  if (showRestrictedCheckbox) showRestrictedCheckbox.checked = false;
+  restrictedRow.style.display = _restrictedFound > 0 ? 'block' : 'none';
+
+  _lastSitesChecked = data.sites_checked || recs.length;
+  currentRecs = _openRecs;
+
+  header.textContent = _resultsHeaderText();
   _popHeader(header);
   if (data.forecast_refreshing) {
     header.textContent += ' · forecast updating…';
@@ -3057,36 +3243,16 @@ function renderResults(data) {
     setTimeout(() => { lunarBanner.style.display = 'none'; lunarBanner.style.opacity = ''; lunarBanner.style.transform = ''; }, 250);
   }
 
-  // Site markers — index matches original API order (used for siteMarkers[origIdx])
-  const bounds = origin ? [[origin.lat, origin.lon]] : [];
-  recs.forEach((rec, idx) => {
-    rec._origIdx = idx;  // tag for card/marker sync after re-sort
-    const site = rec.site;
-    const color = scoreColor(rec.total_score);
-    const marker = L.circleMarker([site.latitude, site.longitude], {
-      radius: 8, color: color, fillColor: color, fillOpacity: 0.85, weight: 1.5,
-    }).addTo(map);
-    marker._origColor = color;
-
-    marker.bindPopup(buildPopup(rec, idx + 1));
-    marker.on('click', (event) => {
-      L.DomEvent.stopPropagation(event);
-      highlightCard(idx);
-      highlightMarker(idx);
-    });
-    siteMarkers.push(marker);
-    bounds.push([site.latitude, site.longitude]);
-  });
-
+  // Site markers — index matches currentRecs (used for siteMarkers[origIdx])
+  const originLatLngArr = origin ? [origin.lat, origin.lon] : null;
+  const bounds = _buildMarkersForRecs(currentRecs, originLatLngArr);
   map.fitBounds(bounds, { padding: [40, 40] });
 
-  currentRecs = recs;  // always original API order — used for marker/score lookups
-  _lastSitesChecked = data.sites_checked || recs.length;
   _activeWeights = null; // reset custom weights on each new search
 
   // Reset sort mode
   _sortMode = 'conditions';
-  _displayRecs = [...recs];
+  _displayRecs = [...currentRecs];
   document.getElementById('sort-btn-conditions').classList.add('active');
   document.getElementById('sort-btn-closest').classList.remove('active');
   const sortBar = document.getElementById('sort-bar');
@@ -3156,8 +3322,8 @@ function buildCard(rec, idx) {
     : '☁ No forecast';
   const cloudColor = cloudColorHex(rec.avg_cloud_cover);
   const pollChip = pollutionChip(rec.site.light_pollution, rec.site.url);
-  const restrictedChip = RESTRICTED_SLUGS.has(site.slug)
-    ? `<span class="chip chip-restricted">🔒 Restricted access</span>` : '';
+  const restrictedChip = restrictionChipHtml(site);
+  const lightPollutionChip = lightPollutionChipHtml(site);
   const typeChip = rec.site.site_type === 'Dark Sky Discovery Site'
     ? `<span class="chip chip-type">${rec.site.site_type}&thinsp;<span class="chip-i" data-tip-type="dsds" onclick="toggleChipTipClick(event,this)" onmouseenter="showChipTip(event,this)" onmouseleave="hideInfoTipDelayed()">ⓘ</span></span>` : '';
   const parkingChip = site.has_parking === true
@@ -3175,8 +3341,11 @@ function buildCard(rec, idx) {
   const toiletRow = site.nearest_toilets
     ? `<span class="amenity-item">🚻 <span class="${site.nearest_toilets.fee === 'no' ? 'amenity-free' : site.nearest_toilets.fee === 'yes' ? 'amenity-paid' : ''}">${feeStr(site.nearest_toilets.fee) || 'Toilets'}</span> · ${distMiStr(site.nearest_toilets.distance_m)}</span>`
     : '';
-  const amenityRow = (parkingRow || toiletRow)
-    ? `<div class="amenity-row">${parkingRow}${toiletRow}</div>` : '';
+  const lampRow = site.nearest_street_lamp_m != null
+    ? `<span class="amenity-item">${_lampIconSvg()} <span class="${site.local_light_pollution ? 'amenity-paid' : ''}">Nearest light</span> · ${distMiStr(site.nearest_street_lamp_m)}</span>`
+    : '';
+  const amenityRow = (parkingRow || toiletRow || lampRow)
+    ? `<div class="amenity-row">${parkingRow}${toiletRow}${lampRow}</div>` : '';
 
   const sqClass = scoreQualityClass(rec.total_score);
   const animDelay = `${(idx * 0.045).toFixed(2)}s`;
@@ -3195,6 +3364,7 @@ function buildCard(rec, idx) {
       <div class="address">${esc(site.address || 'No address')}</div>
       <div class="chips">
         ${pollChip}
+        ${lightPollutionChip}
         ${restrictedChip}
         ${typeChip}
         ${parkingChip}
@@ -3327,7 +3497,7 @@ function filterCards(query) {
       c.style.display = '';
       requestAnimationFrame(() => { c.style.opacity = ''; c.style.pointerEvents = ''; });
     });
-    header.textContent = `${currentRecs.length} sites found (checking ${_lastSitesChecked} within range)`;
+    header.textContent = _resultsHeaderText();
     _popHeader(header);
     return;
   }
@@ -3575,6 +3745,16 @@ function hideInfoTipDelayed() {
 }
 function keepInfoTip() { clearTimeout(_infoTipTimer); }
 
+function _restrictionTipHtml(slug, isLikely) {
+  const rec = currentRecs.find(r => r.site.slug === slug);
+  const notice = rec && rec.site.restriction_notice ? esc(rec.site.restriction_notice) : '';
+  if (isLikely) {
+    const caveat = 'Access to this site is likely restricted. Please check with this site directly for further information.';
+    return `<div class="itip-title">Likely restricted access</div><div>${caveat}${notice ? `<br><br>${notice}` : ''}</div>`;
+  }
+  return `<div class="itip-title">Restricted access</div><div>${notice || 'This site is only accessible by prior arrangement — check with Go Stargazing for details.'}</div>`;
+}
+
 function showChipTip(e, el) {
   const type = el.dataset.tipType;
   let html = '';
@@ -3594,6 +3774,8 @@ function showChipTip(e, el) {
     const desc = LUNAR_TIPS[quality] || '';
     const note = pct ? `<br><span style="color:var(--muted);font-size:0.67rem">${pct}% illuminated</span>` : '';
     html = `<div class="itip-title">Lunar conditions</div><div>${desc}${note}</div>`;
+  } else if (type === 'restricted' || type === 'likely-restricted') {
+    html = _restrictionTipHtml(el.dataset.slug, type === 'likely-restricted');
   }
   showInfoTip(e, html);
 }
@@ -3634,6 +3816,8 @@ function _buildChipTipHtml(el) {
     const desc = LUNAR_TIPS[quality] || '';
     const note = pct ? `<br><span style="color:var(--muted);font-size:0.67rem">${pct}% illuminated</span>` : '';
     return `<div class="itip-title">Lunar conditions</div><div>${desc}${note}</div>`;
+  } else if (type === 'restricted' || type === 'likely-restricted') {
+    return _restrictionTipHtml(el.dataset.slug, type === 'likely-restricted');
   }
   return '';
 }
@@ -3709,6 +3893,25 @@ function pollutionChip(level, siteUrl) {
   const [cls, label] = map[level] || ['chip-unknown', '❓ Unknown'];
   const u = siteUrl || '';
   return `<span class="chip ${cls}">${label}&thinsp;<span class="chip-i" data-tip-type="pollution" data-tip-level="${level}" data-site-url="${u}" onclick="toggleChipTipClick(event,this)" onmouseenter="showChipTip(event,this)" onmouseleave="hideInfoTipDelayed()">ⓘ</span></span>`;
+}
+
+function _lampIconSvg() {
+  return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:-2px;flex-shrink:0" aria-hidden="true"><path d="M12 1.5L16.5 6.5H7.5L12 1.5Z" fill="currentColor"/><rect x="8.5" y="6.5" width="7" height="5.5" rx="0.8" fill="currentColor"/><circle cx="12" cy="9.2" r="1.5" fill="#fffbe6"/><rect x="11.1" y="12" width="1.8" height="8" fill="currentColor"/><path d="M8.5 22h7l-1-2h-5l-1 2z" fill="currentColor"/></svg>`;
+}
+
+function lightPollutionChipHtml(site) {
+  if (!site.local_light_pollution) return '';
+  return `<span class="chip chip-light-pollution">${_lampIconSvg()}&thinsp;Local light pollution expected</span>`;
+}
+
+function restrictionChipHtml(site) {
+  if (site.restricted_access) {
+    return `<span class="chip chip-restricted">🔒 Restricted access&thinsp;<span class="chip-i" data-tip-type="restricted" data-slug="${site.slug}" onclick="toggleChipTipClick(event,this)" onmouseenter="showChipTip(event,this)" onmouseleave="hideInfoTipDelayed()">ⓘ</span></span>`;
+  }
+  if (site.likely_restricted_access) {
+    return `<span class="chip chip-likely-restricted">⚠️ Likely restricted access&thinsp;<span class="chip-i" data-tip-type="likely-restricted" data-slug="${site.slug}" onclick="toggleChipTipClick(event,this)" onmouseenter="showChipTip(event,this)" onmouseleave="hideInfoTipDelayed()">ⓘ</span></span>`;
+  }
+  return '';
 }
 
 function esc(str) {
@@ -3787,6 +3990,78 @@ function closeAppInfo() {
   dd.classList.add('closing');
   if (btn) { btn.setAttribute('aria-expanded', 'false'); btn.textContent = 'App Info'; }
   setTimeout(() => dd.classList.remove('open', 'closing'), 180);
+}
+
+// ── Custom <select> dropdowns ────────────────────────────────────────────────
+function toggleCustomSelect(id) {
+  const dd  = document.getElementById(id + '-dropdown');
+  const btn = document.getElementById(id + '-btn');
+  if (!dd || !btn) return;
+  if (dd.classList.contains('open') && !dd.classList.contains('closing')) {
+    closeCustomSelect(id);
+    return;
+  }
+  // Only one custom select open at a time
+  document.querySelectorAll('.custom-select-dropdown.open').forEach(other => {
+    if (other !== dd) closeCustomSelect(other.id.replace(/-dropdown$/, ''));
+  });
+  dd.classList.remove('closing');
+  dd.classList.add('open');
+  btn.setAttribute('aria-expanded', 'true');
+  const rect = btn.getBoundingClientRect();
+  dd.style.top = (rect.bottom + 6) + 'px';
+  dd.style.left = rect.left + 'px';
+  dd.style.width = rect.width + 'px';
+}
+
+function closeCustomSelect(id) {
+  const dd  = document.getElementById(id + '-dropdown');
+  const btn = document.getElementById(id + '-btn');
+  if (!dd || !dd.classList.contains('open')) return;
+  dd.classList.add('closing');
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+  setTimeout(() => dd.classList.remove('open', 'closing'), 180);
+}
+
+function selectCustomOption(id, value, label) {
+  const input = document.getElementById(id);
+  const labelEl = document.getElementById(id + '-label');
+  if (input) {
+    input.value = value;
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  if (labelEl) labelEl.textContent = label;
+  document.querySelectorAll('#' + id + '-dropdown .custom-select-option').forEach(opt => {
+    opt.classList.toggle('selected', String(opt.dataset.value) === String(value));
+  });
+  closeCustomSelect(id);
+}
+
+// Populate an hour-picker custom dropdown (00:00-23:00 style options) and
+// select a value, without needing to rebuild each <option> by hand like the
+// static pollution-filter list — used for start/end night-window pickers,
+// whose valid option range is recomputed whenever sunset/sunrise changes.
+function setCustomSelectHourOptions(id, hours, selectedValue) {
+  const dd = document.getElementById(id + '-dropdown');
+  if (!dd) return;
+  const fmt = h => `${String(h).padStart(2, '0')}:00`;
+  dd.innerHTML = '';
+  hours.forEach(h => {
+    const opt = document.createElement('div');
+    opt.className = 'custom-select-option' + (String(h) === String(selectedValue) ? ' selected' : '');
+    opt.setAttribute('role', 'option');
+    opt.dataset.value = h;
+    opt.textContent = fmt(h);
+    opt.addEventListener('click', () => selectCustomOption(id, h, fmt(h)));
+    dd.appendChild(opt);
+  });
+  const input = document.getElementById(id);
+  const labelEl = document.getElementById(id + '-label');
+  if (input) {
+    input.value = String(selectedValue);
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  if (labelEl) labelEl.textContent = fmt(selectedValue);
 }
 
 // ── Custom Calendar Widget ───────────────────────────────────────────────────
@@ -3882,6 +4157,11 @@ function _renderCalendar(dir = 0) {
 
   const today = new Date();
   const todayStr = _localISO(today);
+  // Allow selecting yesterday too: forecast data for the previous night is
+  // still cached, so someone checking just after midnight (whose "tonight"
+  // is technically yesterday's date) isn't stuck with no results.
+  const minD = new Date(today); minD.setDate(minD.getDate() - 1);
+  const minStr = _localISO(minD);
   const maxD = new Date(today); maxD.setDate(maxD.getDate() + 14);
   const maxStr = _localISO(maxD);
 
@@ -3919,7 +4199,7 @@ function _renderCalendar(dir = 0) {
     cell.dataset.date = ds;
     if (ds === todayStr)        cell.classList.add('today');
     if (ds === _calSelectedDate) cell.classList.add('selected');
-    if (!cell.classList.contains('other-month') && (ds < todayStr || ds > maxStr))
+    if (!cell.classList.contains('other-month') && (ds < minStr || ds > maxStr))
       cell.classList.add('disabled');
     cell.addEventListener('click', () => {
       if (cell.classList.contains('disabled') || cell.classList.contains('other-month')) return;
@@ -4033,6 +4313,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const wrap = document.getElementById('app-info-wrap');
     if (wrap && !wrap.contains(e.target)) closeAppInfo();
   });
+
+  // Close custom <select> dropdowns when clicking outside them (button or popup)
+  document.addEventListener('click', function(e) {
+    document.querySelectorAll('.custom-select-dropdown.open').forEach(dd => {
+      if (dd.contains(e.target)) return;
+      const id = dd.id.replace(/-dropdown$/, '');
+      const wrap = document.getElementById(id + '-wrap');
+      if (wrap && wrap.contains(e.target)) return;
+      closeCustomSelect(id);
+    });
+  });
 });
 </script>
 
@@ -4050,6 +4341,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <input type="range" class="weight-slider" id="slider-pollution" min="0" max="100" step="1" value="30" oninput="onWeightSliderInput('pollution')">
       <span class="weight-pct" id="slider-val-pollution">30%</span>
     </div>
+    <div class="weight-note">(includes street lighting: 25%)</div>
     <div class="weight-row" id="weight-row-distance">
       <span class="weight-label">📍 Distance</span>
       <input type="range" class="weight-slider" id="slider-distance" min="0" max="100" step="1" value="25" oninput="onWeightSliderInput('distance')">
