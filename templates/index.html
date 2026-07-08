@@ -3745,14 +3745,11 @@ function hideInfoTipDelayed() {
 }
 function keepInfoTip() { clearTimeout(_infoTipTimer); }
 
-function _restrictionTipHtml(slug, isLikely) {
-  const rec = currentRecs.find(r => r.site.slug === slug);
-  const notice = rec && rec.site.restriction_notice ? esc(rec.site.restriction_notice) : '';
+function _restrictionTipHtml(isLikely) {
   if (isLikely) {
-    const caveat = 'Access to this site is likely restricted. Please check with this site directly for further information.';
-    return `<div class="itip-title">Likely restricted access</div><div>${caveat}${notice ? `<br><br>${notice}` : ''}</div>`;
+    return `<div class="itip-title">Likely restricted access</div><div>Access to this site is likely restricted. Please check with this site directly for further information.</div>`;
   }
-  return `<div class="itip-title">Restricted access</div><div>${notice || 'This site is only accessible by prior arrangement — check with Go Stargazing for details.'}</div>`;
+  return `<div class="itip-title">Restricted access</div><div>Access to this site is restricted for public stargazing and can be arranged privately.</div>`;
 }
 
 function showChipTip(e, el) {
@@ -3775,7 +3772,7 @@ function showChipTip(e, el) {
     const note = pct ? `<br><span style="color:var(--muted);font-size:0.67rem">${pct}% illuminated</span>` : '';
     html = `<div class="itip-title">Lunar conditions</div><div>${desc}${note}</div>`;
   } else if (type === 'restricted' || type === 'likely-restricted') {
-    html = _restrictionTipHtml(el.dataset.slug, type === 'likely-restricted');
+    html = _restrictionTipHtml(type === 'likely-restricted');
   }
   showInfoTip(e, html);
 }
@@ -3817,7 +3814,7 @@ function _buildChipTipHtml(el) {
     const note = pct ? `<br><span style="color:var(--muted);font-size:0.67rem">${pct}% illuminated</span>` : '';
     return `<div class="itip-title">Lunar conditions</div><div>${desc}${note}</div>`;
   } else if (type === 'restricted' || type === 'likely-restricted') {
-    return _restrictionTipHtml(el.dataset.slug, type === 'likely-restricted');
+    return _restrictionTipHtml(type === 'likely-restricted');
   }
   return '';
 }
@@ -3906,10 +3903,10 @@ function lightPollutionChipHtml(site) {
 
 function restrictionChipHtml(site) {
   if (site.restricted_access) {
-    return `<span class="chip chip-restricted">🔒 Restricted access&thinsp;<span class="chip-i" data-tip-type="restricted" data-slug="${site.slug}" onclick="toggleChipTipClick(event,this)" onmouseenter="showChipTip(event,this)" onmouseleave="hideInfoTipDelayed()">ⓘ</span></span>`;
+    return `<span class="chip chip-restricted">🔒 Restricted access&thinsp;<span class="chip-i" data-tip-type="restricted" onclick="toggleChipTipClick(event,this)" onmouseenter="showChipTip(event,this)" onmouseleave="hideInfoTipDelayed()">ⓘ</span></span>`;
   }
   if (site.likely_restricted_access) {
-    return `<span class="chip chip-likely-restricted">⚠️ Likely restricted access&thinsp;<span class="chip-i" data-tip-type="likely-restricted" data-slug="${site.slug}" onclick="toggleChipTipClick(event,this)" onmouseenter="showChipTip(event,this)" onmouseleave="hideInfoTipDelayed()">ⓘ</span></span>`;
+    return `<span class="chip chip-likely-restricted">⚠️ Likely restricted access&thinsp;<span class="chip-i" data-tip-type="likely-restricted" onclick="toggleChipTipClick(event,this)" onmouseenter="showChipTip(event,this)" onmouseleave="hideInfoTipDelayed()">ⓘ</span></span>`;
   }
   return '';
 }
