@@ -3,11 +3,16 @@ name: Full Site Scrape
 # Monthly full re-scrape of gostargazing.co.uk: rediscovers slugs from the
 # sitemaps and re-fetches every field for every site (name, address, coords,
 # light pollution, site type, parking/toilets heuristics, restricted access).
-# First scheduled run: 1 August 2026.
+# Observed runtime: ~11 min for ~2730 sites.
+#
+# Runs FIRST in the monthly sequence (00:00 UTC), ahead of Update Restricted-
+# Access Flags (06:00 UTC) and Amenity Scrape (12:00 UTC), so both later jobs
+# operate on the freshest possible site list (including any newly-discovered
+# sites) rather than a month-old one. First scheduled run: 1 August 2026.
 
 on:
   schedule:
-    - cron: '0 4 1 * *'   # 04:00 UTC on the 1st of every month
+    - cron: '0 0 1 * *'   # 00:00 UTC on the 1st of every month
   workflow_dispatch:
 
 jobs:

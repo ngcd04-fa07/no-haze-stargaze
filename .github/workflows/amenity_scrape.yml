@@ -1,18 +1,26 @@
 name: Amenity Scrape
 
-# Bi-monthly full amenity sweep: queries OpenStreetMap's Overpass API for
-# parking/toilets near every cached site (see scripts/refresh_amenities.py).
-# Replaces the old per-request reactive fetch that used to run inline from
-# live user searches on Render (whose ephemeral disk lost the accumulated
-# data on every deploy). First scheduled run: 15 July 2026.
+# Monthly full amenity sweep: queries OpenStreetMap's Overpass API for
+# parking/toilets/street lighting near every cached site (see
+# scripts/refresh_amenities.py). Replaces the old per-request reactive fetch
+# that used to run inline from live user searches on Render (whose ephemeral
+# disk lost the accumulated data on every deploy).
+#
+# Runs LAST in the monthly sequence (12:00 UTC), after Full Site Scrape
+# (00:00 UTC) and Update Restricted-Access Flags (06:00 UTC) — both fast
+# (~11 min / ~16 min), so this gets the full 12h runway before the next
+# day starts, and operates on the freshest + most complete site list rather
+# than racing the other two for write access to sites_cache.json.
+# First scheduled run: 1 August 2026.
 #
 # Single-threaded and paced at ~1.2s/site to stay respectful of the free
-# public Overpass instance — a full sweep of ~2625 sites takes roughly an
-# hour, well within the job's time budget.
+# public Overpass instance. Observed runtime: ~5 hours for ~2650 sites —
+# real Overpass round-trip latency dominates over the deliberate per-site
+# delay, so this is much slower than the delay alone would suggest.
 
 on:
   schedule:
-    - cron: '0 5 15 */2 *'   # 05:00 UTC on the 15th, every 2 months (Jan, Mar, May, Jul, Sep, Nov)
+    - cron: '0 12 1 * *'   # 12:00 UTC on the 1st of every month
   workflow_dispatch:
 
 jobs:

@@ -1,12 +1,19 @@
 name: Update Restricted-Access Flags
 
-# Weekly re-check of gostargazing.co.uk's own private-location notice for every
+# Monthly re-check of gostargazing.co.uk's own private-location notice for every
 # known site. Cheaper than a full scrape since it skips sitemap discovery and
 # only merges the restricted_access field — see scripts/refresh_sites_cache.py.
+# Observed runtime: ~16 min for ~2650 sites.
+#
+# Runs SECOND in the monthly sequence (06:00 UTC), after Full Site Scrape
+# (00:00 UTC, so this operates on the freshest site list including any newly
+# -discovered sites) and before Amenity Scrape (12:00 UTC). 6h gaps rather
+# than 4h since GitHub Actions cron can run 2-3h late under load.
+# First scheduled run: 1 August 2026.
 
 on:
   schedule:
-    - cron: '0 2 * * 1'   # 02:00 UTC every Monday
+    - cron: '0 6 1 * *'   # 06:00 UTC on the 1st of every month
   workflow_dispatch:
 
 jobs:
