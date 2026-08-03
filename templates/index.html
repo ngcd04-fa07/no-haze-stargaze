@@ -508,6 +508,91 @@
     .sun-item { display: inline-flex; align-items: center; gap: 0.35rem; }
     .sun-item b { color: var(--text); font-weight: 600; }
     .sun-icon { flex-shrink: 0; display: block; }
+
+    /* Twilight gradient bar: sunset -> civil -> nautical -> astronomical ->
+       true night -> astronomical -> nautical -> civil -> sunrise. */
+    .twilight-bar-wrap { margin-top: 0.4rem; }
+    .twilight-bar-label {
+      font-size: 0.64rem; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.06em;
+      margin-bottom: 0.3rem;
+    }
+    .twilight-bar {
+      position: relative;
+      display: flex;
+      width: 100%;
+      height: 0.55rem;
+      border-radius: 5px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.16);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+    }
+    .light-mode .twilight-bar { border-color: rgba(0,0,0,0.2); box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
+    .twilight-seg {
+      height: 100%;
+      /* A little sparkle star instead of the default help-cursor "?" —
+         fitting for a stargazing app. Falls back to `pointer` if a browser
+         can't load the inline SVG cursor for some reason. */
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Cpath d='M13 1 L15.6 10.4 L25 13 L15.6 15.6 L13 25 L10.4 15.6 L1 13 L10.4 10.4 Z' fill='%23fde68a' stroke='%2378350f' stroke-width='1.3' stroke-linejoin='round'/%3E%3Ccircle cx='22' cy='5' r='1.7' fill='%23fef3c7' stroke='%2378350f' stroke-width='0.7'/%3E%3C/svg%3E") 13 13, pointer;
+      position: relative;
+      /* thin separator so adjacent segments stay visually distinct from
+         each other regardless of how close their colours are */
+      box-shadow: inset -1px 0 0 rgba(255,255,255,0.35);
+      transition: filter 0.15s ease, box-shadow 0.15s ease;
+    }
+    .twilight-seg:last-child { box-shadow: none; }
+    /* Hue shifts (not just lightness) between phases so neighbours never
+       read as "the same colour, slightly darker" against each other or
+       against the card's own near-black background in dark mode. */
+    .twilight-seg.twilight-civil      { background: linear-gradient(90deg, #f59e0b, #fb923c); }
+    .twilight-seg.twilight-nautical   { background: #4361ee; }
+    .twilight-seg.twilight-astro      { background: #6d28d9; }
+    .twilight-seg.twilight-night      { background: #1e1033; }
+    /* Hovering/clicking a segment highlights that one specifically, so it's
+       clear which category the native title tooltip belongs to. */
+    .twilight-seg:hover,
+    .twilight-seg.twilight-seg-active {
+      filter: brightness(1.4) saturate(1.2);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.9), inset -1px 0 0 rgba(255,255,255,0.35);
+      z-index: 2;
+    }
+    /* Start/end-of-full-darkness tick marks, overlaid on the bar itself */
+    .twilight-tick {
+      position: absolute;
+      top: 0; bottom: 0;
+      width: 2px;
+      margin-left: -1px;
+      background: rgba(255,255,255,0.85);
+      box-shadow: 0 0 3px rgba(0,0,0,0.6);
+      pointer-events: none;
+    }
+    /* All four boundary labels share one row, positioned to line up with
+       their point on the bar above. */
+    .twilight-bar-ticks {
+      position: relative;
+      height: 1.1em;
+      margin-top: 0.25rem;
+    }
+    .twilight-bar-ticks span {
+      position: absolute;
+      top: 0;
+      white-space: nowrap;
+      font-size: 0.66rem;
+    }
+    .twilight-edge-label { color: var(--muted); }
+    .twilight-edge-label:first-child  { transform: translateX(0); }
+    .twilight-edge-label:last-child   { transform: translateX(-100%); }
+    /* Darkness start/end times are the point of this chart — make them
+       stand out against the plain sunset/sunrise labels. */
+    .twilight-tick-label {
+      transform: translateX(-50%);
+      color: var(--text);
+      font-weight: 700;
+    }
+    .twilight-note {
+      font-size: 0.66rem; color: var(--warn);
+      margin-top: 0.25rem;
+    }
     .time-window-block { margin-top: 0.35rem; display: flex; flex-direction: column; gap: 0.45rem; }
     .time-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; align-items: end; }
     .time-field { display: flex; flex-direction: column; gap: 0.2rem; }
@@ -1110,6 +1195,35 @@
     .amenity-free { color: #34d399; }
     .amenity-paid { color: var(--warn); }
 
+    /* Nearest-photo card (Wikimedia Commons) */
+    .site-photo-wrap {
+      display: block;
+      margin-top: 0.6rem;
+      border-radius: var(--radius);
+      overflow: hidden;
+      text-decoration: none;
+      border: 1px solid var(--border);
+    }
+    .site-photo {
+      display: block;
+      width: 100%;
+      height: 140px;
+      object-fit: cover;
+      background: rgba(255,255,255,0.03);
+      transition: transform 0.35s ease;
+    }
+    .site-photo-wrap:hover .site-photo { transform: scale(1.04); }
+    .site-photo-credit {
+      display: block;
+      padding: 0.3rem 0.55rem;
+      font-size: 0.62rem;
+      color: var(--muted);
+      background: rgba(255,255,255,0.02);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     /* amenity map markers (DivIcon) */
     .am-marker {
       border-radius: 4px;
@@ -1203,6 +1317,30 @@
     .light-mode #map { background: #DFF1F1; }
 
     /* Decorative compass rose, desktop map only (main is hidden entirely on mobile) */
+    .map-overlay-toggle {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 1000;
+      background: rgba(9,14,28,0.88);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.14);
+      color: var(--text);
+      font-size: 0.76rem;
+      font-family: inherit;
+      padding: 0.4rem 0.65rem;
+      border-radius: 7px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+      transition: border-color 0.15s, background 0.15s, color 0.15s;
+    }
+    .map-overlay-toggle:hover { border-color: rgba(78,154,241,0.5); }
+    .map-overlay-toggle.active {
+      background: rgba(78,154,241,0.22);
+      border-color: rgba(78,154,241,0.7);
+      color: #fff;
+    }
     #map-compass {
       position: absolute;
       right: 14px;
@@ -1699,6 +1837,20 @@
     .light-mode .site-ac-addr { color: var(--muted); }
     .light-mode .app-info-btn {
       background: rgba(37,117,212,0.1); border-color: rgba(37,117,212,0.3);
+    }
+    /* The default (dark) style is a semi-transparent tint over the map, so
+       its text colour is chosen assuming a dark map underneath. In light
+       mode the map is much brighter, so use solid, theme-appropriate
+       backgrounds instead of relying on transparency for contrast. */
+    .light-mode .map-overlay-toggle {
+      background: rgba(255,255,255,0.92);
+      border-color: rgba(37,117,212,0.35);
+      color: var(--text);
+    }
+    .light-mode .map-overlay-toggle.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
     }
     .light-mode .leaflet-popup-content-wrapper {
       background: rgba(255,248,238,0.97); border-color: rgba(0,0,0,0.1);
@@ -2205,6 +2357,7 @@
             </div>
           </div>
           <div class="sun-info" id="sun-info" style="display:none"></div>
+          <div class="twilight-bar-wrap" id="twilight-bar-location" style="display:none"></div>
 
           <label>Night window</label>
           <div class="time-window-block">
@@ -2294,6 +2447,7 @@
             </div>
           </div>
           <div class="sun-info" id="site-sun-info" style="display:none"></div>
+          <div class="twilight-bar-wrap" id="twilight-bar-site" style="display:none"></div>
 
           <label>Night window</label>
           <div class="time-window-block">
@@ -2378,6 +2532,8 @@
   <!-- ── Map ── -->
   <main>
     <div id="map"></div>
+    <button class="map-overlay-toggle" id="lp-overlay-btn" onclick="toggleLightPollutionOverlay()"
+            title="Show NASA nighttime-lights imagery as a map overlay">💡 Light pollution map</button>
     <img id="map-compass" src="/static/compass.png" alt="" aria-hidden="true" />
     <div id="loading-overlay">
       <div class="spinner">✦</div>
@@ -2424,7 +2580,17 @@ let map, tileLayer, originMarker, siteMarkers = [], activeSiteIdx = -1;
 
 const MAP_TILE_URL_DARK = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
 const MAP_TILE_URL_LIGHT = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+// NASA GIBS VIIRS Black Marble — annual nighttime-lights composite, public
+// WMTS, no API key. Native tiles stop at zoom 8 (GoogleMapsCompatible_Level8);
+// maxNativeZoom lets Leaflet keep upscaling the last tile past that instead
+// of requesting (and 404ing on) tiles that don't exist.
+const LIGHT_POLLUTION_TILE_URL = 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_Black_Marble/default/2016-01-01/GoogleMapsCompatible_Level8/{z}/{y}/{x}.png';
+let lpOverlayLayer = null;
+// Deliberately not used anywhere else in the palette (score dots run
+// green/amber/red) so a highlighted marker always pops regardless of score.
+const MARKER_HIGHLIGHT_COLOR = '#ec4899';
 let _activeMarkerIdx = -1;
+let _previewMarkerIdx = -1;  // hover preview on the map dot, separate from the persistent "selected" state
 let amenityMarkers = [];
 let currentRecs = [];
 let _displayRecs = [];
@@ -2500,12 +2666,37 @@ function highlightMarker(idx) {
   if (idx >= 0 && siteMarkers[idx]) {
     const m = siteMarkers[idx];
     m.setStyle({ radius: 14, weight: 3, fillOpacity: 1,
-                 color: '#ffffff', fillColor: m._origColor });
+                 color: '#ffffff', fillColor: MARKER_HIGHLIGHT_COLOR });
     m.bringToFront();
     // Add amenity markers for this site
     if (currentRecs[idx]) addAmenityMarkers(currentRecs[idx]);
   }
   _activeMarkerIdx = idx;
+}
+
+// Lightweight hover preview — a colour pulse on the marker's own dot,
+// distinct from highlightMarker's persistent "selected" state (bigger ring +
+// amenity markers + popup), so hovering a card doesn't disturb whatever's
+// currently selected or pop anything open. Desktop-only: hover means
+// nothing on a touch device.
+function previewMarker(idx) {
+  if (window.innerWidth <= 640) return;
+  if (idx === _previewMarkerIdx || idx === _activeMarkerIdx) return;
+  clearMarkerPreview();
+  const m = siteMarkers[idx];
+  if (!m) return;
+  m.setStyle({ radius: 11, weight: 2.5, fillOpacity: 1, color: '#ffffff', fillColor: MARKER_HIGHLIGHT_COLOR });
+  m.bringToFront();
+  _previewMarkerIdx = idx;
+}
+
+function clearMarkerPreview() {
+  if (_previewMarkerIdx < 0) return;
+  const m = siteMarkers[_previewMarkerIdx];
+  if (m && _previewMarkerIdx !== _activeMarkerIdx) {
+    m.setStyle({ radius: 8, weight: 1.5, fillOpacity: 0.85, color: m._origColor, fillColor: m._origColor });
+  }
+  _previewMarkerIdx = -1;
 }
 
 function addAmenityMarkers(rec) {
@@ -2611,6 +2802,30 @@ function initMap() {
   }).addTo(map);
 
   map.on('click', clearSelection);
+
+  if (localStorage.getItem('lpOverlayOn') === '1') toggleLightPollutionOverlay(true);
+}
+
+// Nighttime-lights map overlay (NASA GIBS VIIRS Black Marble), toggled by
+// the button in the top-right corner of the map. `force` skips the toggle
+// check and just turns it on — used to restore the saved preference on load.
+function toggleLightPollutionOverlay(force) {
+  const btn = document.getElementById('lp-overlay-btn');
+  const turningOn = force === true ? true : !lpOverlayLayer;
+  if (!turningOn) {
+    if (lpOverlayLayer) { map.removeLayer(lpOverlayLayer); lpOverlayLayer = null; }
+    if (btn) btn.classList.remove('active');
+    localStorage.setItem('lpOverlayOn', '0');
+    return;
+  }
+  if (lpOverlayLayer) return; // already on
+  lpOverlayLayer = L.tileLayer(LIGHT_POLLUTION_TILE_URL, {
+    opacity: 0.55,
+    maxNativeZoom: 8,
+    attribution: 'Nighttime imagery &copy; NASA GIBS / VIIRS Black Marble',
+  }).addTo(map);
+  if (btn) btn.classList.add('active');
+  localStorage.setItem('lpOverlayOn', '1');
 }
 
 function updateMapTheme() {
@@ -2660,6 +2875,99 @@ function _hourRange(from, to) {
 }
 const buildSiteStartHourOptions = (endHour) => _hourRange(_siteWindowMinStart, _clampHour(endHour) - 1);
 const buildSiteEndHourOptions = (startHour) => _hourRange(_clampHour(startHour) + 1, _siteWindowMaxEnd);
+
+// ── Twilight gradient bar ────────────────────────────────────────────────
+// Renders sunset -> civil -> nautical -> astronomical -> true night ->
+// astronomical -> nautical -> civil -> sunrise as a proportional bar.
+// `twilight` is the {sunset, civil_dusk, ..., sunrise} object returned
+// alongside sunrise/sunset by /api/sunrise_sunset. Any boundary can be null
+// if the sun never reaches that angle that night (e.g. northern Scotland
+// near midsummer never gets true astronomical darkness).
+// Boundary keys in chronological order, and the darkness class of the
+// segment that runs from each key to the next.
+const _TWILIGHT_KEY_ORDER = ['sunset','civil_dusk','nautical_dusk','astronomical_dusk','astronomical_dawn','nautical_dawn','civil_dawn','sunrise'];
+const _TWILIGHT_CLASS_AFTER = ['civil','nautical','astro','night','astro','nautical','civil'];
+const _TWILIGHT_RANK  = { civil: 0, nautical: 1, astro: 2, night: 3 };
+const _TWILIGHT_LABEL = { civil: 'Civil twilight', nautical: 'Nautical twilight', astro: 'Astronomical twilight', night: 'Full darkness' };
+
+// Tap/click support for the twilight bar's segments (hover already
+// highlights via CSS :hover) — mainly for touch, where there's no hover.
+function toggleTwilightSegActive(el) {
+  const bar = el.closest('.twilight-bar');
+  const wasActive = el.classList.contains('twilight-seg-active');
+  bar.querySelectorAll('.twilight-seg-active').forEach(s => s.classList.remove('twilight-seg-active'));
+  if (!wasActive) el.classList.add('twilight-seg-active');
+}
+
+function _twilightBarHtml(twilight) {
+  if (!twilight || !twilight.sunset || !twilight.sunrise) return '';
+  const toMin = (hhmm) => {
+    if (!hhmm) return null;
+    const [h, m] = hhmm.split(':').map(Number);
+    return h * 60 + m;
+  };
+  const sunsetMin = toMin(twilight.sunset);
+  // Unwrap past-midnight boundaries (dawn side) so they keep increasing
+  // relative to sunset instead of wrapping back to 0.
+  const unwrap = (hhmm) => {
+    const m = toMin(hhmm);
+    if (m === null) return null;
+    return m < sunsetMin ? m + 1440 : m;
+  };
+  // Only the boundaries the sun actually reaches tonight (see _sun_event_utc
+  // — astronomical/nautical twilight can fail to complete at UK latitudes
+  // near midsummer). Connect consecutive KNOWN points directly rather than
+  // leaving a gap where an unreached boundary would have been.
+  const known = _TWILIGHT_KEY_ORDER
+    .map((key, idx) => ({ key, idx, min: unwrap(twilight[key]) }))
+    .filter(p => p.min !== null);
+  if (known.length < 2) return '';
+
+  const totalSpan = known[known.length - 1].min - known[0].min;
+  if (!(totalSpan > 0)) return '';
+
+  let segmentsHtml = '';
+  for (let i = 0; i < known.length - 1; i++) {
+    const from = known[i], to = known[i + 1];
+    // Darkest phase spanned by this stretch, in case one or more boundaries
+    // in between were unreachable and got skipped.
+    let cls = _TWILIGHT_CLASS_AFTER[from.idx];
+    for (let j = from.idx; j < to.idx; j++) {
+      if (_TWILIGHT_RANK[_TWILIGHT_CLASS_AFTER[j]] > _TWILIGHT_RANK[cls]) cls = _TWILIGHT_CLASS_AFTER[j];
+    }
+    const pct = Math.max(0, (to.min - from.min) / totalSpan * 100);
+    if (pct <= 0) continue;
+    segmentsHtml += `<div class="twilight-seg twilight-${cls}" style="width:${pct.toFixed(2)}%" title="${_TWILIGHT_LABEL[cls]}: ${twilight[from.key]}–${twilight[to.key]}" onclick="toggleTwilightSegActive(this)"></div>`;
+  }
+
+  // Tick marks for the start/end of full astronomical darkness, in addition
+  // to the sunset/sunrise labels at the bar's edges — all on one label row,
+  // positioned to line up with their point on the bar.
+  const duskMin = unwrap(twilight.astronomical_dusk);
+  const dawnMin = unwrap(twilight.astronomical_dawn);
+  let ticksHtml = '', darkTickLabels = '';
+  if (duskMin !== null && dawnMin !== null) {
+    const duskPct = Math.min(100, Math.max(0, (duskMin - known[0].min) / totalSpan * 100));
+    const dawnPct = Math.min(100, Math.max(0, (dawnMin - known[0].min) / totalSpan * 100));
+    ticksHtml = `
+      <div class="twilight-tick" style="left:${duskPct.toFixed(2)}%"></div>
+      <div class="twilight-tick" style="left:${dawnPct.toFixed(2)}%"></div>`;
+    darkTickLabels = `
+      <span class="twilight-tick-label" style="left:${duskPct.toFixed(2)}%">${twilight.astronomical_dusk}</span>
+      <span class="twilight-tick-label" style="left:${dawnPct.toFixed(2)}%">${twilight.astronomical_dawn}</span>`;
+  }
+  const note = (duskMin === null || dawnMin === null)
+    ? `<div class="twilight-note">No full astronomical darkness tonight at this latitude.</div>` : '';
+  return `
+    <div class="twilight-bar-label">Darkness through the night</div>
+    <div class="twilight-bar">${segmentsHtml}${ticksHtml}</div>
+    <div class="twilight-bar-ticks">
+      <span class="twilight-edge-label" style="left:0%">${twilight.sunset}</span>
+      ${darkTickLabels}
+      <span class="twilight-edge-label" style="left:100%">${twilight.sunrise}</span>
+    </div>
+    ${note}`;
+}
 
 // ── Init form defaults ─────────────────────────────────────────────────────
 function initForm() {
@@ -2766,8 +3074,10 @@ function initForm() {
 
   async function refreshSunInfo() {
     const selectedDate = applyDateValue(dateInput.value);
+    const twilightBar = document.getElementById('twilight-bar-location');
     if (!selectedDate) {
       document.getElementById('sun-info').style.display = 'none';
+      twilightBar.style.display = 'none';
       document.getElementById('time-help').textContent = 'Choose a date to see the night window.';
       return;
     }
@@ -2775,6 +3085,7 @@ function initForm() {
       const sunInfo = document.getElementById('sun-info');
       sunInfo.innerHTML = '<div class="sun-item" style="color:var(--muted)"><b>—</b></div>';
       sunInfo.style.display = 'flex';
+      twilightBar.style.display = 'none';
       document.getElementById('time-help').textContent = API_SETUP_HINT;
       return;
     }
@@ -2795,6 +3106,9 @@ function initForm() {
         <div class="sun-item"><svg class="sun-icon" width="22" height="22" viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M20 1.5v10.5M16 9l4 3 4-3" stroke="#ef4444" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><g stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round"><line x1="30.8" y1="26.1" x2="34.3" y2="25.5"/><line x1="28.4" y1="20.9" x2="31.1" y2="18.7"/><line x1="23.8" y1="17.7" x2="25" y2="14.4"/><line x1="16.2" y1="17.7" x2="15" y2="14.4"/><line x1="11.6" y1="20.9" x2="8.9" y2="18.7"/><line x1="9.2" y1="26.1" x2="5.7" y2="25.5"/></g><path d="M11 28A9 9 0 0 1 29 28" stroke="#f97316" stroke-width="1.9" stroke-linecap="round"/><line x1="9" y1="30.5" x2="31" y2="30.5" stroke="#f97316" stroke-width="1.5" stroke-linecap="round"/><line x1="11" y1="34" x2="29" y2="34" stroke="#f97316" stroke-width="1.3" stroke-linecap="round" opacity="0.5"/></svg><span>Sunset</span> <b>${sunset}</b></div>
         <div class="sun-item"><svg class="sun-icon" width="22" height="22" viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M20 12v-10.5M16 4.5l4-3 4 3" stroke="#ef4444" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><g stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round"><line x1="30.8" y1="26.1" x2="34.3" y2="25.5"/><line x1="28.4" y1="20.9" x2="31.1" y2="18.7"/><line x1="23.8" y1="17.7" x2="25" y2="14.4"/><line x1="16.2" y1="17.7" x2="15" y2="14.4"/><line x1="11.6" y1="20.9" x2="8.9" y2="18.7"/><line x1="9.2" y1="26.1" x2="5.7" y2="25.5"/></g><path d="M11 28A9 9 0 0 1 29 28" stroke="#f97316" stroke-width="1.9" stroke-linecap="round"/><line x1="9" y1="30.5" x2="31" y2="30.5" stroke="#f97316" stroke-width="1.5" stroke-linecap="round"/><line x1="11" y1="34" x2="29" y2="34" stroke="#f97316" stroke-width="1.3" stroke-linecap="round" opacity="0.5"/></svg><span>Sunrise</span> <b>${sunrise}</b></div>`;
       sunInfo.style.display = 'flex';
+      const barHtml = _twilightBarHtml(data.twilight);
+      if (barHtml) { twilightBar.innerHTML = barHtml; twilightBar.style.display = 'block'; }
+      else { twilightBar.style.display = 'none'; }
       const sunsetHour = parseInt(sunset.slice(0, 2), 10);
       const sunriseHour = parseInt(sunrise.slice(0, 2), 10);
       const sunriseMinute = parseInt(sunrise.slice(3, 5), 10);
@@ -2805,6 +3119,7 @@ function initForm() {
       const sunInfo = document.getElementById('sun-info');
       sunInfo.innerHTML = '<div class="sun-item" style="color:var(--muted)"><b>—</b></div>';
       sunInfo.style.display = 'flex';
+      twilightBar.style.display = 'none';
       document.getElementById('time-help').textContent = 'Sunrise/sunset unavailable — the window can still be adjusted manually.';
     }
   }
@@ -3069,12 +3384,14 @@ function setSiteDefaultWindow(startHour, endHour) {
 
 async function refreshSiteSunInfo() {
   const siteInfo = document.getElementById('site-sun-info');
+  const twilightBar = document.getElementById('twilight-bar-site');
   if (!siteInfo) return;
   const dateVal = document.getElementById('site-date-input').value;
-  if (!dateVal) { siteInfo.style.display = 'none'; return; }
+  if (!dateVal) { siteInfo.style.display = 'none'; if (twilightBar) twilightBar.style.display = 'none'; return; }
   if (!hasConfiguredBackend()) {
     siteInfo.innerHTML = '<div class="sun-item" style="color:var(--muted)"><b>—</b></div>';
     siteInfo.style.display = 'flex';
+    if (twilightBar) twilightBar.style.display = 'none';
     return;
   }
   let reqBody;
@@ -3098,6 +3415,11 @@ async function refreshSiteSunInfo() {
       <div class="sun-item"><svg class="sun-icon" width="22" height="22" viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M20 1.5v10.5M16 9l4 3 4-3" stroke="#ef4444" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><g stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round"><line x1="30.8" y1="26.1" x2="34.3" y2="25.5"/><line x1="28.4" y1="20.9" x2="31.1" y2="18.7"/><line x1="23.8" y1="17.7" x2="25" y2="14.4"/><line x1="16.2" y1="17.7" x2="15" y2="14.4"/><line x1="11.6" y1="20.9" x2="8.9" y2="18.7"/><line x1="9.2" y1="26.1" x2="5.7" y2="25.5"/></g><path d="M11 28A9 9 0 0 1 29 28" stroke="#f97316" stroke-width="1.9" stroke-linecap="round"/><line x1="9" y1="30.5" x2="31" y2="30.5" stroke="#f97316" stroke-width="1.5" stroke-linecap="round"/><line x1="11" y1="34" x2="29" y2="34" stroke="#f97316" stroke-width="1.3" stroke-linecap="round" opacity="0.5"/></svg><span>Sunset</span> <b>${sunset}</b></div>
       <div class="sun-item"><svg class="sun-icon" width="22" height="22" viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M20 12v-10.5M16 4.5l4-3 4 3" stroke="#ef4444" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><g stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round"><line x1="30.8" y1="26.1" x2="34.3" y2="25.5"/><line x1="28.4" y1="20.9" x2="31.1" y2="18.7"/><line x1="23.8" y1="17.7" x2="25" y2="14.4"/><line x1="16.2" y1="17.7" x2="15" y2="14.4"/><line x1="11.6" y1="20.9" x2="8.9" y2="18.7"/><line x1="9.2" y1="26.1" x2="5.7" y2="25.5"/></g><path d="M11 28A9 9 0 0 1 29 28" stroke="#f97316" stroke-width="1.9" stroke-linecap="round"/><line x1="9" y1="30.5" x2="31" y2="30.5" stroke="#f97316" stroke-width="1.5" stroke-linecap="round"/><line x1="11" y1="34" x2="29" y2="34" stroke="#f97316" stroke-width="1.3" stroke-linecap="round" opacity="0.5"/></svg><span>Sunrise</span> <b>${sunrise}</b></div>`;
     siteInfo.style.display = 'flex';
+    if (twilightBar) {
+      const barHtml = _twilightBarHtml(data.twilight);
+      if (barHtml) { twilightBar.innerHTML = barHtml; twilightBar.style.display = 'block'; }
+      else { twilightBar.style.display = 'none'; }
+    }
     const sunsetHour  = parseInt(sunset.slice(0,2), 10);
     const sunriseHour = parseInt(sunrise.slice(0,2), 10);
     const sunriseMin  = parseInt(sunrise.slice(3,5), 10);
@@ -3105,6 +3427,7 @@ async function refreshSiteSunInfo() {
   } catch (_) {
     siteInfo.innerHTML = '<div class="sun-item" style="color:var(--muted)"><b>—</b></div>';
     siteInfo.style.display = 'flex';
+    if (twilightBar) twilightBar.style.display = 'none';
   }
 }
 
@@ -3216,6 +3539,7 @@ function _buildMarkersForRecs(recs, originLatLngArr) {
   siteMarkers.forEach(m => map.removeLayer(m));
   siteMarkers = [];
   _activeMarkerIdx = -1;
+  _previewMarkerIdx = -1;
   amenityMarkers.forEach(m => map.removeLayer(m));
   amenityMarkers = [];
   const bounds = originLatLngArr ? [originLatLngArr] : [];
@@ -3285,6 +3609,7 @@ function renderResults(data) {
   siteMarkers.forEach(m => map.removeLayer(m));
   siteMarkers = [];
   _activeMarkerIdx = -1;
+  _previewMarkerIdx = -1;
   amenityMarkers.forEach(m => map.removeLayer(m));
   amenityMarkers = [];
   currentRecs = [];
@@ -3426,11 +3751,16 @@ function attachDisplayCardListeners() {
   document.querySelectorAll('#results-list .site-card').forEach(card => {
     const origIdx = parseInt(card.dataset.origIdx);
     card.addEventListener('click', () => {
+      // The map is hidden on mobile (<=640px) — highlighting/panning a
+      // marker the user can't see does nothing useful, so skip it there.
+      if (window.innerWidth <= 640) return;
       highlightCard(origIdx);
       highlightMarker(origIdx);
       siteMarkers[origIdx].openPopup();
       map.panTo([currentRecs[origIdx].site.latitude, currentRecs[origIdx].site.longitude]);
     });
+    card.addEventListener('mouseenter', () => previewMarker(origIdx));
+    card.addEventListener('mouseleave', clearMarkerPreview);
   });
 }
 
@@ -3467,6 +3797,17 @@ function buildCard(rec, idx) {
   const amenityRow = (parkingRow || toiletRow || lampRow)
     ? `<div class="amenity-row">${parkingRow}${toiletRow}${lampRow}</div>` : '';
 
+  // Nearest geotagged photo (Wikimedia Commons) — general daytime site
+  // context, not a night photo (no free bulk source for that exists).
+  // loading="lazy" means the browser doesn't fetch the bytes until the
+  // card scrolls near the viewport, so this doesn't cost anything for the
+  // ~24 other cards the user never scrolls to.
+  const photoHtml = site.photo_thumb_url ? `
+    <a class="site-photo-wrap" href="${site.photo_page_url || '#'}" target="_blank" rel="noopener" onclick="event.stopPropagation()">
+      <img class="site-photo" src="${site.photo_thumb_url}" alt="${esc(site.name)}" loading="lazy" decoding="async" />
+      <span class="site-photo-credit">📷 ${esc(site.photo_artist || 'Wikimedia Commons')}${site.photo_license ? ` · ${esc(site.photo_license)}` : ''}</span>
+    </a>` : '';
+
   const sqClass = scoreQualityClass(rec.total_score);
   const animDelay = `${(idx * 0.045).toFixed(2)}s`;
   const rankText = window._allUk
@@ -3498,6 +3839,7 @@ function buildCard(rec, idx) {
         <span class="score-val">${rec.total_score} <span style="font-size:0.58rem;opacity:0.5">/ 100 ⓘ</span></span>
       </div>
       ${amenityRow}
+      ${photoHtml}
       ${cardLinks}
       ${buildMiniHourlyChart(rec)}
     </div>`;
