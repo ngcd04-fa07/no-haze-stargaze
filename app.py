@@ -650,7 +650,22 @@ def _normalize_angle(angle: float) -> float:
     return angle % 360.0
 
 
-def _sun_event_utc(date: datetime, latitude: float, longitude: float, is_sunrise: bool) -> datetime | None:
+# Solar zenith angle (degrees from vertical) at which each phase boundary is
+# defined. 90.833 is the standard sunrise/sunset angle (accounts for
+# atmospheric refraction + the Sun's apparent radius); 96/102/108 are the
+# conventional civil/nautical/astronomical twilight angles (sun 6/12/18
+# degrees below the geometric horizon). Same "Sunrise Equation" algorithm as
+# before — this is exactly what that zenith parameter is for.
+_ZENITH_SUNRISE_SUNSET = 90.833
+_ZENITH_CIVIL = 96.0
+_ZENITH_NAUTICAL = 102.0
+_ZENITH_ASTRONOMICAL = 108.0
+
+
+def _sun_event_utc(
+    date: datetime, latitude: float, longitude: float, is_sunrise: bool,
+    zenith: float = _ZENITH_SUNRISE_SUNSET,
+) -> datetime | None:
     n = date.timetuple().tm_yday
     lng_hour = longitude / 15.0
     t = n + ((6 - lng_hour) / 24.0) if is_sunrise else n + ((18 - lng_hour) / 24.0)
@@ -668,10 +683,13 @@ def _sun_event_utc(date: datetime, latitude: float, longitude: float, is_sunrise
     cos_dec = math.cos(math.asin(sin_dec))
 
     cos_h = (
-        math.cos(math.radians(90.833))
+        math.cos(math.radians(zenith))
         - sin_dec * math.sin(math.radians(latitude))
     ) / (cos_dec * math.cos(math.radians(latitude)))
     if cos_h > 1 or cos_h < -1:
+        # The sun never reaches this angle on this date at this latitude —
+        # e.g. no true astronomical darkness in northern Scotland near
+        # midsummer. Caller must handle None.
         return None
 
     h = math.degrees(math.acos(cos_h))
@@ -690,15 +708,36 @@ def _sun_event_utc(date: datetime, latitude: float, longitude: float, is_sunrise
     return datetime(date.year, date.month, date.day, hours, minutes, tzinfo=timezone.utc)
 
 
-def _fallback_sunrise_sunset(date: datetime, latitude: float, longitude: float) -> tuple[str, str] | None:
-    sunrise_utc = _sun_event_utc(date, latitude, longitude, True)
-    sunset_utc = _sun_event_utc(date, latitude, longitude, False)
-    if not sunrise_utc or not sunset_utc:
-        return None
+def _twilight_times_utc(date: datetime, latitude: float, longitude: float) -> dict[str, datetime | None]:
+    """All 8 solar event times (UTC) for one calendar date. Any value can be
+    None — see _sun_event_utc's zenith-unreachable case."""
+    return {
+        "astronomical_dawn": _sun_event_utc(date, latitude, longitude, True, _ZENITH_ASTRONOMICAL),
+        "nautical_dawn":     _sun_event_utc(date, latitude, longitude, True, _ZENITH_NAUTICAL),
+        "civil_dawn":        _sun_event_utc(date, latitude, longitude, True, _ZENITH_CIVIL),
+        "sunrise":           _sun_event_utc(date, latitude, longitude, True, _ZENITH_SUNRISE_SUNSET),
+        "sunset":            _sun_event_utc(date, latitude, longitude, False, _ZENITH_SUNRISE_SUNSET),
+        "civil_dusk":        _sun_event_utc(date, latitude, longitude, False, _ZENITH_CIVIL),
+        "nautical_dusk":     _sun_event_utc(date, latitude, longitude, False, _ZENITH_NAUTICAL),
+        "astronomical_dusk": _sun_event_utc(date, latitude, longitude, False, _ZENITH_ASTRONOMICAL),
+    }
+
+
+def _twilight_info(date: datetime, latitude: float, longitude: float) -> dict[str, str | None]:
+    """Local (Europe/London) HH:MM strings for every twilight boundary, or
+    None for any boundary the sun doesn't reach on this date/latitude."""
     uk_tz = ZoneInfo("Europe/London")
-    sunrise_local = sunrise_utc.astimezone(uk_tz)
-    sunset_local = sunset_utc.astimezone(uk_tz)
-    return sunrise_local.strftime("%H:%M"), sunset_local.strftime("%H:%M")
+    return {
+        key: (dt.astimezone(uk_tz).strftime("%H:%M") if dt else None)
+        for key, dt in _twilight_times_utc(date, latitude, longitude).items()
+    }
+
+
+def _fallback_sunrise_sunset(date: datetime, latitude: float, longitude: float) -> tuple[str, str] | None:
+    twilight = _twilight_info(date, latitude, longitude)
+    if not twilight["sunrise"] or not twilight["sunset"]:
+        return None
+    return twilight["sunrise"], twilight["sunset"]
 
 
 # Preload cached data on app load; only scrape immediately if no cache exists.
@@ -890,10 +929,13 @@ def api_sunrise_sunset():
         if not origin:
             return jsonify({"error": f"Could not geocode location: {location!r}"}), 400
         origin_lat, origin_lon, origin_name = origin
-    fallback = _fallback_sunrise_sunset(base_date, origin_lat, origin_lon)
-    if fallback:
-        sunrise, sunset = fallback
-        return jsonify({"sunrise": sunrise, "sunset": sunset})
+    twilight = _twilight_info(base_date, origin_lat, origin_lon)
+    if twilight["sunrise"] and twilight["sunset"]:
+        return jsonify({
+            "sunrise": twilight["sunrise"],
+            "sunset": twilight["sunset"],
+            "twilight": twilight,
+        })
     return jsonify({"error": "Sunrise/sunset not available for that date"}), 502
 
 
