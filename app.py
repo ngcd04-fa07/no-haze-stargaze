@@ -39,7 +39,7 @@ def _json_dumps_bytes(obj) -> bytes:
     return _orjson.dumps(obj) if _orjson else json.dumps(obj).encode()
 
 import requests
-from flask import Flask, Response, jsonify, render_template, request, send_from_directory
+from flask import Flask, Response, jsonify, redirect, render_template, request, send_from_directory
 
 from config import DATA_DIR
 import geocoder as geo
@@ -55,6 +55,13 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+
+
+@app.before_request
+def redirect_render_domain():
+    if request.host.split(":")[0] == "no-haze-stargaze.onrender.com":
+        return redirect(f"https://nohaze.co.uk{request.full_path.rstrip('?')}", code=301)
+
 
 # ---------------------------------------------------------------------------
 # Forecast background cache
