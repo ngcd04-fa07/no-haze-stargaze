@@ -82,6 +82,10 @@ CACHE_ONLY_FORECASTS = os.getenv("CACHE_ONLY_FORECASTS", "true").lower() == "tru
 FORECAST_CACHE_REMOTE_ENABLED = os.getenv("FORECAST_CACHE_REMOTE_ENABLED", "false").lower() == "true"
 # Deployment mode label surfaced in /api/status.
 DEPLOYMENT_MODE = os.getenv("DEPLOYMENT_MODE", "local")
+# CARTO now requires a (free) API key for its basemap tiles — sign up at
+# https://carto.com/basemaps/apikey (5M tile requests/month, no cost) and set
+# this env var. Without it the map falls back to CARTO's watermarked tiles.
+CARTO_API_KEY = os.getenv("CARTO_API_KEY", "")
 
 _forecast_state = {
     "data": {},              # slug -> [(time_str, cloud_pct), ...]
@@ -814,7 +818,7 @@ threading.Thread(target=_keep_alive, daemon=True, name="keep-alive").start()
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return render_template("index.html", carto_api_key=CARTO_API_KEY)
 
 
 @app.route("/og-image.png")

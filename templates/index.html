@@ -2578,8 +2578,9 @@
 // ── State ──────────────────────────────────────────────────────────────────
 let map, tileLayer, originMarker, siteMarkers = [], activeSiteIdx = -1;
 
-const MAP_TILE_URL_DARK = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-const MAP_TILE_URL_LIGHT = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+const CARTO_API_KEY = '{{ carto_api_key }}';
+const MAP_TILE_URL_DARK = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png' + (CARTO_API_KEY ? `?key=${CARTO_API_KEY}` : '');
+const MAP_TILE_URL_LIGHT = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png' + (CARTO_API_KEY ? `?key=${CARTO_API_KEY}` : '');
 // NASA GIBS VIIRS Black Marble — annual nighttime-lights composite, public
 // WMTS, no API key. Native tiles stop at zoom 8 (GoogleMapsCompatible_Level8);
 // maxNativeZoom lets Leaflet keep upscaling the last tile past that instead
