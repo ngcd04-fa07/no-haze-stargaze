@@ -593,6 +593,37 @@
       font-size: 0.66rem; color: var(--warn);
       margin-top: 0.25rem;
     }
+    /* Moon-up overlay — a translucent wash on top of the darkness-phase
+       segments (opacity set inline, scaled by illumination %), since
+       "is it dark" and "is the Moon up" are independent facts. Purely
+       decorative: pointer-events:none so it never steals a segment's own
+       hover/tap target — the ⓘ icon in .moon-edge-row is the interactive
+       hit target for moon info instead (same chip-i pattern as site cards). */
+    .moon-band {
+      position: absolute;
+      top: 0; bottom: 0;
+      background: #dbeafe;
+      pointer-events: none;
+    }
+    .moon-tick {
+      position: absolute;
+      top: 0; bottom: 0;
+      width: 2px;
+      margin-left: -1px;
+      background: repeating-linear-gradient(to bottom, #fde68a 0 3px, transparent 3px 6px);
+      pointer-events: none;
+    }
+    /* Moonrise/moonset, pinned to the bar's two ends (like the sunset/sunrise
+       edge labels above) rather than positioned at their actual time —
+       easier to scan, and each is its own icon + ⓘ tooltip trigger. */
+    .moon-edge-row {
+      display: flex; justify-content: space-between;
+      margin-top: 0.3rem;
+    }
+    .moon-edge-item {
+      display: inline-flex; align-items: center; gap: 0.25rem;
+      font-size: 0.7rem;
+    }
     .time-window-block { margin-top: 0.35rem; display: flex; flex-direction: column; gap: 0.45rem; }
     .time-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; align-items: end; }
     .time-field { display: flex; flex-direction: column; gap: 0.2rem; }
@@ -2900,6 +2931,28 @@ function toggleTwilightSegActive(el) {
   if (!wasActive) el.classList.add('twilight-seg-active');
 }
 
+// Every moon-up interval within [windowStart, windowEnd], as [from, to]
+// minute pairs (0, 1, or 2 of them — see the two-interval note below).
+function _moonUpIntervals(moon, moonriseMin, moonsetMin, windowStart, windowEnd) {
+  const intervals = [];
+  const add = (fromMin, toMin) => { if (fromMin !== null && toMin !== null && toMin > fromMin) intervals.push([fromMin, toMin]); };
+  if (moonriseMin !== null && moonsetMin !== null && moonriseMin > moonsetMin) {
+    // High-latitude edge case: the Moon sets and then rises again within one
+    // night (short down-arc), so it's up at both window ends with a gap.
+    add(windowStart, moonsetMin);
+    add(moonriseMin, windowEnd);
+  } else if (moonriseMin !== null && moonsetMin !== null) {
+    add(moonriseMin, moonsetMin);
+  } else if (moonriseMin !== null && moon.up_at_sunrise) {
+    add(moonriseMin, windowEnd);
+  } else if (moonsetMin !== null && moon.up_at_sunset) {
+    add(windowStart, moonsetMin);
+  } else if (moon.up_at_sunset && moon.up_at_sunrise) {
+    add(windowStart, windowEnd);
+  }
+  return intervals;
+}
+
 function _twilightBarHtml(twilight) {
   if (!twilight || !twilight.sunset || !twilight.sunrise) return '';
   const toMin = (hhmm) => {
@@ -2927,6 +2980,26 @@ function _twilightBarHtml(twilight) {
   const totalSpan = known[known.length - 1].min - known[0].min;
   if (!(totalSpan > 0)) return '';
 
+  // Moon-up interval(s) within this window — computed up front so the
+  // segment tooltips below can flag "moonlight present" wherever a segment
+  // overlaps one, since the sky isn't actually fully dark while the Moon's
+  // up even during "Full darkness"/astronomical-twilight stretches.
+  const moon = twilight.moon || {};
+  const moonriseMin = unwrap(moon.moonrise);
+  const moonsetMin = unwrap(moon.moonset);
+  const windowStart = known[0].min, windowEnd = known[known.length - 1].min;
+  const moonIntervals = moon.illumination_pct != null
+    ? _moonUpIntervals(moon, moonriseMin, moonsetMin, windowStart, windowEnd) : [];
+  const overlapsMoon = (fromMin, toMin) => moonIntervals.some(([mFrom, mTo]) => mTo > fromMin && mFrom < toMin);
+  // Every moonrise/moonset instant, so a phase stretch that's only PARTLY
+  // moonlit gets split into its own "plain" and "(moonlight present)"
+  // pieces at the exact crossing, instead of tagging the whole stretch.
+  const moonBoundaryPoints = moonIntervals.flatMap(([a, b]) => [a, b]);
+  const fmtMin = (m) => {
+    const wrapped = ((m % 1440) + 1440) % 1440;
+    return `${String(Math.floor(wrapped / 60)).padStart(2, '0')}:${String(wrapped % 60).padStart(2, '0')}`;
+  };
+
   let segmentsHtml = '';
   for (let i = 0; i < known.length - 1; i++) {
     const from = known[i], to = known[i + 1];
@@ -2936,9 +3009,19 @@ function _twilightBarHtml(twilight) {
     for (let j = from.idx; j < to.idx; j++) {
       if (_TWILIGHT_RANK[_TWILIGHT_CLASS_AFTER[j]] > _TWILIGHT_RANK[cls]) cls = _TWILIGHT_CLASS_AFTER[j];
     }
-    const pct = Math.max(0, (to.min - from.min) / totalSpan * 100);
-    if (pct <= 0) continue;
-    segmentsHtml += `<div class="twilight-seg twilight-${cls}" style="width:${pct.toFixed(2)}%" title="${_TWILIGHT_LABEL[cls]}: ${twilight[from.key]}–${twilight[to.key]}" onclick="toggleTwilightSegActive(this)"></div>`;
+    if (!(to.min > from.min)) continue;
+    const cutsInside = moonBoundaryPoints.filter(p => p > from.min && p < to.min).sort((a, b) => a - b);
+    const bounds = [from.min, ...cutsInside, to.min];
+    for (let k = 0; k < bounds.length - 1; k++) {
+      const subFrom = bounds[k], subTo = bounds[k + 1];
+      const pct = (subTo - subFrom) / totalSpan * 100;
+      if (pct <= 0) continue;
+      const label = _TWILIGHT_LABEL[cls] + (overlapsMoon(subFrom, subTo) ? ' (moonlight present)' : '');
+      segmentsHtml += `<div class="twilight-seg twilight-${cls}" style="width:${pct.toFixed(2)}%" ` +
+        `data-tip-type="twilight" data-tip-label="${label}" data-tip-range="${fmtMin(subFrom)}–${fmtMin(subTo)}" ` +
+        `onmouseenter="showChipTip(event,this)" onmouseleave="hideInfoTipDelayed()" ` +
+        `onclick="toggleTwilightSegActive(this); toggleChipTipClick(event,this)"></div>`;
+    }
   }
 
   // Tick marks for the start/end of full astronomical darkness, in addition
@@ -2959,14 +3042,61 @@ function _twilightBarHtml(twilight) {
   }
   const note = (duskMin === null || dawnMin === null)
     ? `<div class="twilight-note">No full astronomical darkness tonight at this latitude.</div>` : '';
+
+  // Moon-up overlay: translucent band(s) (opacity scaling with illumination —
+  // a thin crescent barely dims the bar, a gibbous/full moon washes it out
+  // visibly) drawn on top of the darkness-phase segments, since "is it dark"
+  // and "is the Moon up" are independent facts about the same stretch of
+  // night (moonIntervals was computed earlier, alongside the segments loop,
+  // since the segment tooltips also need it).
+  let moonTicksHtml = '', moonriseItemHtml = '', moonsetItemHtml = '';
+  let moonBandHtml = '';
+
+  if (moon.illumination_pct != null) {
+    const illum = moon.illumination_pct;
+    const opacity = (0.08 + 0.32 * (illum / 100)).toFixed(2);
+    for (const [fromMin, toMin] of moonIntervals) {
+      const startPct = (fromMin - windowStart) / totalSpan * 100;
+      const widthPct = (toMin - fromMin) / totalSpan * 100;
+      moonBandHtml += `<div class="moon-band" style="left:${startPct.toFixed(2)}%;width:${widthPct.toFixed(2)}%;opacity:${opacity}"></div>`;
+    }
+
+    const rangeLabel = `${moon.moonrise || twilight.sunset}–${moon.moonset || twilight.sunrise}`;
+    const washNote = illum >= 25 ? ' — reduces darkness while up' : '';
+    // Purely decorative (pointer-events: none) — it sits visually on top of
+    // the twilight segments, but must NOT steal their hover/tap target, so
+    // the segment underneath stays reachable everywhere on the bar. The
+    // interactive hit target for moon info is the ⓘ icon below instead
+    // (same chip-i pattern as the site cards' lunar/pollution info icons).
+    const tipAttrs = `data-tip-type="moonband" data-tip-label="Moon up (${illum}% illuminated)" data-tip-range="${rangeLabel}${washNote}" ` +
+      `onclick="toggleChipTipClick(event,this)" onmouseenter="showChipTip(event,this)" onmouseleave="hideInfoTipDelayed()"`;
+    const infoIcon = `<span class="chip-i" ${tipAttrs}>ⓘ</span>`;
+    if (moonriseMin !== null) {
+      const pct = Math.min(100, Math.max(0, (moonriseMin - windowStart) / totalSpan * 100));
+      moonTicksHtml += `<div class="moon-tick" style="left:${pct.toFixed(2)}%"></div>`;
+      moonriseItemHtml = `<span class="moon-edge-item">🌙<span>Moonrise</span> <b>${moon.moonrise}</b>${infoIcon}</span>`;
+    }
+    if (moonsetMin !== null) {
+      const pct = Math.min(100, Math.max(0, (moonsetMin - windowStart) / totalSpan * 100));
+      moonTicksHtml += `<div class="moon-tick" style="left:${pct.toFixed(2)}%"></div>`;
+      // If moonrise isn't shown, this is the row's only child — flex
+      // space-between won't push a lone child to the end on its own.
+      const pinRight = moonriseMin === null ? ' style="margin-left:auto"' : '';
+      moonsetItemHtml = `<span class="moon-edge-item"${pinRight}>🌙<span>Moonset</span> <b>${moon.moonset}</b>${infoIcon}</span>`;
+    }
+  }
+  const moonEdgeRow = (moonriseItemHtml || moonsetItemHtml)
+    ? `<div class="moon-edge-row">${moonriseItemHtml}${moonsetItemHtml}</div>` : '';
+
   return `
     <div class="twilight-bar-label">Darkness through the night</div>
-    <div class="twilight-bar">${segmentsHtml}${ticksHtml}</div>
+    <div class="twilight-bar">${segmentsHtml}${moonBandHtml}${ticksHtml}${moonTicksHtml}</div>
     <div class="twilight-bar-ticks">
       <span class="twilight-edge-label" style="left:0%">${twilight.sunset}</span>
       ${darkTickLabels}
       <span class="twilight-edge-label" style="left:100%">${twilight.sunrise}</span>
     </div>
+    ${moonEdgeRow}
     ${note}`;
 }
 
@@ -4236,6 +4366,8 @@ function showChipTip(e, el) {
     html = `<div class="itip-title">Lunar conditions</div><div>${desc}${note}</div>`;
   } else if (type === 'restricted' || type === 'likely-restricted') {
     html = _restrictionTipHtml(type === 'likely-restricted');
+  } else if (type === 'twilight' || type === 'moonband') {
+    html = `<div class="itip-title">${el.dataset.tipLabel}</div><div>${el.dataset.tipRange}</div>`;
   }
   showInfoTip(e, html);
 }
@@ -4286,6 +4418,8 @@ function _buildChipTipHtml(el) {
     return `<div class="itip-title">Lunar conditions</div><div>${desc}${note}</div>`;
   } else if (type === 'restricted' || type === 'likely-restricted') {
     return _restrictionTipHtml(type === 'likely-restricted');
+  } else if (type === 'twilight' || type === 'moonband') {
+    return `<div class="itip-title">${el.dataset.tipLabel}</div><div>${el.dataset.tipRange}</div>`;
   }
   return '';
 }

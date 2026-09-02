@@ -744,6 +744,33 @@ def _twilight_info(date: datetime, latitude: float, longitude: float) -> dict[st
     }
 
 
+def _moon_night_info(date: datetime, latitude: float, longitude: float) -> dict:
+    """Moonrise/moonset + illumination for the night spanning `date`'s sunset
+    through the next day's sunrise — the same span the darkness bar covers.
+    All fields None when the Sun doesn't reach the sunset/sunrise angle that
+    day (see _sun_event_utc), same edge case _twilight_info already has."""
+    sunset_utc = _sun_event_utc(date, latitude, longitude, False)
+    sunrise_utc = _sun_event_utc(date + timedelta(days=1), latitude, longitude, True)
+    if not sunset_utc or not sunrise_utc:
+        return {
+            "moonrise": None, "moonset": None,
+            "up_at_sunset": False, "up_at_sunrise": False,
+            "illumination_pct": None, "quality": None,
+        }
+    rise_set = lu.moon_rise_set_utc(sunset_utc, sunrise_utc, latitude, longitude)
+    uk_tz = ZoneInfo("Europe/London")
+    midpoint = sunset_utc + (sunrise_utc - sunset_utc) / 2
+    info = lu.lunar_info(midpoint)
+    return {
+        "moonrise": rise_set["moonrise"].astimezone(uk_tz).strftime("%H:%M") if rise_set["moonrise"] else None,
+        "moonset": rise_set["moonset"].astimezone(uk_tz).strftime("%H:%M") if rise_set["moonset"] else None,
+        "up_at_sunset": rise_set["up_at_start"],
+        "up_at_sunrise": rise_set["up_at_end"],
+        "illumination_pct": info["illumination_pct"],
+        "quality": info["quality"],
+    }
+
+
 def _fallback_sunrise_sunset(date: datetime, latitude: float, longitude: float) -> tuple[str, str] | None:
     twilight = _twilight_info(date, latitude, longitude)
     if not twilight["sunrise"] or not twilight["sunset"]:
@@ -942,6 +969,7 @@ def api_sunrise_sunset():
         origin_lat, origin_lon, origin_name = origin
     twilight = _twilight_info(base_date, origin_lat, origin_lon)
     if twilight["sunrise"] and twilight["sunset"]:
+        twilight["moon"] = _moon_night_info(base_date, origin_lat, origin_lon)
         return jsonify({
             "sunrise": twilight["sunrise"],
             "sunset": twilight["sunset"],
