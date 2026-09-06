@@ -38,7 +38,7 @@ jobs:
       - name: Commit and push
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.email "ng.nilaygupta04@gmail.com"
           # Save fresh data before pull — a concurrent Windows push during our sweep
           # can cause an autostash conflict that corrupts forecast_cache.json.
           cp forecast_cache.json /tmp/forecast_cache_fresh.json

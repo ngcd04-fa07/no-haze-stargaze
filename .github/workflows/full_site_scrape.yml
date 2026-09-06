@@ -39,7 +39,7 @@ jobs:
       - name: Commit and push
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.email "ng.nilaygupta04@gmail.com"
           cp sites_cache.json /tmp/sites_cache_fresh.json
           git pull --rebase --autostash origin main
           git stash drop 2>/dev/null || true
